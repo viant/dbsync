@@ -1,0 +1,2 @@
+INSERT OR REPLACE INTO events_clone(id,ts,event_type,ua,dnt,charge,payment,modified) SELECT id,ts,event_type,ua,dnt,charge,payment,modified FROM events_clone_tmp t
+WHERE (id) NOT IN (SELECT id FROM events_clone t WHERE t.date = '2018-01-01' AND t.hour IN('2018-01-01 21','2018-01-01 23'))

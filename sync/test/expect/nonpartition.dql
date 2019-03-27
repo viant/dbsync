@@ -1,0 +1,9 @@
+SELECT id,
+ts,
+event_type,
+ua,
+dnt,
+charge,
+payment,
+modified
+FROM events_clone t

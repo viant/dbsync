@@ -1,0 +1,9 @@
+SELECT COUNT(DISTINCT COALESCE(id, 0)) AS cnt_id,
+	MAX(ts) AS max_ts,
+	COUNT(DISTINCT COALESCE(event_type, 0)) AS cnt_event_type,
+	COUNT(DISTINCT COALESCE(ua, 0)) AS cnt_ua,
+	COUNT(DISTINCT COALESCE(dnt, 0)) AS cnt_dnt,
+	COUNT(DISTINCT COALESCE(charge, 0)) AS cnt_charge,
+	COUNT(DISTINCT COALESCE(payment, 0)) AS cnt_payment,
+	MAX(modified) AS max_modified
+FROM events_clone

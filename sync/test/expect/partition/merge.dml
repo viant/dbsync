@@ -1,0 +1,24 @@
+MERGE events_clone d
+USING (SELECT id,
+ts,
+event_type,
+ua,
+dnt,
+charge,
+payment,
+modified
+FROM events_clone_tmp t) t
+ON d.id = t.id AND d.date = '2018-01-01' AND d.hour IN('2018-01-01 21','2018-01-01 23')
+WHEN MATCHED THEN
+  UPDATE SET ts = t.ts,
+	event_type = t.event_type,
+	ua = t.ua,
+	dnt = t.dnt,
+	charge = t.charge,
+	payment = t.payment,
+	modified = t.modified
+WHEN NOT MATCHED BY TARGET THEN
+  INSERT (id,ts,event_type,ua,dnt,charge,payment,modified)
+  VALUES(id,ts,event_type,ua,dnt,charge,payment,modified)
+WHEN NOT MATCHED BY SOURCE THEN
+  DELETE

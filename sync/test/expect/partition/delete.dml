@@ -1,0 +1,1 @@
+DELETE FROM events_clone WEHRE  d.date = '2018-01-01' AND d.hour IN('2018-01-01 21','2018-01-01 23') AND (id) NOT IN (SELECT id FROM events_clone_tmp)

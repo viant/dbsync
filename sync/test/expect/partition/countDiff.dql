@@ -1,0 +1,7 @@
+SELECT date(ts) AS date,
+	strftime('%Y-%m-%d %H', ts) AS hour,
+	COUNT(1) AS cnt
+FROM events_clone
+WHERE date(ts) = '2018-01-01'
+GROUP BY 1,2
+ORDER BY 1,2

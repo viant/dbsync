@@ -1,0 +1,10 @@
+dest:
+  driverName: sqlite3
+  descriptor: test/data/db1.db
+  table: events_clone
+source:
+  driverName: sqlite3
+  descriptor: test/data/db1.db
+  table: events
+uniqueColumns:
+  - id
