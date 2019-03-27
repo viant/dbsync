@@ -20,5 +20,6 @@ source:
     expression: strftime('%Y-%m-%d %H', ts)
 uniqueColumns:
   - id
-partitionColumns:
-  - date
+partition:
+  columns:
+    - date

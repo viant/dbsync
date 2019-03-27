@@ -3,8 +3,8 @@ package sync
 import "github.com/viant/toolbox/url"
 
 type SyncRequest struct {
-	Sync
-	Transfer
+	Sync `yaml:",inline" json:",inline"`
+	Transfer `yaml:",inline" json:",inline"`
 	Dest *Resource
 	Source *Resource
 }
@@ -24,6 +24,9 @@ func (r *SyncRequest) Init() error {
 				r.MergeStyle = DMLMerge
 			}
 		}
+	}
+	if len(r.Partition.Columns) == 0 {
+		r.Partition.Columns = make([]string, 0)
 	}
 	return nil
 }

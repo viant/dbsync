@@ -121,10 +121,8 @@ func (b *Builder) init(manager dsc.Manager) error {
 		b.pseudoColumns[column.Name] = column
 	}
 	b.partitions = make(map[string]bool)
-	if len(b.PartitionColumns) == 0 {
-		b.PartitionColumns = make([]string, 0)
-	}
-	for _, partition := range b.PartitionColumns {
+
+	for _, partition := range b.Partition.Columns {
 		b.partitions[partition] = true
 	}
 	if b.columns, err = b.dialect.GetColumns(manager, datastore, b.table); err != nil {
@@ -137,10 +135,10 @@ func (b *Builder) init(manager dsc.Manager) error {
 }
 
 func (b *Builder) initDatePartition(resource *Resource) {
-	if len(b.PartitionColumns) > 0 {
+	if len(b.Partition.Columns) > 0 {
 		dateColumn := resource.DateColumn
 		hasDateColumn := dateColumn != nil
-		for _, partition := range b.PartitionColumns {
+		for _, partition := range b.Partition.Columns {
 			if hasDateColumn && dateColumn.Name == partition {
 				b.datePartition = fmt.Sprintf("%v AS %v", dateColumn.Expression, dateColumn.Name)
 				continue
@@ -204,7 +202,7 @@ func (b *Builder) diffDQL(time time.Time, resource *Resource, projectionGenerato
 		groupBy = append(groupBy, toolbox.AsString(groupByIndex))
 		groupByIndex++
 	}
-	for _, partition := range b.PartitionColumns {
+	for _, partition := range b.Partition.Columns {
 		if _, has := dimension[partition]; has {
 			continue
 		}

@@ -27,5 +27,5 @@ type Sync struct {
 	CustomDiffColumns []string
 	NumericPrecision  int
 	MergeStyle        string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
-	Partition         *Partition
+	Partition         Partition
 }
