@@ -12,6 +12,7 @@ type Chunk struct {
 	CountValue *int
 	Method string
 	Status string
+	CriteriaValues map[string]interface{}
 	Transfer *TransferJob
 }
 

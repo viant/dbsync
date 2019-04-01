@@ -299,11 +299,9 @@ USING %v t
 ON %v
 WHEN MATCHED THEN
   UPDATE SET %v
-WHEN NOT MATCHED BY TARGET THEN
+WHEN NOT MATCHED THEN
   INSERT (%v)
   VALUES(%v)
-WHEN NOT MATCHED BY SOURCE THEN
-  DELETE
 `
 
 func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) (string) {

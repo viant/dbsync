@@ -5,6 +5,10 @@ import (
 	"github.com/viant/dsc"
 )
 
+
+const transientTableSuffix = "_tmp"
+
+
 //Transfer represents transferData config
 type Transfer struct {
 	BatchSize     int
