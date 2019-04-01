@@ -1,0 +1,11 @@
+version: "3.2"
+services:
+  dstransfer:
+    container_name: dstransfer
+    image: adrianwit/dstransfer:0.1.0
+    command: ["/app/dstransfer"]
+    ports:
+      - 8080:8080
+    volumes:
+      - ${HOME}/.secret/:/root/.secret/
+    network_mode: bridge

@@ -1,0 +1,26 @@
+{
+  "BatchSize": 128,
+  "WriterThreads": 1,
+  "Mode": "insert",
+
+  "Source": {
+    "Descriptor": "tcp([host]:3000)/test",
+    "DriverName": "aerospike",
+    "Parameters": {
+      "namespace": "test",
+      "host": "$aerospikeIP"
+    },
+    "Query": "SELECT id, name, TIMESTAMP(visited) AS visited, perf.rank AS perf_rank, perf.score AS perf_score, TO_JSON_STRING(quiz) AS quiz  FROM users"
+  },
+  "Dest": {
+    "DriverName": "mysql",
+    "Credentials": "mysql",
+    "Descriptor":"[username]:[password]@tcp([host]:3306)/[dbname]?parseTime=true",
+    "Parameters": {
+      "dbname": "db3",
+      "host": "$mysqlIP"
+    },
+    "Table": "users"
+  }
+
+}

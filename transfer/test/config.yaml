@@ -1,0 +1,6 @@
+driverName: ndjson
+descriptor: [url]
+parameters:
+  dateFormat: yyyy-MM-dd hh:mm:ss
+  ext: json
+  url: test/transfer/

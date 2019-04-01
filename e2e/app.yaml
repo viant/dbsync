@@ -1,0 +1,54 @@
+tasks: $tasks
+init:
+  sourcePath: $Pwd(..)
+  buildPath: /tmp/dbsync
+  version: 0.1.0
+
+pipeline:
+
+  build:
+    action: exec:run
+    commands:
+      - rm -rf $buildPath
+      - mkdir -p $buildPath
+      - cp -r $sourcePath/transfer $buildPath/
+      - cp -r $sourcePath/sync $buildPath/
+      - cp -r $sourcePath/app $buildPath/
+
+
+
+#
+#    clean:
+#      action: storage:remove
+#      url: /tmp/dbsync
+#
+#    copy:
+#      action: storage:copy
+#      source:
+#        URL: config/Dockerfile
+#      dest:
+#        URL: $buildPath
+#        credentials: localhost
+#
+#
+#    build-img:
+#      action: docker:build
+#      path: $buildPath
+#      '@tag':
+#        image: dstransfer
+#        username: adrianwit
+#        version: 0.1.0
+#
+
+#  stop:
+#    target: $appTarget
+#    action: docker/ssh:composeDown
+#    source:
+#      URL: config/docker-compose.yaml
+#
+#  deploy:
+#    target: $appTarget
+#    action: docker/ssh:composeUp
+#    runInBackground: true
+#    source:
+#      URL: config/docker-compose.yaml

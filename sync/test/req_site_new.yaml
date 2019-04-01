@@ -1,0 +1,24 @@
+source:
+  #hint: /*+ INDEX_ASX(SITE SYS_C007323) */
+  driverName: oci8
+  descriptor: '[username]/[password]@18.214.10.111:1521/ORCL'
+  credentials: /root/.secret/sitemgnt.json
+  parameters:
+    dbname: sitemgnt
+dest:
+  driverName: bigquery
+  credentials: /root/.secret/bq.json
+  parameters:
+    datasetId: sitemgnt
+table: SITE_NEW
+uniqueColumns:
+  - ID
+batchSize: 524287
+writerThreads: 2
+chunkRowCount: 2097152
+chunkSQL: SELECT MIN(id) AS min_value, MAX(id) max_value, COUNT(1) AS count_value FROM (
+             SELECT $hint ID FROM SITE_NEW
+             WHERE ID >= $offset $where AND ROWNUM <= $limit
+          )
+multiChunk: 6
+endpointIP: 10.55.1.129:8081

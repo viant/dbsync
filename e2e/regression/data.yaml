@@ -1,0 +1,61 @@
+pipeline:
+  db1:
+    aerospike-ip:
+      target: $target
+      action: docker:inspect
+      name: endly_db1
+      logging: false
+      post:
+        - aerospikeIP = $Info[0].NetworkSettings.IPAddress
+    register:
+      action: dsunit:register
+      datastore: db1
+      config:
+        driverName: aerospike
+        descriptor: tcp([host]:3000)/[namespace]
+        parameters:
+          dbname: db1
+          namespace: test
+          host: 127.0.0.1
+          port: 3000
+          dateFormat: yyyy-MM-dd hh:mm:ss
+    prepare:
+      datastore: db1
+      action: dsunit:prepare
+      URL: regression/data/db1/
+
+  db2:
+    register:
+      action: dsunit:register
+      datastore: db2
+      config:
+        driverName: bigquery
+        credentials: $bqCredentials
+        parameters:
+          datasetId: db2
+    prepare:
+      datastore: db2
+      action: dsunit:prepare
+      URL: regression/data/db2
+
+  db3:
+    mysql-ip:
+      target: $target
+      action: docker:inspect
+      name: endly_db3
+      logging: false
+      post:
+      - mysqlIP = $Info[0].NetworkSettings.IPAddress
+    register:
+      action: dsunit:register
+      datastore: db3
+      config:
+        driverName: mysql
+        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        credentials: $mysqlCredentials
+        parameters:
+          dbname: db3
+    prepare:
+      datastore: db3
+      action: dsunit:prepare
+      URL: regression/data/db3/

@@ -23,9 +23,12 @@ type PseudoColumn struct {
 //Sync sync
 type Sync struct {
 	UniqueColumns     []string
-	PseudoColumns     []*PseudoColumn
 	CustomDiffColumns []string
 	NumericPrecision  int
 	MergeStyle        string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
 	Partition         Partition
+	Full              bool
+	ChunkSQL          string
+	ChunkRowCount     int
+	MultiChunk        int
 }

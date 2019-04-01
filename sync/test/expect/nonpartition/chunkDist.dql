@@ -1,0 +1,4 @@
+SELECT MIN(id) AS min_value,
+	MAX(id) AS max_valu,
+	COUNT(1) AS count_value
+FROM events_clone t

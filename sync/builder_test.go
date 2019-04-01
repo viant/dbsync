@@ -95,7 +95,7 @@ func TestBuilder_DDLBuilder(t *testing.T) {
 	if ! assert.Nil(t, err) {
 		return
 	}
-	DDL, err := builder.DDL(true)
+	DDL, err := builder.DDL("_tmp")
 	assert.Nil(t, err)
 	expect, _ := loadTextFile("test/expect/ddl.sql")
 	assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(DDL))
@@ -145,7 +145,68 @@ func TestBuilder_DQL(t *testing.T) {
 		assert.Nil(t, request.Init())
 		assert.NotNil(t, request, useCase.description)
 		builder, err := NewBuilder(request)
-		DQL := builder.DQL(false, request.Source, useCase.values)
+
+
+		DQL := builder.DQL("", request.Source, useCase.values)
+		if ! assert.Nil(t, err, useCase.description) {
+			continue
+		}
+
+		expect, err := loadTextFile(useCase.expectURL)
+		if ! assert.Nil(t, err, useCase.description) {
+			continue
+		}
+		assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(DQL))
+	}
+}
+
+
+func TestBuilder_CunkDistDQL(t *testing.T) {
+	parent := toolbox.CallerDirectory(3)
+	if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
+		return
+	}
+
+	var useCases = []struct {
+		description string
+		requestURL  string
+		values      map[string]interface{}
+		expectURL   string
+	}{
+
+		{
+			description: "partition based sync",
+			values: map[string]interface{}{
+				"date": "2018-01-01",
+				"hour": []interface{}{
+					"2018-01-01 21",
+					"2018-01-01 23",
+				},
+			},
+			requestURL: path.Join(parent, "test/partition_req.yaml"),
+			expectURL:  "test/expect/partition/chunkDist.dql",
+		},
+		{
+			description: "non-partition based sync",
+			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
+			expectURL:   "test/expect/nonpartition/chunkDist.dql",
+			values: map[string]interface{}{
+
+			},
+		},
+	}
+
+	for _, useCase := range useCases {
+		request, err := NewSyncRequestFromURL(useCase.requestURL)
+		if !assert.Nil(t, err) {
+			continue
+		}
+		assert.Nil(t, request.Init())
+		assert.NotNil(t, request, useCase.description)
+		builder, err := NewBuilder(request)
+		DQL, err := builder.ChunkDQL(request.Source, 0, 1000, useCase.values)
+		fmt.Printf("%v\n", DQL)
+		assert.Nil(t, err)
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
@@ -257,7 +318,7 @@ func TestBuilder_DML(t *testing.T) {
 		assert.Nil(t, request.Init())
 		assert.NotNil(t, request, useCase.description)
 		builder, err := NewBuilder(request)
-		DML, err := builder.DML(useCase.dmlType, useCase.values)
+		DML, err := builder.DML("_tmp", useCase.dmlType, useCase.values)
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
@@ -318,7 +379,7 @@ func TestBuilder_Diff(t *testing.T) {
 		assert.NotNil(t, request, useCase.description)
 		builder, err := NewBuilder(request)
 		{
-			SQL, dim := builder.DiffDQL(*time, builder.dest)
+			SQL, dim := builder.DiffDQL(time, builder.dest)
 			sort.Strings(dim)
 			sort.Strings(useCase.dimension)
 			if len(dim) > 0 || len(useCase.dimension) > 0 {
@@ -331,7 +392,7 @@ func TestBuilder_Diff(t *testing.T) {
 			assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(SQL))
 		}
 		{
-			SQL, dim := builder.CountDiffDQL(*time, builder.dest)
+			SQL, dim := builder.CountDiffDQL(time, builder.dest)
 			if len(dim) > 0 || len(useCase.dimension) > 0 {
 				assert.EqualValues(t, useCase.dimension, dim)
 			}

@@ -1,0 +1,18 @@
+{
+  "Method": "get",
+  "URL": "http://localhost:8080//v1/api/task/${postJob.Response.TaskId}",
+  "Expect": {
+    "Status": "done",
+    "ReadCount":3,
+    "WriteCount":3
+  },
+  "Variables": [
+    {
+      "Name": "status",
+      "From": "Status"
+    }
+  ],
+  "Repeat": 10,
+  "SleepTimeMs": 2000,
+  "Exit": "$status:!/running/"
+}

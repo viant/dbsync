@@ -1,0 +1,70 @@
+pipeline:
+  init:
+    action: run
+    request: '@data'
+    comments: register driver, get datastore IPs
+    sharedState: true
+
+  test:
+    tag: $pathMatch
+    description: '@use_case'
+    range: 1..007
+    subPath: use_cases/${index}_*
+    template:
+      skip-tag:
+        action: nop
+        init:
+          idx: $Int(${index})
+          # uncomment when testing with standalone app
+#          mysqlIP: 127.0.0.1
+#          aerospikeIP: 127.0.0.1
+        skip: $HasResource(${subPath}/skip.txt)
+        comments: skip tag Id if subdirectory has skip.txt file present
+
+      db1-prepare:
+        when: '$HasResource(${path}/prepare/${db})'
+        action: dsunit:prepare
+        request: '@req/prepare'
+        db: db1
+        comments: populate data for use case if data is defined in folder prepare/${db}
+      db2-prepare:
+        when: '$HasResource(${path}/prepare/${db})'
+        action: dsunit:prepare
+        request: '@req/prepare'
+        db: db2
+        comments: populate data for use case if data is defined in folder prepare/${db}
+      db3-prepare:
+        when: '$HasResource(${path}/prepare/${db})'
+        action: dsunit:prepare
+        request: '@req/prepare'
+        db: db3
+        comments: populate data for use case if data is defined in folder prepare/${db}
+
+      postJob:
+        action: rest/runner:send
+        request: '@req/transfer @request'
+        comments: post a transfer job
+
+      wait:
+        action: rest/runner:send
+        request: '@wait'
+        comments: wait for job completion
+
+      db1-expect:
+        when: '$HasResource(${path}/expect/${db})'
+        action: dsunit:expect
+        request: '@req/expect'
+        db: db1
+        comments: verify test db1 state after use case
+      db2-expect:
+        when: '$HasResource(${path}/expect/${db})'
+        action: dsunit:expect
+        request: '@req/expect'
+        db: db2
+        comments: verify test db3 state after use case
+      db3-expect:
+        when: '$HasResource(${path}/expect/${db})'
+        action: dsunit:expect
+        request: '@req/expect'
+        db: db3
+        comments: verify test db3 state after use case

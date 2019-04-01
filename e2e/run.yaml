@@ -1,0 +1,48 @@
+init:
+  app: dstransfer
+  sdk: go:1.11
+  appPath: /opt/${app}
+  target:
+    URL: ssh://127.0.0.1/
+    credentials: localhost
+  appVersion: 0.1
+  bqCredentials: gcp-e2e
+  mysqlCredentials: mysql-e2e
+defaults:
+  app: $app
+  target: $target
+  buildTarget: $buildTarget
+  appTarget: $appTarget
+  bqCredentials: $bqCredentials
+  mysqlCredentials: $mysqlCredentials
+pipeline:
+  init:
+    system:
+      action: run
+      request: '@system'
+      tasks: '*'
+    datastore:
+      action: run
+      request: '@datastore'
+      tasks: '*'
+    app:
+      sdk: $sdk
+      action: run
+      request: '@app'
+      tasks: '*'
+  test:
+    action: run
+    request: '@regression/regression'
+    tasks: '*'
+  destroy:
+    app:
+      buildTarget: $target
+      app: $app
+      appVersion: $appVersion
+      action: run
+      request: '@app'
+      tasks: stop
+    system:
+      action: run
+      request: '@system'
+      tasks: destroy

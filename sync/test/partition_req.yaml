@@ -2,22 +2,22 @@ dest:
   driverName: sqlite3
   descriptor: test/data/db1.db
   table: events_clone
-  dateColumn:
-    name: date
-    expression: date(ts)
-  hourColumn:
-    name: hour
-    expression: strftime('%Y-%m-%d %H', ts)
+  pseudoColumns:
+    - name: hour
+      expression: strftime('%Y-%m-%d %H', ts)
+    - name: date
+      expression: date(ts)
+
 source:
   driverName: sqlite3
   descriptor: test/data/db1.db
   table: events
-  dateColumn:
-    name: date
-    expression: date(ts)
-  hourColumn:
-    name: hour
-    expression: strftime('%Y-%m-%d %H', ts)
+  pseudoColumns:
+    - name: hour
+      expression: strftime('%Y-%m-%d %H', ts)
+    - name: date
+      expression: date(ts)
+
 uniqueColumns:
   - id
 partition:

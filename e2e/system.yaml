@@ -1,0 +1,27 @@
+tasks: $tasks
+init:
+  db1Secrets: ${secrets.$mysqlCredentials}
+pipeline:
+  destroy:
+    stop-images:
+      action: docker:stop
+      images:
+      - mysql
+  init:
+    services:
+      mysql:
+        action: docker:run
+        image: mysql:5.7
+        name: dbsync_db1
+        ports:
+          3306: 3306
+        env:
+          MYSQL_ROOT_PASSWORD: ${db1Secrets.Password}
+
+      mysql-ip:
+        action: docker:inspect
+        logging: false
+        name: dbsync_db1
+        post:
+        - dbIP = $Info[0].NetworkSettings.IPAddress
+        - mysqlIP = $Info[0].NetworkSettings.IPAddress

@@ -1,0 +1,6 @@
+SELECT MIN(id) AS min_value,
+	MAX(id) AS max_valu,
+	COUNT(1) AS count_value
+FROM events_clone t
+ WHERE date(ts) = '2018-01-01' AND strftime('%Y-%m-%d %H', ts) IN('2018-01-01 21','2018-01-01 23')
+OFFSET 0 LIMIT 1000

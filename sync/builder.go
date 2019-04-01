@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/data"
 	"sort"
 	"strings"
-	"time"
 )
 
-var dayTimeLayout = toolbox.DateFormatToLayout("yyyy-MM-dd")
 
 type Builder struct {
 	Sync
-	pseudoColumns map[string]*PseudoColumn
 	uniques       map[string]bool
 	partitions    map[string]bool
 	manager       dsc.Manager
@@ -24,6 +22,7 @@ type Builder struct {
 	columns       []dsc.Column
 	columnsByName map[string]dsc.Column
 	datePartition string
+
 }
 
 func (b *Builder) Dialect() dsc.DatastoreDialect {
@@ -38,46 +37,86 @@ func (b *Builder) HasDatePartition() bool {
 	return b.datePartition != ""
 }
 
-func (b *Builder) Table(temp bool) string {
-	if ! temp {
+
+func (b *Builder) Table(suffix string) string {
+	if suffix == ""{
 		return b.table
 	}
-	return b.table + "_tmp"
+	return b.table + suffix
 }
 
-func (b *Builder) DDL(tempTable bool) (string, error) {
+
+
+func (b *Builder) DDL(tempTable string) (string, error) {
 	dialect := b.Dialect()
 	DDL, err := dialect.ShowCreateTable(b.manager, b.table)
 	if err != nil {
 		return "", err
 	}
-	if tempTable {
-		DDL = strings.Replace(DDL, b.Table(false), b.Table(true), 1)
+	if tempTable != "" {
+		DDL = strings.Replace(DDL, b.Table(""), b.Table(tempTable), 1)
 	}
 	return DDL, nil
 }
 
 func (b *Builder) columnExpression(column string, resource *Resource) string {
-	if resource.DateColumn != nil && resource.DateColumn.Name == column {
-		return resource.DateColumn.Expression
-	}
-	if resource.HourColumn != nil && resource.HourColumn.Name == column {
-		return resource.HourColumn.Expression
-	}
-	if pseudoColumn, ok := b.pseudoColumns[column]; ok {
+	if pseudoColumn, ok := resource.pseudoColumns[column]; ok {
 		return pseudoColumn.Expression
 	}
 	return column
 }
 
-func (b *Builder) DQL(tempTable bool, resource *Resource, values map[string]interface{}) (string) {
+func (b *Builder) ChunkDQL(resource *Resource, offset, limit int, values map[string]interface{}) (string, error) {
+	state := data.NewMap()
+	state.Put("hint", resource.Hint)
+	state.Put( "offset", offset)
+	state.Put( "max", limit + offset)
+	state.Put( "limit", limit)
+	state.Put( "where", "")
+	state.Put( "whereClause", "")
+	if len(values) > 0 {
+		var whereCritera = make([]string, 0)
+		for k, v := range values {
+			column := b.columnExpression(k, resource)
+			whereCritera = append(whereCritera, toCriterion(column, v))
+		}
+		state.Put( "where", " AND " + strings.Join(whereCritera, " AND "))
+		state.Put( "whereClause", " WHERE " + strings.Join(whereCritera, " AND "))
+	}
+	chunkSQL := b.Sync.ChunkSQL
+	if chunkSQL == "" {
+		chunkSQL = b.defaultChunkDQL()
+	}
+	DQL := state.ExpandAsText(chunkSQL)
+	return DQL, nil
+}
+
+
+
+func (b *Builder) CountDQL(suffix string, resource *Resource, criteria map[string]interface{}) (string) {
+	DQL := fmt.Sprintf("SELECT COUNT(1) AS count_value\nFROM %v t", b.Table(suffix))
+	if len(criteria) > 0 {
+		var whereCritera = make([]string, 0)
+		keys := toolbox.MapKeysToStringSlice(criteria)
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := criteria[k]
+			column := b.columnExpression(k, resource)
+			whereCritera = append(whereCritera, toCriterion(column, v))
+		}
+		DQL += "\nWHERE " + strings.Join(whereCritera, " AND ")
+	}
+	return DQL
+}
+
+func (b *Builder) DQL(suffix string, resource *Resource, values map[string]interface{}) (string) {
 	var projection = make([]string, 0)
 
 	for _, column := range b.columns {
 		if _, has := b.uniques[column.Name()]; has {
 			continue
 		}
-		alias, ok := b.pseudoColumns[column.Name()]
+		alias, ok := resource.pseudoColumns[column.Name()]
 		if ! ok {
 			projection = append(projection, column.Name())
 			continue
@@ -87,12 +126,15 @@ func (b *Builder) DQL(tempTable bool, resource *Resource, values map[string]inte
 	if len(b.UniqueColumns) > 0 {
 		projection = append(b.UniqueColumns, projection...)
 	}
-	DQL := fmt.Sprintf("SELECT %v\nFROM %v t", strings.Join(projection, ",\n"), b.Table(tempTable))
+	DQL := fmt.Sprintf("SELECT %v %v\nFROM %v t", resource.Hint, strings.Join(projection, ",\n"), b.Table(suffix))
 	if len(values) > 0 {
 		var whereCritera = make([]string, 0)
-		for k, v := range values {
+		keys := toolbox.MapKeysToStringSlice(values)
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := values[k]
 			column := b.columnExpression(k, resource)
-			whereCritera = append(whereCritera, criteria(column, v))
+			whereCritera = append(whereCritera, toCriterion(column, v))
 		}
 		DQL += "\nWHERE " + strings.Join(whereCritera, " AND ")
 	}
@@ -113,13 +155,8 @@ func (b *Builder) init(manager dsc.Manager) error {
 	for _, column := range b.UniqueColumns {
 		b.uniques[column] = true
 	}
-	b.pseudoColumns = make(map[string]*PseudoColumn)
-	if len(b.PseudoColumns) == 0 {
-		b.PseudoColumns = make([]*PseudoColumn, 0)
-	}
-	for _, column := range b.PseudoColumns {
-		b.pseudoColumns[column.Name] = column
-	}
+	b.source.indexPseudoColumns()
+	b.dest.indexPseudoColumns()
 	b.partitions = make(map[string]bool)
 
 	for _, partition := range b.Partition.Columns {
@@ -134,32 +171,11 @@ func (b *Builder) init(manager dsc.Manager) error {
 	return nil
 }
 
-func (b *Builder) initDatePartition(resource *Resource) {
-	if len(b.Partition.Columns) > 0 {
-		dateColumn := resource.DateColumn
-		hasDateColumn := dateColumn != nil
-		for _, partition := range b.Partition.Columns {
-			if hasDateColumn && dateColumn.Name == partition {
-				b.datePartition = fmt.Sprintf("%v AS %v", dateColumn.Expression, dateColumn.Name)
-				continue
-			}
-			column, ok := b.columnsByName[partition]
-			if ! ok {
-				continue
-			}
-			switch strings.ToUpper(column.DatabaseTypeName()) {
-			case "DATE", "TIME", "DATETIME", "TIMESTAMP":
-				b.datePartition = partition
-			}
-		}
-	}
-}
 
-func (b *Builder) DiffDQL(time time.Time, resource *Resource) (string, []string) {
 
-	return b.diffDQL(time, resource, func(projection *[]string, dimension map[string]bool) {
+func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *Resource) (string, []string) {
+	return b.diffDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
 		for _, column := range b.columns {
-
 			if _, has := dimension[column.Name()]; has {
 				continue
 			}
@@ -176,32 +192,19 @@ func (b *Builder) DiffDQL(time time.Time, resource *Resource) (string, []string)
 	})
 }
 
-
-func (b *Builder) CountDiffDQL(time time.Time, resource *Resource) (string, []string) {
-	return b.diffDQL(time, resource, func(projection *[]string, dimension map[string]bool) {
+func (b *Builder) CountDiffDQL(criteria map[string]interface{}, resource *Resource) (string, []string) {
+	return b.diffDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
 		*projection = append(*projection, "COUNT(1) AS cnt")
 	})
 }
 
-func (b *Builder) diffDQL(time time.Time, resource *Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) (string, []string) {
+func (b *Builder) diffDQL(criteria map[string]interface{}, resource *Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) (string, []string) {
 	var projection = make([]string, 0)
 	var groupBy = make([]string, 0)
 	var whereClause = make([]string, 0)
 	groupByIndex := 1
 	var dimension = make(map[string]bool)
-	if column := resource.DateColumn; column != nil {
-		dimension[column.Name] = true
-		projection = append(projection, fmt.Sprintf("%v AS %v", column.Expression, column.Name))
-		groupBy = append(groupBy, toolbox.AsString(groupByIndex))
-		groupByIndex++
-		whereClause = append(whereClause, fmt.Sprintf("%v = '%v'", column.Expression, time.Format(dayTimeLayout)))
-	}
-	if column := resource.HourColumn; column != nil {
-		dimension[column.Name] = true
-		projection = append(projection, fmt.Sprintf("%v AS %v", column.Expression, column.Name))
-		groupBy = append(groupBy, toolbox.AsString(groupByIndex))
-		groupByIndex++
-	}
+
 	for _, partition := range b.Partition.Columns {
 		if _, has := dimension[partition]; has {
 			continue
@@ -212,8 +215,8 @@ func (b *Builder) diffDQL(time time.Time, resource *Resource, projectionGenerato
 		groupByIndex++
 	}
 
-	projectionGenerator(&projection, dimension)
 
+	projectionGenerator(&projection, dimension)
 	SQL := fmt.Sprintf("SELECT %v\nFROM %s", strings.Join(projection, ",\n\t"), b.table)
 	if len(whereClause) > 0 {
 		SQL += fmt.Sprintf("\nWHERE %s", strings.Join(whereClause, " AND "))
@@ -227,18 +230,18 @@ func (b *Builder) diffDQL(time time.Time, resource *Resource, projectionGenerato
 	return SQL, toolbox.MapKeysToStringSlice(dimension)
 }
 
-func (b *Builder) DML(dmlType string, filter map[string]interface{}) (string, error) {
+func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface{}) (string, error) {
 	switch dmlType {
 	case DMLInsertReplace:
-		return b.insertReplaceDML(filter), nil
+		return b.insertReplaceDML(suffix, filter), nil
 	case DMLInsertUpddate:
-		return b.insertUpdateDML(filter), nil
+		return b.insertUpdateDML(suffix, filter), nil
 	case DMLMerge:
-		return b.mergeDML(filter), nil
+		return b.mergeDML(suffix, filter), nil
 	case DMLInsert:
-		return b.insertDML(filter), nil
+		return b.insertDML(suffix, filter), nil
 	case DMLDelete:
-		return b.deleteDML(filter), nil
+		return b.deleteDML(suffix, filter), nil
 	}
 	return "", fmt.Errorf("unsupported %v", dmlType)
 }
@@ -275,17 +278,18 @@ func (b *Builder) updateSetValues() (string) {
 	return strings.Join(update, ",\n\t")
 }
 
-func (b *Builder) baseInsert(withReplace bool) string {
+func (b *Builder) baseInsert(suffix string, withReplace bool) string {
 	names, values := b.insertNameAndValues()
 	replace := ""
 	if withReplace {
 		replace = "OR REPLACE"
 	}
-	return fmt.Sprintf("INSERT %v INTO %v(%v) SELECT %v FROM %v t", replace, b.Table(false), names, values, b.Table(true))
+	return fmt.Sprintf("INSERT %v INTO %v(%v) SELECT %v FROM %v t", replace, b.Table(""), names, values, b.Table(suffix))
 }
 
-func (b *Builder) insertUpdateDML(filter map[string]interface{}) string {
-	DML := b.baseInsert(false)
+
+func (b *Builder) insertUpdateDML(suffix string, wfilter map[string]interface{}) string {
+	DML := b.baseInsert(suffix, false)
 	return fmt.Sprintf("%v \nON DUPLICATE KEY \n UPDATE %v", DML, b.updateSetValues())
 }
 
@@ -302,8 +306,8 @@ WHEN NOT MATCHED BY SOURCE THEN
   DELETE
 `
 
-func (b *Builder) mergeDML(filter map[string]interface{}) (string) {
-	DQL := b.DQL(true, b.dest, nil)
+func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) (string) {
+	DQL := b.DQL("_tmp", b.dest, nil)
 	var onCriteria = make([]string, 0)
 	for _, column := range b.UniqueColumns {
 		onCriteria = append(onCriteria, fmt.Sprintf("d.%v = t.%v", column, column))
@@ -312,17 +316,18 @@ func (b *Builder) mergeDML(filter map[string]interface{}) (string) {
 	sort.Strings(filterKeys)
 	for _, k := range filterKeys {
 		v := filter[k]
-		onCriteria = append(onCriteria, criteria("d."+k, v))
+		onCriteria = append(onCriteria, toCriterion("d."+k, v))
 	}
 	setValues := b.updateSetValues()
 	names, values := b.insertNameAndValues()
 	return fmt.Sprintf(mergeSQL,
-		b.Table(false),
+		b.Table(suffix),
 		fmt.Sprintf("(%v)", DQL),
 		strings.Join(onCriteria, " AND "),
 		setValues,
 		names, values)
 }
+
 
 func (b *Builder) getInsertWhereClause(filter map[string]interface{}) string {
 	if len(b.UniqueColumns) > 0 {
@@ -332,38 +337,54 @@ func (b *Builder) getInsertWhereClause(filter map[string]interface{}) string {
 		sort.Strings(filterKeys)
 		for _, k := range filterKeys {
 			v := filter[k]
-			innerCriteria = append(innerCriteria, criteria("t."+k, v))
+			innerCriteria = append(innerCriteria, toCriterion("t."+k, v))
 		}
 		if len(innerCriteria) > 0 {
 			innerWhere = "WHERE  " + strings.Join(innerCriteria, " AND ")
 		}
-		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v t %v)", strings.Join(b.UniqueColumns, ","), strings.Join(b.UniqueColumns, ","), b.Table(false), innerWhere)
+		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v t %v)", strings.Join(b.UniqueColumns, ","), strings.Join(b.UniqueColumns, ","), b.Table(""), innerWhere)
 		return "\nWHERE " + inCriteria
 	}
 	return ""
 }
 
-func (b *Builder) insertDML(filter map[string]interface{}) string {
-	return b.baseInsert(false) + b.getInsertWhereClause(filter)
+func (b *Builder) insertDML(suffix string, filter map[string]interface{}) string {
+	return b.baseInsert(suffix, false) + b.getInsertWhereClause(filter)
 }
 
-func (b *Builder) insertReplaceDML(filter map[string]interface{}) string {
-	return b.baseInsert(true) + b.getInsertWhereClause(filter)
+func (b *Builder) insertReplaceDML(suffix string, filter map[string]interface{}) string {
+	return b.baseInsert(suffix, true) + b.getInsertWhereClause(filter)
 }
 
-func (b *Builder) deleteDML(filter map[string]interface{}) string {
+func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string {
 	var whereClause = make([]string, 0)
 	filterKeys := toolbox.MapKeysToStringSlice(filter)
 	sort.Strings(filterKeys)
 	for _, k := range filterKeys {
 		v := filter[k]
-		whereClause = append(whereClause, criteria("d."+k, v))
+		whereClause = append(whereClause, toCriterion("d."+k, v))
 	}
 	if len(b.UniqueColumns) > 0 {
-		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v)", strings.Join(b.UniqueColumns, ","), strings.Join(b.UniqueColumns, ","), b.Table(true))
+		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v)", strings.Join(b.UniqueColumns, ","), strings.Join(b.UniqueColumns, ","), b.Table(suffix))
 		whereClause = append(whereClause, inCriteria)
 	}
-	return fmt.Sprintf("DELETE FROM %v WEHRE  %v", b.Table(false), strings.Join(whereClause, " AND "))
+	return fmt.Sprintf("DELETE FROM %v WEHRE  %v", b.Table(""), strings.Join(whereClause, " AND "))
+}
+
+
+func (b *Builder) defaultChunkDQL() string {
+	if len(b.UniqueColumns) == 0 {
+		return ""
+	}
+	var projection = []string{
+		fmt.Sprintf("MIN(%v) AS min_value", b.UniqueColumns[0]),
+		fmt.Sprintf("MAX(%v) AS max_valu", b.UniqueColumns[0]),
+		"COUNT(1) AS count_value",
+	}
+	return fmt.Sprintf(`SELECT %v
+FROM %v t 
+$whereClause
+OFFSET $min LIMIT $limit`, strings.Join(projection, ",\n\t"), b.Table(""))
 }
 
 func NewBuilder(request *SyncRequest) (*Builder, error) {
@@ -382,6 +403,5 @@ func NewBuilder(request *SyncRequest) (*Builder, error) {
 	if err = builder.init(manager); err != nil {
 		return nil, err
 	}
-	builder.initDatePartition(request.Dest)
 	return builder, nil
 }

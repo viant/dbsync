@@ -1,0 +1,99 @@
+[
+  {
+    "@fromQuery@":"SELECT id, name, visited AS visited, perf, quiz  FROM users ORDER BY id",
+    "@indexBy@":"id",
+    "@timeFormat@": "yyyy-MM-dd HH:mm:ss"
+  },
+  {
+    "id": 1,
+    "name": "user 1",
+    "perf": {
+      "rank": 100,
+      "score": 6.5
+    },
+    "visited": "2018-01-15 08:02:23",
+    "quiz": [
+      {
+        "@indexBy@":"key"
+      },
+      {
+        "key": "1",
+        "value": {
+          "id": 1,
+          "score": 10,
+          "taken": "2018-01-10 16:02:01"
+        }
+      },
+      {
+        "key": "2",
+        "value": {
+          "id": 2,
+          "score": 3,
+          "taken": "2018-01-15 08:02:23"
+        }
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "user 2",
+    "visited": "2018-01-12 09:00:26",
+    "perf": {
+      "rank": 101,
+      "score": 7.0
+    },
+    "quiz": [
+      {
+        "@indexBy@":"key"
+      },
+
+      {
+        "key": "1",
+        "value": {
+          "id": 1,
+          "score": 10,
+          "taken": "2018-01-11 13:01:48"
+        }
+      },
+      {
+        "key": "2",
+        "value": {
+          "id": 2,
+          "score": 4,
+          "taken": "2018-01-12 09:00:26"
+        }
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "user 3",
+    "visited": "2018-01-12 07:30:52",
+    "perf": {
+      "rank": 99,
+      "score": 5.0
+    },
+    "quiz": [
+      {
+        "@indexBy@":"key"
+      },
+
+      {
+        "key": "1",
+        "value": {
+          "id": 1,
+          "score": 5,
+          "taken": "2018-01-10 05:01:35"
+        }
+      },
+      {
+        "key": "2",
+        "value": {
+          "id": 2,
+          "score": 5,
+          "taken": "2018-01-12 07:30:52"
+        }
+      }
+    ]
+  }
+]

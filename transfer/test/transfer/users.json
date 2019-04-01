@@ -1,0 +1,3 @@
+{"id":1, "name":"user1", "email":"user1@hotmail.com", "address":{"state":"ca", "postcode":"90038", "city":"Los Angeles"}}
+{"id":2, "name":"user2", "email":"user2@hotmail.com", "address":{"state":"ny", "postcode":"10030", "city":"New York"}}
+{"id":3, "name":"user3", "email":"user3@hotmail.com", "address":{"state":"ne", "postcode":"88901", "city":"Los Vegas"}}

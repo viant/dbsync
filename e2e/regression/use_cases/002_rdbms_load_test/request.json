@@ -1,0 +1,25 @@
+{
+  "BatchSize": 128,
+  "WriterThreads": 4,
+  "Mode": "insert",
+  "Source": {
+    "DriverName": "mysql",
+    "Credentials": "mysql",
+    "Descriptor":"[username]:[password]@tcp([host]:3306)/[dbname]?parseTime=true",
+    "Parameters": {
+      "dbname": "db3",
+      "host": "$mysqlIP"
+    },    "Query": "SELECT id, name, visited FROM users"
+  },
+  "Dest": {
+    "DriverName": "mysql",
+    "Credentials": "mysql",
+    "Descriptor":"[username]:[password]@tcp([host]:3306)/[dbname]?parseTime=true",
+    "Parameters": {
+      "dbname": "db3",
+      "host": "$mysqlIP"
+    },
+    "Table": "transfered_users"
+  }
+
+}
