@@ -1,1 +1,0 @@
-NoSQL to RDBMS transfer, with invalid RDBMS credentials

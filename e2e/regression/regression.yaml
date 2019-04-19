@@ -1,3 +1,6 @@
+init:
+  sourcePath: $Pwd(..)
+
 pipeline:
   init:
     action: run
@@ -8,7 +11,7 @@ pipeline:
   test:
     tag: $pathMatch
     description: '@use_case'
-    range: 1..007
+    range: 1..018
     subPath: use_cases/${index}_*
     template:
       skip-tag:
@@ -16,8 +19,7 @@ pipeline:
         init:
           idx: $Int(${index})
           # uncomment when testing with standalone app
-#          mysqlIP: 127.0.0.1
-#          aerospikeIP: 127.0.0.1
+          mysqlIP: 127.0.0.1
         skip: $HasResource(${subPath}/skip.txt)
         comments: skip tag Id if subdirectory has skip.txt file present
 
@@ -41,14 +43,27 @@ pipeline:
         comments: populate data for use case if data is defined in folder prepare/${db}
 
       postJob:
+        when: $HasResource($path/request.json)
         action: rest/runner:send
-        request: '@req/transfer @request'
-        comments: post a transfer job
+        request: '@req/sync @request'
+        comments: post a sync job
+
+
+      scheduleJob:
+        when: $HasResource($path/schedule.yaml)
+        action: storage:copy
+        sleepTimeMs: 5000
+        source:
+          URL: $path/schedule.yaml
+        dest:
+          URL: $sourcePath/sync/app/cron/
 
       wait:
+        when: $HasResource($path/wait.json)
         action: rest/runner:send
         request: '@wait'
-        comments: wait for job completion
+        comments: wait for job sync
+
 
       db1-expect:
         when: '$HasResource(${path}/expect/${db})'
@@ -61,10 +76,10 @@ pipeline:
         action: dsunit:expect
         request: '@req/expect'
         db: db2
-        comments: verify test db3 state after use case
+        comments: verify test db2 state after use case
       db3-expect:
         when: '$HasResource(${path}/expect/${db})'
         action: dsunit:expect
         request: '@req/expect'
         db: db3
-        comments: verify test db3 state after use case
+        comments: verify test db2 state after use case

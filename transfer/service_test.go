@@ -9,12 +9,13 @@ import (
 )
 
 func TestService_Transfer(t *testing.T) {
+
 	_ = toolbox.RemoveFileIfExist("test/transfer/test_users.json")
 	config, err := dsc.NewConfigFromURL("test/config.yaml")
 	if !assert.Nil(t, err) {
 		return
 	}
-	request := &TransferRequest{
+	request := &Request{
 		Source: &Source{
 			Config: config,
 			Query:  "SELECT id, name, email, address.state AS state FROM users",
@@ -23,15 +24,14 @@ func TestService_Transfer(t *testing.T) {
 			Config: config,
 			Table:  "test_users",
 		},
-		Mode: TransferModeInsert,
 	}
-	service := New(false, nil)
+	service := New(nil)
 	assert.NotNil(t, service)
 	response := service.Transfer(request)
 	assert.NotNil(t, response)
 	assert.Equal(t, "ok", response.Status)
 	for {
-		taskStatus := service.Task(response.TaskId, nil)
+		taskStatus := service.Task(response.TaskID, nil)
 		if taskStatus.Status == "running" {
 			time.Sleep(time.Second)
 			continue

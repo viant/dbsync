@@ -1,7 +1,6 @@
 init:
   app: dstransfer
-  sdk: go:1.11
-  appPath: /opt/${app}
+  sdk: go:1.12
   target:
     URL: ssh://127.0.0.1/
     credentials: localhost
@@ -21,15 +20,16 @@ pipeline:
       action: run
       request: '@system'
       tasks: '*'
-    datastore:
-      action: run
-      request: '@datastore'
-      tasks: '*'
-    app:
-      sdk: $sdk
-      action: run
-      request: '@app'
-      tasks: '*'
+
+  datastore:
+    action: run
+    request: '@datastore'
+    tasks: '*'
+  app:
+    sdk: $sdk
+    action: run
+    request: '@app'
+    tasks: '*'
   test:
     action: run
     request: '@regression/regression'

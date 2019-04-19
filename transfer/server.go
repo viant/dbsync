@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+//Server represents REST server
 type Server struct {
 	*http.Server
 	termination chan bool
@@ -24,6 +25,7 @@ func (s *Server) shutdown() {
 	}
 }
 
+//StopOnSiginals stop server on siginal
 func (s *Server) StopOnSiginals(siginals ...os.Signal) {
 	notification := make(chan os.Signal, 1)
 	signal.Notify(notification, siginals...)
@@ -31,6 +33,7 @@ func (s *Server) StopOnSiginals(siginals ...os.Signal) {
 	s.Stop()
 }
 
+//Stop sends termination siginal
 func (s *Server) Stop() {
 	s.termination <- true
 }

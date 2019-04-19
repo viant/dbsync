@@ -1,0 +1,18 @@
+{
+  "Method": "get",
+  "URL": "http://localhost:8081/v1/api/job/db3:events",
+  "Expect": {
+    "Jobs": [
+      {
+        "Status": "done",
+        "Progress": {
+          "DestCount": 17,
+          "SourceCount": 17
+        }
+      }
+    ]
+  },
+  "Repeat": 10,
+  "SleepTimeMs": 2000,
+  "Exit": "${Jobs[0].Status}:!/running/"
+}

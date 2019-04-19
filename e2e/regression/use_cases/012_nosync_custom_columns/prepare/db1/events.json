@@ -1,0 +1,15 @@
+[
+  {},
+  {
+    "id": 1,
+    "event_type": 3,
+    "quantity": 11,
+    "timestamp": "2019-03-11"
+  },
+  {
+    "id": 2,
+    "event_type": 2,
+    "quantity": 33,
+    "timestamp": "2019-03-13"
+  }
+]

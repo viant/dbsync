@@ -6,7 +6,14 @@ import (
 )
 
 const (
-	TransferModeInsert = "insert"
+	//StatusOk represents ok status
+	StatusOk = "ok"
+	//StatusError represents error status
+	StatusError = "error"
+	//StatusDone represents done status
+	StatusDone = "done"
+	//StatusRunning represents running status
+	StatusRunning = "running"
 )
 
 //Source source
@@ -21,22 +28,23 @@ type Dest struct {
 	Table string
 }
 
-//TransferRequest represents transfer request
-type TransferRequest struct {
+//Request represents transfer request
+type Request struct {
 	Source        *Source
 	Dest          *Dest
+	Async         bool
 	BatchSize     int
-	WriterThreads int    `description:"number of writer go routines"`
-	Mode          string `description:"supported values: insert or persist"`
-	OmitEmpty     bool   `description:"if set set null for any 0 or empty values"`
+	WriterThreads int `description:"number of writer go routines"`
+	WriterCount   int
+	OmitEmpty     bool `description:"if set set null for any 0 or empty values"`
 }
 
-
-//TransferResponse transfer response
-type TransferResponse struct {
-	TaskId int
-	Status string
-	Error  string
+//Response transfer response
+type Response struct {
+	TaskID     int
+	WriteCount int
+	Status     string
+	Error      string
 }
 
 //TasksResponse tasks response
@@ -44,15 +52,19 @@ type TasksResponse struct {
 	Tasks Tasks
 }
 
-func (r *TransferRequest) Init() error {
+//Init initializes request
+func (r *Request) Init() error {
 	if r.BatchSize == 0 {
 		r.BatchSize = 1
+	}
+	if r.WriterCount != 0 {
+		r.WriterThreads = r.WriterCount
 	}
 	return nil
 }
 
 //Validate validates request
-func (r *TransferRequest) Validate() error {
+func (r *Request) Validate() error {
 	if r.Source == nil {
 		return fmt.Errorf("source was empty")
 	}
@@ -87,7 +99,8 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func (r *TransferResponse) SetError(err error) {
+//SetError sets error
+func (r *Response) SetError(err error) {
 	if err == nil {
 		return
 	}

@@ -4,51 +4,52 @@ init:
   buildPath: /tmp/dbsync
   version: 0.1.0
 
+defaults:
+  target: $target
 pipeline:
+
+  stop:
+    transfer:
+      action: process:stop-all
+      input: vtransfer
+    sync:
+      action: process:stop-all
+      input: vsync
+
+  setSdk:
+    action: sdk:set
+    sdk: $sdk
 
   build:
     action: exec:run
+    systemPaths:
+      - /usr/local/bin
     commands:
-      - rm -rf $buildPath
-      - mkdir -p $buildPath
-      - cp -r $sourcePath/transfer $buildPath/
-      - cp -r $sourcePath/sync $buildPath/
-      - cp -r $sourcePath/app $buildPath/
+      - unset GOPATH
+      - export LD_LIBRARY_PATH=${env.HOME}/Downloads/instantclient_12_2
+      - export PKG_CONFIG_PATH=${env.HOME}/Downloads/instantclient_12_2
+
+      - rm $sourcePath/transfer/app/vtransfer
+      - rm $sourcePath/transfer/app/nohup.out
+      - cd $sourcePath/transfer/app
+      - go build -o vtransfer
+
+      - rm $sourcePath/sync/app/nohup.out
+      - rm $sourcePath/sync/app/vsync
+      - cd $sourcePath/sync/app
+      - rm -rf $sourcePath/sync/app/cron
+      - go build -o vsync
 
 
+  start:
+    transfer:
+      action: process:start
+      directory: $sourcePath/transfer/app
+      immuneToHangups: true
+      command: ./vtransfer -debug=true
+    sync:
+      action: process:start
+      directory: $sourcePath/sync/app
+      immuneToHangups: true
+      command: ./vsync -port=8081
 
-#
-#    clean:
-#      action: storage:remove
-#      url: /tmp/dbsync
-#
-#    copy:
-#      action: storage:copy
-#      source:
-#        URL: config/Dockerfile
-#      dest:
-#        URL: $buildPath
-#        credentials: localhost
-#
-#
-#    build-img:
-#      action: docker:build
-#      path: $buildPath
-#      '@tag':
-#        image: dstransfer
-#        username: adrianwit
-#        version: 0.1.0
-#
-
-#  stop:
-#    target: $appTarget
-#    action: docker/ssh:composeDown
-#    source:
-#      URL: config/docker-compose.yaml
-#
-#  deploy:
-#    target: $appTarget
-#    action: docker/ssh:composeUp
-#    runInBackground: true
-#    source:
-#      URL: config/docker-compose.yaml

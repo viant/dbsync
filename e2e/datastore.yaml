@@ -21,21 +21,52 @@ pipeline:
     db2:
       action: dsunit:init
       datastore: db2
-      config:
-        driverName: bigquery
-        credentials: $bqCredentials
-        parameters:
-          datasetId: db2
       recreate: true
+      config:
+        driverName: mysql
+        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        credentials: $mysqlCredentials
+      admin:
+        datastore: mysql
+        ping: true
+        config:
+          driverName: mysql
+          descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+          credentials: $mysqlCredentials
       scripts:
         - URL: datastore/db2/schema.sql
 
-  prepare:
-    db1:
-      action: dsunit:prepare
-      datastore: db1
-      URL: datastore/db1/data
-    db2:
-      action: dsunit:prepare
-      datastore: db2
-      URL: datastore/db2/data
+    db3:
+      action: dsunit:init
+      datastore: db3
+      recreate: true
+      config:
+        driverName: mysql
+        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        credentials: $mysqlCredentials
+      admin:
+        datastore: mysql
+        ping: true
+        config:
+          driverName: mysql
+          descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+          credentials: $mysqlCredentials
+      scripts:
+        - URL: datastore/db3/schema.sql
+
+
+  transfer:
+    action: dsunit:init
+    datastore: transfer
+    recreate: true
+    config:
+      driverName: mysql
+      descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+      credentials: $mysqlCredentials
+    admin:
+      datastore: mysql
+      ping: true
+      config:
+        driverName: mysql
+        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        credentials: $mysqlCredentials

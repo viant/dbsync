@@ -1,24 +1,18 @@
 source:
-  hint: /*+ INDEX_ASX(SITE SYS_C007323) */
-  driverName: oci8
-  descriptor: '[username]/[password]@18.214.10.111:1521/ORCL'
-  credentials: /root/.secret/sitemgnt.json
+  driverName: mysql
+  descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+  credentials: mysql-e2e
   parameters:
-    dbname: sitemgnt
+    dbname: db1
 dest:
-  driverName: bigquery
-  credentials: /root/.secret/bq.json
+  driverName: mysql
+  descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+  credentials: mysql-e2e
   parameters:
-    datasetId: sitemgnt
-table: SITE
+    dbname: db2
+table: events
 uniqueColumns:
-  - ID
-batchSize: 524287
+  - id
+batchSize: 2048
 writerThreads: 2
-chunkRowCount: 2097152
-chunkSQL: SELECT MIN(id) AS min_value, MAX(id) max_value, COUNT(1) AS count_value FROM (
-             SELECT $hint ID FROM SITE
-             WHERE ID >= $offset $where AND ROWNUM <= $limit
-          )
-multiChunk: 8
-endpointIP: 10.55.1.129:8081
+endpointIP: 127.0.0.1:8080

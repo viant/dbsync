@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-//TransferTask represents a transfer tasks
-type TransferTask struct {
+//Task represents a transfer tasks
+type Task struct {
 	source           dsc.Manager
 	dest             dsc.Manager
 	transfers        *transfers
@@ -16,7 +16,7 @@ type TransferTask struct {
 	isWriteCompleted *sync.WaitGroup
 	hasError         int32
 	ID               int
-	Request          *TransferRequest
+	Request          *Request
 	StartTime        time.Time
 	EndTime          *time.Time
 	Error            string
@@ -28,23 +28,25 @@ type TransferTask struct {
 }
 
 //IsReading returns true if transfer read data from the source
-func (t *TransferTask) IsReading() bool {
+func (t *Task) IsReading() bool {
 	return atomic.LoadInt32(&t.isReadCompleted) == 0
 }
 
-func (t *TransferTask) CanEvict() bool {
+//CanEvict returns true if can evict
+func (t *Task) CanEvict() bool {
 	if t.EndTime == nil {
 		return false
 	}
 	return time.Now().Sub(*t.EndTime) > time.Minute
 }
 
-//IsReading returns true if error occured
-func (t *TransferTask) HasError() bool {
+//HasError returns true if error occurred
+func (t *Task) HasError() bool {
 	return atomic.LoadInt32(&t.hasError) == 1
 }
 
-func (t *TransferTask) SetError(err error) {
+//SetError sets error
+func (t *Task) SetError(err error) {
 	if err == nil {
 		return
 	}
@@ -54,12 +56,13 @@ func (t *TransferTask) SetError(err error) {
 	t.transfers.close()
 }
 
-func NewTransferTask(request *TransferRequest) (*TransferTask, error) {
-	var task = &TransferTask{
+//NewTask returns a new transfer task
+func NewTask(request *Request) (*Task, error) {
+	var task = &Task{
 		transfers:        newTransfers(request),
 		isWriteCompleted: &sync.WaitGroup{},
 		StartTime:        time.Now(),
-		Status:           "running",
+		Status:           StatusRunning,
 	}
 	var err error
 	if task.source, err = dsc.NewManagerFactory().Create(request.Source.Config); err != nil {
@@ -71,7 +74,8 @@ func NewTransferTask(request *TransferRequest) (*TransferTask, error) {
 	return task, nil
 }
 
-type Tasks []*TransferTask
+//Tasks retpresents tasks
+type Tasks []*Task
 
 func (a Tasks) Len() int {
 	return len(a)

@@ -63,7 +63,7 @@ func (t *transfer) getBatch() *transferBatch {
 	}
 }
 
-func newTransfer(request *TransferRequest) *transfer {
+func newTransfer(request *Request) *transfer {
 	return &transfer{
 		batchSize:  uint64(request.BatchSize),
 		collection: data.NewCompactedSlice(request.OmitEmpty, true),
@@ -100,7 +100,7 @@ func (t *transfers) flush() {
 	}
 }
 
-func newTransfers(request *TransferRequest) *transfers {
+func newTransfers(request *Request) *transfers {
 	if request.WriterThreads == 0 {
 		request.WriterThreads = 1
 	}

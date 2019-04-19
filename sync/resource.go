@@ -8,6 +8,7 @@ import (
 type Resource struct {
 	*dsc.Config
 	Table         string
+	From          string
 	Hint          string
 	PseudoColumns []*PseudoColumn
 	pseudoColumns map[string]*PseudoColumn

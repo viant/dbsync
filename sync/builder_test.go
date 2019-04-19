@@ -62,7 +62,7 @@ func TestNewBuilder(t *testing.T) {
 		request, err := NewSyncRequestFromURL(useCase.requestURL)
 		assert.Nil(t, err)
 		assert.NotNil(t, request)
-		builder, err := NewBuilder(request)
+		builder, err := NewBuilder(request, nil)
 		assert.Nil(t, err)
 		if len(useCase.columns) > 0 {
 			assert.Equal(t, len(useCase.columns), len(builder.columns))
@@ -87,12 +87,12 @@ func getPartitionBuilder(t *testing.T) (*Builder, error) {
 	requestURL := path.Join(parent, "test/partition_req.yaml")
 	request, err := NewSyncRequestFromURL(requestURL)
 	assert.Nil(t, err)
-	return NewBuilder(request)
+	return NewBuilder(request, nil)
 }
 
 func TestBuilder_DDLBuilder(t *testing.T) {
 	builder, err := getPartitionBuilder(t)
-	if ! assert.Nil(t, err) {
+	if !assert.Nil(t, err) {
 		return
 	}
 	DDL, err := builder.DDL("_tmp")
@@ -100,7 +100,6 @@ func TestBuilder_DDLBuilder(t *testing.T) {
 	expect, _ := loadTextFile("test/expect/ddl.sql")
 	assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(DDL))
 }
-
 
 func TestBuilder_DQL(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
@@ -131,9 +130,7 @@ func TestBuilder_DQL(t *testing.T) {
 			description: "non-partition based sync",
 			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
 			expectURL:   "test/expect/nonpartition.dql",
-			values: map[string]interface{}{
-
-			},
+			values:      map[string]interface{}{},
 		},
 	}
 
@@ -144,22 +141,20 @@ func TestBuilder_DQL(t *testing.T) {
 		}
 		assert.Nil(t, request.Init())
 		assert.NotNil(t, request, useCase.description)
-		builder, err := NewBuilder(request)
-
+		builder, err := NewBuilder(request, nil)
 
 		DQL := builder.DQL("", request.Source, useCase.values)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 
 		expect, err := loadTextFile(useCase.expectURL)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(DQL))
 	}
 }
-
 
 func TestBuilder_CunkDistDQL(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
@@ -190,9 +185,7 @@ func TestBuilder_CunkDistDQL(t *testing.T) {
 			description: "non-partition based sync",
 			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
 			expectURL:   "test/expect/nonpartition/chunkDist.dql",
-			values: map[string]interface{}{
-
-			},
+			values:      map[string]interface{}{},
 		},
 	}
 
@@ -203,15 +196,15 @@ func TestBuilder_CunkDistDQL(t *testing.T) {
 		}
 		assert.Nil(t, request.Init())
 		assert.NotNil(t, request, useCase.description)
-		builder, err := NewBuilder(request)
+		builder, err := NewBuilder(request, nil)
 		DQL, err := builder.ChunkDQL(request.Source, 0, 1000, useCase.values)
 		fmt.Printf("%v\n", DQL)
 		assert.Nil(t, err)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		expect, err := loadTextFile(useCase.expectURL)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(DQL))
@@ -250,9 +243,7 @@ func TestBuilder_DML(t *testing.T) {
 			dmlType:     DMLMerge,
 			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
 			expectURL:   "test/expect/nonpartition/merge.dml",
-			values: map[string]interface{}{
-
-			},
+			values:      map[string]interface{}{},
 		},
 		{
 			description: "partition based insertReplace",
@@ -272,18 +263,14 @@ func TestBuilder_DML(t *testing.T) {
 			dmlType:     DMLInsertUpddate,
 			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
 			expectURL:   "test/expect/nonpartition/insertUpdate.dml",
-			values: map[string]interface{}{
-
-			},
+			values:      map[string]interface{}{},
 		},
 		{
 			description: "non-partition based insert",
 			dmlType:     DMLInsert,
 			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
 			expectURL:   "test/expect/nonpartition/insert.dml",
-			values: map[string]interface{}{
-
-			},
+			values:      map[string]interface{}{},
 		},
 
 		{
@@ -304,9 +291,7 @@ func TestBuilder_DML(t *testing.T) {
 			dmlType:     DMLDelete,
 			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
 			expectURL:   "test/expect/nonpartition/delete.dml",
-			values: map[string]interface{}{
-
-			},
+			values:      map[string]interface{}{},
 		},
 	}
 
@@ -317,13 +302,13 @@ func TestBuilder_DML(t *testing.T) {
 		}
 		assert.Nil(t, request.Init())
 		assert.NotNil(t, request, useCase.description)
-		builder, err := NewBuilder(request)
+		builder, err := NewBuilder(request, nil)
 		DML, err := builder.DML("_tmp", useCase.dmlType, useCase.values)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		expect, err := loadTextFile(useCase.expectURL)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(DML))
@@ -337,12 +322,12 @@ func TestBuilder_Diff(t *testing.T) {
 	}
 
 	var useCases = []struct {
-		description string
-		requestURL  string
-		values      map[string]interface{}
-		diffDqlURL  string
-		countDiffDqlURL  string
-		dimension   []string
+		description     string
+		requestURL      string
+		values          map[string]interface{}
+		diffDqlURL      string
+		countDiffDqlURL string
+		dimension       []string
 	}{
 		{
 			description: "partition based diff dql",
@@ -354,22 +339,24 @@ func TestBuilder_Diff(t *testing.T) {
 					"2018-01-01 23",
 				},
 			},
-			requestURL: path.Join(parent, "test/partition_req.yaml"),
-			diffDqlURL: "test/expect/partition/diff.dql",
-			countDiffDqlURL:"test/expect/partition/countDiff.dql",
-			dimension:  []string{"date", "hour"},
+			requestURL:      path.Join(parent, "test/partition_req.yaml"),
+			diffDqlURL:      "test/expect/partition/diff.dql",
+			countDiffDqlURL: "test/expect/partition/countDiff.dql",
+			dimension:       []string{"date", "hour"},
 		},
 		{
-			description: "non-partition based diff dql",
-			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
-			diffDqlURL:  "test/expect/nonpartition/diff.dql",
+			description:     "non-partition based diff dql",
+			requestURL:      path.Join(parent, "test/nonpartition_req.yaml"),
+			diffDqlURL:      "test/expect/nonpartition/diff.dql",
 			countDiffDqlURL: "test/expect/nonpartition/countDiff.dql",
-			values: map[string]interface{}{
-			},
+			values:          map[string]interface{}{},
 		},
 	}
 
 	time, _ := toolbox.ToTime("2018-01-01", toolbox.DateFormatToLayout("yyyy-MM-dd"))
+	var values = map[string]interface{}{
+		"date": time,
+	}
 	for _, useCase := range useCases {
 		request, err := NewSyncRequestFromURL(useCase.requestURL)
 		if !assert.Nil(t, err) {
@@ -377,27 +364,28 @@ func TestBuilder_Diff(t *testing.T) {
 		}
 		assert.Nil(t, request.Init())
 		assert.NotNil(t, request, useCase.description)
-		builder, err := NewBuilder(request)
+		builder, err := NewBuilder(request, nil)
 		{
-			SQL, dim := builder.DiffDQL(time, builder.dest)
+
+			SQL, dim := builder.DiffDQL(values, builder.dest)
 			sort.Strings(dim)
 			sort.Strings(useCase.dimension)
 			if len(dim) > 0 || len(useCase.dimension) > 0 {
 				assert.EqualValues(t, useCase.dimension, dim)
 			}
 			expect, err := loadTextFile(useCase.diffDqlURL)
-			if ! assert.Nil(t, err, useCase.description) {
+			if !assert.Nil(t, err, useCase.description) {
 				continue
 			}
 			assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(SQL))
 		}
 		{
-			SQL, dim := builder.CountDiffDQL(time, builder.dest)
+			SQL, dim := builder.CountDiffDQL(values, builder.dest)
 			if len(dim) > 0 || len(useCase.dimension) > 0 {
 				assert.EqualValues(t, useCase.dimension, dim)
 			}
 			expect, err := loadTextFile(useCase.countDiffDqlURL)
-			if ! assert.Nil(t, err, useCase.description) {
+			if !assert.Nil(t, err, useCase.description) {
 				continue
 			}
 			assert.EqualValues(t, normalizeSQL(expect), normalizeSQL(SQL))
@@ -422,5 +410,3 @@ func loadTextFile(name string) (string, error) {
 	resource := url.NewResource(path.Join(parent, name))
 	return resource.DownloadText()
 }
-
-

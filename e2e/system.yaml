@@ -12,16 +12,9 @@ pipeline:
       mysql:
         action: docker:run
         image: mysql:5.7
-        name: dbsync_db1
+        name: dbsync
         ports:
           3306: 3306
         env:
           MYSQL_ROOT_PASSWORD: ${db1Secrets.Password}
 
-      mysql-ip:
-        action: docker:inspect
-        logging: false
-        name: dbsync_db1
-        post:
-        - dbIP = $Info[0].NetworkSettings.IPAddress
-        - mysqlIP = $Info[0].NetworkSettings.IPAddress

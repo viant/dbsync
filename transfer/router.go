@@ -8,6 +8,7 @@ import (
 
 const baseURI = "/v1/api"
 
+//Router represents RESET router
 type Router struct {
 	*http.ServeMux
 	service *Service
@@ -59,14 +60,15 @@ func (r Router) static() http.Handler {
 
 func (r Router) status() http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Write([]byte("ok"))
+		_, _ = writer.Write([]byte("ok"))
 	})
 }
 
-func NewRouter(dummyService *Service) http.Handler {
+//NewRouter returns new router
+func NewRouter(service *Service) http.Handler {
 	var result = &Router{
 		ServeMux: http.NewServeMux(),
-		service:  dummyService,
+		service:  service,
 	}
 	result.route()
 	return result

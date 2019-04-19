@@ -7,7 +7,7 @@ import (
 )
 
 func TestTransfer(t *testing.T) {
-	transfers := newTransfers(&TransferRequest{WriterThreads: 3, BatchSize: 2})
+	transfers := newTransfers(&Request{WriterThreads: 3, BatchSize: 2})
 	var index = 0
 	for i := 0; i < 6; i++ { //push data across 3 writer thread batches
 		err := transfers.push(map[string]interface{}{
