@@ -201,11 +201,14 @@ func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []st
 		return result, nil
 	}
 
-	if s.IsEqual(groupColumns, sourceData, destData, result) {
+	isEqual := s.IsEqual(groupColumns, sourceData, destData, result)
+	if s.IsDebug() {
+		log.Printf("equal: %v,  %v , %v\n", isEqual, sourceData, destData)
+	}
+	if isEqual {
 		result.InSync = true
 		return result, nil
 	}
-
 	if result.Method != "" {
 		return result, nil
 	}
@@ -305,6 +308,7 @@ func (s *Session) IsEqual(index []string, source, dest []Record, status *Info) b
 		}
 		discrepant := false
 		for k, v := range sourceRecord {
+
 			if destRecord[k] != v {
 				discrepant = true
 				break
@@ -313,6 +317,19 @@ func (s *Session) IsEqual(index []string, source, dest []Record, status *Info) b
 		if discrepant { //Try apply date format or numeric rounding to compare again
 			for _, column := range s.Builder.Sync.Columns {
 				key := column.Alias
+
+				if (destRecord[key] != nil && sourceRecord[key] != nil) {
+					if toolbox.IsInt(destRecord[key]) || toolbox.IsInt(sourceRecord[key]) {
+						destRecord[key] = toolbox.AsInt(destRecord[key])
+						sourceRecord[key] = toolbox.AsInt(sourceRecord[key])
+					} else if toolbox.IsFloat(destRecord[key]) || toolbox.IsFloat(sourceRecord[key]) {
+						destRecord[key] = toolbox.AsFloat(destRecord[key])
+						sourceRecord[key] = toolbox.AsFloat(sourceRecord[key])
+					} else if toolbox.IsBool(destRecord[key]) || toolbox.IsBool(sourceRecord[key]) {
+						destRecord[key] = toolbox.AsBoolean(destRecord[key])
+						sourceRecord[key] = toolbox.AsBoolean(sourceRecord[key])
+					}
+				}
 				if destRecord[key] != sourceRecord[key] {
 					if column.DateLayout != "" {
 						destTime, err := toolbox.ToTime(destRecord[key], column.DateLayout)

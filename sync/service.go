@@ -47,7 +47,6 @@ func (s *service) ListScheduled(request *ScheduleListRequest) *ScheduleListRespo
 
 func (s *service) ListJobs(request *JobListRequest) *JobListResponse {
 	response := &JobListResponse{}
-	fmt.Printf("ids: %v\n", request.Ids)
 	if len(request.Ids) == 0 {
 		response.Jobs = s.Jobs.List()
 	} else {

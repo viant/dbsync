@@ -7,17 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	_ "github.com/viant/bgc"
 	"github.com/viant/dsc"
-	"github.com/viant/toolbox"
 	"log"
-	"path"
 	"testing"
 )
 
 func TestService_Sync(t *testing.T) {
 
 	dsc.Logf = dsc.StdoutLogger
-	parent := toolbox.CallerDirectory(3)
-	requestURL := path.Join(parent, "test/site_list_entry.yaml")
+	requestURL := "/Projects/go/workspace/src/github.vianttech.com/adelphic/dbsync/ora2bq/sitemgnt/SITE_LIST_ENTRY.yaml"
 	request, err := NewSyncRequestFromURL(requestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)
