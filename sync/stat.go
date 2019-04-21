@@ -41,7 +41,7 @@ func (s *Stats) Add(syncStat *RunStat) {
 		if len(stats) >= s.maxHistory {
 			break
 		}
-		stats = append(stats, syncStat)
+		stats = append(stats, s.Stats[i])
 	}
 	s.Stats = stats
 }
