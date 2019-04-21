@@ -156,6 +156,7 @@ func (s *service) createTransientDest(session *Session, suffix string) error {
 
 func (s *service) transferDataWithRetries(session *Session, transferJob *TransferJob) error {
 	var err error
+
 	for transferJob.Attempts < transferJob.MaxRetries {
 		err = s.transferData(session, transferJob)
 		if err == nil {
@@ -165,6 +166,7 @@ func (s *service) transferDataWithRetries(session *Session, transferJob *Transfe
 			transferJob.Attempts++
 			continue
 		}
+		time.Sleep(time.Second * time.Duration(transferJob.Attempts%10))
 	}
 	transferJob.SetError(err)
 	return nil

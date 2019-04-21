@@ -151,11 +151,12 @@ func (s *Session) findInSyncMaxID(destMaxID int, narrowedCriteria map[string]int
 
 //Info represents a sync info
 type Info struct {
-	InSync      bool
-	Method      string
-	SourceCount int
-	SyncFromID  int
-	depth       int
+	InSync        bool
+	Method        string
+	Inconsistency string
+	SourceCount   int
+	SyncFromID    int
+	depth         int
 }
 
 func (s *Session) runDiffSQL(criteriaValue map[string]interface{}, source, dest *[]Record) ([]string, error) {
@@ -190,11 +191,29 @@ func (s *Session) sumRowCount(data []Record) int {
 	}
 	return result
 }
+func (s *Session) sumRowDistinctCount(data []Record) int {
+	result := 0
+	if s.Builder.uniqueCountAlias == "" {
+		return -1
+	}
+	for _, sourceRecord := range data {
+		countValue, ok := sourceRecord[s.Builder.uniqueCountAlias]
+		if ok {
+			result += toolbox.AsInt(countValue)
+		}
+	}
+	return result
+}
 
 func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []string, criteriaValue map[string]interface{}) (*Info, error) {
 	result := &Info{
 		depth: 1,
 	}
+	defer func() {
+		if s.IsDebug() {
+			log.Printf("%v method: %v\n", criteriaValue, result.Method)
+		}
+	}()
 	result.SourceCount = s.sumRowCount(sourceData)
 	if len(destData) == 0 {
 		result.Method = SyncMethodInsert
@@ -209,18 +228,24 @@ func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []st
 		result.InSync = true
 		return result, nil
 	}
+
 	if result.Method != "" {
 		return result, nil
 	}
 	result.Method = SyncMethodMerge
 	if len(sourceData) == 1 && len(destData) == 1 {
 
-		if s.hasOnlyAddition(sourceData[0], destData[0], criteriaValue, result) {
-			return result, nil
-		}
 		if toolbox.AsInt(sourceData[0][s.Builder.countColumnAlias]) < toolbox.AsInt(destData[0][s.Builder.countColumnAlias]) {
+			destRowCount := s.sumRowCount(destData)
+			destDistinctRowCount := s.sumRowDistinctCount(destData)
+			if destRowCount > destDistinctRowCount {
+				return nil, fmt.Errorf("destination %v[%v], has duplicates rowCount: %v, distinct ids: %v\n", s.Request.Table, criteriaValue, destRowCount, destDistinctRowCount)
+			}
 			result.Method = SyncMethodMergeDelete
 		} else {
+			if s.hasOnlyAddition(sourceData[0], destData[0], criteriaValue, result) {
+				return result, nil
+			}
 			result.Method = SyncMethodMerge
 		}
 	}
@@ -318,7 +343,7 @@ func (s *Session) IsEqual(index []string, source, dest []Record, status *Info) b
 			for _, column := range s.Builder.Sync.Columns {
 				key := column.Alias
 
-				if (destRecord[key] != nil && sourceRecord[key] != nil) {
+				if destRecord[key] != nil && sourceRecord[key] != nil {
 					if toolbox.IsInt(destRecord[key]) || toolbox.IsInt(sourceRecord[key]) {
 						destRecord[key] = toolbox.AsInt(destRecord[key])
 						sourceRecord[key] = toolbox.AsInt(sourceRecord[key])
@@ -381,7 +406,7 @@ func (s *Session) destConfig() *dsc.Config {
 }
 
 func (s *Session) buildTransferJob(partition *Partition, criteriaValue map[string]interface{}, suffix string, sourceCount int) *TransferJob {
-	DQL := s.Builder.DQL("", s.Source, criteriaValue)
+	DQL := s.Builder.DQL("", s.Source, criteriaValue, false)
 	if s.IsDebug() {
 		log.Printf("DQL:%v\n", DQL)
 	}

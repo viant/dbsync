@@ -27,6 +27,7 @@ type Builder struct {
 	isUpperCase      bool
 	maxIDColumnAlias string
 	countColumnAlias string
+	uniqueCountAlias string
 }
 
 //Dialect returns dest database dialect
@@ -156,34 +157,40 @@ func (b *Builder) CountDQL(suffix string, resource *Resource, criteria map[strin
 }
 
 //DQL returns sync DQL
-func (b *Builder) DQL(suffix string, resource *Resource, values map[string]interface{}) string {
+func (b *Builder) DQL(suffix string, resource *Resource, values map[string]interface{}, dedupe bool) string {
 	var projection = make([]string, 0)
-
+	var dedupeFunction = ""
+	if dedupe {
+		dedupeFunction = "MAX"
+	}
 	for _, column := range b.columns {
 		if _, has := b.uniques[column.Name()]; has {
 			continue
 		}
 		alias, ok := resource.pseudoColumns[column.Name()]
 		if !ok {
-			projection = append(projection, column.Name())
+			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, column.Name(), column.Name()))
 			continue
 		}
-		projection = append(projection, fmt.Sprintf("%v AS %v", alias, column.Name()))
+		projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, alias, column.Name()))
 	}
 	if len(b.UniqueColumns) > 0 {
 		projection = append(b.UniqueColumns, projection...)
 	}
-	DQL := fmt.Sprintf("SELECT %v %v\nFROM %v t", resource.Hint, strings.Join(projection, ",\n"), b.QueryTable(suffix))
+	DQL := fmt.Sprintf("SELECT %v %v\nFROM %v t ", resource.Hint, strings.Join(projection, ",\n"), b.QueryTable(suffix))
 	if len(values) > 0 {
-		var whereCritera = make([]string, 0)
+		var whereCriteria = make([]string, 0)
 		keys := toolbox.MapKeysToStringSlice(values)
 		sort.Strings(keys)
 		for _, k := range keys {
 			v := values[k]
 			column := b.columnExpression(k, resource)
-			whereCritera = append(whereCritera, toCriterion(column, v))
+			whereCriteria = append(whereCriteria, toCriterion(column, v))
 		}
-		DQL += "\nWHERE " + strings.Join(whereCritera, " AND ")
+		DQL += "\nWHERE " + strings.Join(whereCriteria, " AND ")
+	}
+	if dedupeFunction != "" {
+		DQL += fmt.Sprintf("\nGROUP BY %v", strings.Join(b.UniqueColumns, ","))
 	}
 	return DQL
 }
@@ -337,18 +344,20 @@ func (b *Builder) updateSetValues() string {
 }
 
 func (b *Builder) baseInsert(suffix string, withReplace bool) string {
+	DQL := b.DQL(suffix, b.dest, nil, true)
 	names, values := b.insertNameAndValues()
 	replace := ""
 	if withReplace {
 		replace = "OR REPLACE"
 	}
-	return fmt.Sprintf("INSERT %v INTO %v(%v) SELECT %v FROM %v t", replace, b.Table(""), names, values, b.Table(suffix))
+	return fmt.Sprintf("INSERT %v INTO %v(%v) SELECT %v FROM (%v) t", replace, b.Table(""), names, values, DQL)
 }
 
 //AppendDML returns append DML
 func (b *Builder) AppendDML(sourceSuffix, destSuffix string) string {
+	DQL := b.DQL(sourceSuffix, b.dest, nil, true)
 	names, values := b.insertNameAndValues()
-	return fmt.Sprintf("INSERT INTO %v(%v) SELECT %v FROM %v t", b.Table(destSuffix), names, values, b.Table(sourceSuffix))
+	return fmt.Sprintf("INSERT INTO %v(%v) SELECT %v FROM (%v) t", b.Table(destSuffix), names, values, DQL)
 }
 
 func (b *Builder) insertUpdateDML(suffix string, wfilter map[string]interface{}) string {
@@ -368,7 +377,7 @@ WHEN NOT MATCHED THEN
 `
 
 func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) string {
-	DQL := b.DQL(suffix, b.dest, nil)
+	DQL := b.DQL(suffix, b.dest, nil, true)
 	var onCriteria = make([]string, 0)
 	for _, column := range b.UniqueColumns {
 		onCriteria = append(onCriteria, fmt.Sprintf("d.%v = t.%v", column, column))
@@ -419,7 +428,8 @@ func (b *Builder) insertReplaceDML(suffix string, filter map[string]interface{})
 func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string {
 	whereClause := b.toWhereCriteria(filter, b.dest)
 	if len(b.UniqueColumns) > 0 {
-		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v)", strings.Join(b.UniqueColumns, ","), strings.Join(b.UniqueColumns, ","), b.Table(suffix))
+		uniqueExpr := strings.Join(b.UniqueColumns, ",")
+		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v)", uniqueExpr, uniqueExpr, b.Table(suffix))
 		if whereClause != "" {
 			whereClause += " AND " + inCriteria
 		} else {
@@ -453,12 +463,19 @@ func (b *Builder) addStandardDiffColumns() {
 		uniqueAlias := b.alias("max_" + unique)
 		if len(b.UniqueColumns) == 1 {
 			b.maxIDColumnAlias = uniqueAlias
+			b.uniqueCountAlias = b.alias("unique_cnt")
+			b.Columns = append(b.Columns, &DiffColumn{
+				Func:  "COUNT",
+				Name:  unique,
+				Alias: b.uniqueCountAlias,
+			})
 		}
 		b.Columns = append(b.Columns, &DiffColumn{
 			Func:  "MAX",
 			Name:  unique,
 			Alias: uniqueAlias,
 		})
+
 	}
 }
 

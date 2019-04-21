@@ -143,7 +143,7 @@ func TestBuilder_DQL(t *testing.T) {
 		assert.NotNil(t, request, useCase.description)
 		builder, err := NewBuilder(request, nil)
 
-		DQL := builder.DQL("", request.Source, useCase.values)
+		DQL := builder.DQL("", request.Source, useCase.values, false)
 		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
