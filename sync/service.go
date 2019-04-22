@@ -313,6 +313,7 @@ func (s *service) syncDataPartitions(session *Session) error {
 				partition.criteriaValues[session.Builder.UniqueColumns[0]] = &greaterThan{value: info.SyncFromID}
 			}
 		}
+
 		if session.isChunkedTransfer {
 			err = s.syncDataPartitionWithChunks(session, partition)
 		} else {
@@ -353,7 +354,6 @@ func (s *service) syncDataPartitionWithChunks(session *Session, partition *Parti
 		return err
 	}
 	go s.transferDataChunks(session, partition)
-
 	partitionCriteria := partition.CriteriaValues()
 	for {
 		criteriaValues := partition.CriteriaValues()
@@ -372,16 +372,22 @@ func (s *service) syncDataPartitionWithChunks(session *Session, partition *Parti
 		if session.IsDebug() {
 			log.Printf("chunk source data: %v\n", sourceCount)
 		}
+
+		if sourceCount.Count() > limit {
+			return fmt.Errorf("invalid chunk SQL: %v, count: %v is greater than chunk limit: %v", checkDQL, sourceCount.Count(), limit)
+		}
+
 		criteriaValues[session.Builder.UniqueColumns[0]] = &between{from: sourceCount.Min(), to: sourceCount.Max()}
 
 		destDQL := session.Builder.CountDQL("", session.Dest, criteriaValues)
 		if session.IsDebug() {
-			log.Printf("chunk dest SQL: %v\n", checkDQL)
+			log.Printf("chunk dest SQL: %v\n", destDQL)
 		}
 		destCount := &ChunkInfo{}
 		if _, err = session.DestDB.ReadSingle(destCount, destDQL, nil, nil); err != nil {
 			return err
 		}
+
 		if session.IsDebug() {
 			log.Printf("chunk dest data: %v\n", destCount)
 		}
@@ -389,14 +395,19 @@ func (s *service) syncDataPartitionWithChunks(session *Session, partition *Parti
 			break
 		}
 		max = sourceCount.Max() + 1
+		inSync := destCount.Count() == sourceCount.Count()
+		if session.IsDebug() {
+			log.Printf("count sync: [%v .. %v]: %v (%v, %v) \n", sourceCount.Min(), sourceCount.Max(), inSync, destCount.Count(), sourceCount.Count())
+		}
 		if session.syncMethod != SyncMethodMergeDelete && !session.Request.Force {
-			if destCount.Count() == sourceCount.Count() {
+			if inSync && !session.Request.CountOnly {
 				if info, err := session.GetSyncInfo(criteriaValues); err == nil && info.InSync {
 					session.SetSynMethod(SyncMethodMerge)
 					continue
 				}
 			}
 		}
+
 		partition.WaitGroup.Add(1)
 		chunk := &Chunk{ChunkInfo: *sourceCount}
 		if destCount.Count() == 0 {

@@ -14,6 +14,7 @@ import (
 func TestService_Sync(t *testing.T) {
 
 	dsc.Logf = dsc.StdoutLogger
+
 	requestURL := ""
 	request, err := NewSyncRequestFromURL(requestURL)
 	if !assert.Nil(t, err) {
