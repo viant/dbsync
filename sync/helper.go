@@ -89,3 +89,18 @@ func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]inte
 	}
 	return criteria
 }
+
+//IsMapItemEqual compares map item
+func IsMapItemEqual(sourceMap, destMap map[string]interface{}, key string) bool {
+	if toolbox.IsInt(destMap[key]) || toolbox.IsInt(sourceMap[key]) {
+		destMap[key] = toolbox.AsInt(destMap[key])
+		sourceMap[key] = toolbox.AsInt(sourceMap[key])
+	} else if toolbox.IsFloat(destMap[key]) || toolbox.IsFloat(sourceMap[key]) {
+		destMap[key] = toolbox.AsFloat(destMap[key])
+		sourceMap[key] = toolbox.AsFloat(sourceMap[key])
+	} else if toolbox.IsBool(destMap[key]) || toolbox.IsBool(sourceMap[key]) {
+		destMap[key] = toolbox.AsBoolean(destMap[key])
+		sourceMap[key] = toolbox.AsBoolean(sourceMap[key])
+	}
+	return destMap[key] == sourceMap[key]
+}

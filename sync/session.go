@@ -181,7 +181,7 @@ func (s *Session) runDiffSQL(criteriaValue map[string]interface{}, source, dest 
 
 
 	if key := s.Partitions.keyColumn; key != "" && len(*source) == 1 && len(*dest) == 1 {
-		if (*source)[0][key] != (*dest)[0][key] {
+		if ! IsMapItemEqual((*source)[0], (*dest)[0], key) {
 			return nil, fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", key, (*source)[0][key], (*dest)[0][key])
 		}
 	}
@@ -230,7 +230,7 @@ func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []st
 
 
 	if key := s.Partitions.keyColumn; key != "" && len(sourceData) == 1 && len(destData) == 1 {
-		if sourceData[0][key] != destData[0][key] {
+		if ! IsMapItemEqual(sourceData[0], destData[0], key) {
 			return nil, fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", key, sourceData[0][key], destData[0][key])
 		}
 	}
@@ -360,19 +360,7 @@ func (s *Session) IsEqual(index []string, source, dest []Record, status *Info) b
 			for _, column := range s.Builder.Sync.Columns {
 				key := column.Alias
 
-				if destRecord[key] != nil && sourceRecord[key] != nil {
-					if toolbox.IsInt(destRecord[key]) || toolbox.IsInt(sourceRecord[key]) {
-						destRecord[key] = toolbox.AsInt(destRecord[key])
-						sourceRecord[key] = toolbox.AsInt(sourceRecord[key])
-					} else if toolbox.IsFloat(destRecord[key]) || toolbox.IsFloat(sourceRecord[key]) {
-						destRecord[key] = toolbox.AsFloat(destRecord[key])
-						sourceRecord[key] = toolbox.AsFloat(sourceRecord[key])
-					} else if toolbox.IsBool(destRecord[key]) || toolbox.IsBool(sourceRecord[key]) {
-						destRecord[key] = toolbox.AsBoolean(destRecord[key])
-						sourceRecord[key] = toolbox.AsBoolean(sourceRecord[key])
-					}
-				}
-				if destRecord[key] != sourceRecord[key] {
+				if ! IsMapItemEqual(destRecord, sourceRecord, key) {
 					if column.DateLayout != "" {
 						destTime, err := toolbox.ToTime(destRecord[key], column.DateLayout)
 						if err != nil {
