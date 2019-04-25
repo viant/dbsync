@@ -7,19 +7,20 @@ import (
 //Resource represents sync resource
 type Resource struct {
 	*dsc.Config
-	Table         string
-	From          string
-	Hint          string
-	PseudoColumns []*PseudoColumn
-	pseudoColumns map[string]*PseudoColumn
+	Table            string
+	From             string
+	Hint             string
+	PseudoColumns    []*PseudoColumn
+	columnExpression map[string]*PseudoColumn
+	PositionReference bool
 }
 
 func (r *Resource) indexPseudoColumns() {
-	r.pseudoColumns = make(map[string]*PseudoColumn)
+	r.columnExpression = make(map[string]*PseudoColumn)
 	if len(r.PseudoColumns) == 0 {
 		return
 	}
 	for _, column := range r.PseudoColumns {
-		r.pseudoColumns[column.Name] = column
+		r.columnExpression[column.Name] = column
 	}
 }

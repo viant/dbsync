@@ -399,12 +399,22 @@ func (s *service) syncDataPartitionWithChunks(session *Session, partition *Parti
 		if session.IsDebug() {
 			log.Printf("count sync: [%v .. %v]: %v (%v, %v) \n", sourceCount.Min(), sourceCount.Max(), inSync, destCount.Count(), sourceCount.Count())
 		}
-		if session.syncMethod != SyncMethodMergeDelete && !session.Request.Force {
-			if inSync && !session.Request.CountOnly {
-				if info, err := session.GetSyncInfo(criteriaValues); err == nil && info.InSync {
+		if session.syncMethod != SyncMethodMergeDelete && ! session.Request.Force {
+
+			if inSync {
+				if session.Request.CountOnly {
+					log.Printf("[%v .. %v] in sync skipping",  sourceCount.Min(), sourceCount.Max())
+					continue
+				}
+				info, _ := session.GetSyncInfo(criteriaValues)
+				if info.InSync {
 					session.SetSynMethod(SyncMethodMerge)
 					continue
 				}
+				if info.SyncFromID > 0 {
+					criteriaValues[session.Builder.UniqueColumns[0]] = &between{from: info.SyncFromID , to: sourceCount.Max()}
+				}
+
 			}
 		}
 

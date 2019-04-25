@@ -1,0 +1,21 @@
+[
+  {},
+  {
+    "id": 1,
+    "event_type": 2,
+    "quantity": 33.23432374000549,
+    "timestamp": "$FormatTime('now', 'yyyy-MM-dd HH:mm:ss')"
+  },
+  {
+    "id": 2,
+    "event_type": 3,
+    "quantity": 21.957962334156036,
+    "timestamp": "$FormatTime('now', 'yyyy-MM-dd HH:mm:ss')"
+  },
+  {
+    "id": 3,
+    "event_type": 4,
+    "quantity": 5.084940046072006,
+    "timestamp": "$FormatTime('now', 'yyyy-MM-dd HH:mm:ss')"
+  }
+]

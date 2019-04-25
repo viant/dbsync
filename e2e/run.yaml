@@ -15,11 +15,11 @@ defaults:
   bqCredentials: $bqCredentials
   mysqlCredentials: $mysqlCredentials
 pipeline:
-  init:
-    system:
-      action: run
-      request: '@system'
-      tasks: '*'
+#  init:
+#    system:
+#      action: run
+#      request: '@system'
+#      tasks: '*'
 
   datastore:
     action: run
@@ -34,15 +34,15 @@ pipeline:
     action: run
     request: '@regression/regression'
     tasks: '*'
-  destroy:
-    app:
-      buildTarget: $target
-      app: $app
-      appVersion: $appVersion
-      action: run
-      request: '@app'
-      tasks: stop
-    system:
-      action: run
-      request: '@system'
-      tasks: destroy
+#  destroy:
+#    app:
+#      buildTarget: $target
+#      app: $app
+#      appVersion: $appVersion
+#      action: run
+#      request: '@app'
+#      tasks: stop
+#    system:
+#      action: run
+#      request: '@system'
+#      tasks: destroy

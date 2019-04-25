@@ -178,6 +178,14 @@ func (s *Session) runDiffSQL(criteriaValue map[string]interface{}, source, dest 
 		log.Printf("diff source data: %v\n", source)
 		log.Printf("diff dest   data: %v\n", dest)
 	}
+
+
+	if key := s.Partitions.keyColumn; key != "" && len(*source) == 1 && len(*dest) == 1 {
+		if (*source)[0][key] != (*dest)[0][key] {
+			return nil, fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", key, (*source)[0][key], (*dest)[0][key])
+		}
+	}
+
 	return groupColumns, nil
 }
 
@@ -220,6 +228,13 @@ func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []st
 		return result, nil
 	}
 
+
+	if key := s.Partitions.keyColumn; key != "" && len(sourceData) == 1 && len(destData) == 1 {
+		if sourceData[0][key] != destData[0][key] {
+			return nil, fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", key, sourceData[0][key], destData[0][key])
+		}
+	}
+
 	isEqual := s.IsEqual(groupColumns, sourceData, destData, result)
 	if s.IsDebug() {
 		log.Printf("equal: %v,  %v , %v\n", isEqual, sourceData, destData)
@@ -255,6 +270,8 @@ func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []st
 //GetSyncInfo returns a sync info
 func (s *Session) GetSyncInfo(criteriaValue map[string]interface{}) (*Info, error) {
 	if len(criteriaValue) == 1 {
+
+
 		if value, has := criteriaValue[s.Partitions.keyColumn]; has {
 			partition, ok := s.Partitions.index[toolbox.AsString(value)]
 			if ok && partition.Info != nil {

@@ -1,0 +1,49 @@
+{
+	"BatchSize": 2048,
+	"Dest": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db2"
+		},
+		"PseudoColumns": [
+    		{
+        		"Name":"date",
+		        "expression": "DATE(timestamp)"
+		    }
+		]
+
+	},
+	"EndpointIP": "127.0.0.1:8080",
+	"CountOnly": true,
+	"Debug":true,
+	"Source": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db1"
+		},
+		"PseudoColumns": [
+            {
+                "Name":"date",
+                "expression": "DATE(timestamp)"
+            }
+        ]
+	},
+	"Table": "events",
+	"UniqueColumns": [
+		"id"
+	],
+	"DiffDepth": 5,
+	"Partition": {
+		"Columns": [
+			"date"
+		],
+		"Threads": 1,
+        "ProviderSQL": "SELECT '$FormatTime(now, yyyy-MM-dd)' AS date"
+	},
+	"WriterThreads": 1
+
+}

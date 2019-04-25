@@ -49,7 +49,11 @@ func (b *Builder) Table(suffix string) string {
 	if suffix == "" {
 		return b.table
 	}
-
+	for _, achar := range []string{" ", "-", ":"} {
+		if count := strings.Count(suffix, achar);count > 0 {
+			suffix = strings.Replace(suffix, achar, "_", count)
+		}
+	}
 	if b.tempDatabase != "" {
 		return b.tempDatabase + "." + b.table + suffix
 	}
@@ -85,11 +89,18 @@ func (b *Builder) DDL(tempTable string) (string, error) {
 }
 
 func (b *Builder) columnExpression(column string, resource *Resource) string {
-	if pseudoColumn, ok := resource.pseudoColumns[column]; ok {
+	if pseudoColumn, ok := resource.columnExpression[column]; ok {
+		return pseudoColumn.Expression + " AS " + column
+	}
+	return column
+}
+func (b *Builder) unAliasedColumnExpression(column string, resource *Resource) string {
+	if pseudoColumn, ok := resource.columnExpression[column]; ok {
 		return pseudoColumn.Expression
 	}
 	return column
 }
+
 
 func (b *Builder) defaultChunkDQL() string {
 	if len(b.UniqueColumns) == 0 {
@@ -120,7 +131,7 @@ func (b *Builder) ChunkDQL(resource *Resource, max, limit int, values map[string
 	if len(values) > 0 {
 		var whereCriteria = make([]string, 0)
 		for k, v := range values {
-			column := b.columnExpression(k, resource)
+			column := b.unAliasedColumnExpression(k, resource)
 			whereCriteria = append(whereCriteria, toCriterion(column, v))
 		}
 		state.Put("where", " AND "+strings.Join(whereCriteria, " AND "))
@@ -138,13 +149,12 @@ func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *Res
 	if len(criteria) == 0 {
 		return ""
 	}
-
 	var whereCriteria = make([]string, 0)
 	keys := toolbox.MapKeysToStringSlice(criteria)
 	sort.Strings(keys)
 	for _, k := range keys {
 		v := criteria[k]
-		column := b.columnExpression(k, resource)
+		column := b.unAliasedColumnExpression(k, resource)
 		whereCriteria = append(whereCriteria, toCriterion(column, v))
 	}
 	return "\nWHERE " + strings.Join(whereCriteria, " AND ")
@@ -167,7 +177,7 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 		if _, has := b.uniques[column.Name()]; has {
 			continue
 		}
-		alias, ok := resource.pseudoColumns[column.Name()]
+		alias, ok := resource.columnExpression[column.Name()]
 		if !ok {
 			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, column.Name(), column.Name()))
 			continue
@@ -184,7 +194,7 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 		sort.Strings(keys)
 		for _, k := range keys {
 			v := values[k]
-			column := b.columnExpression(k, resource)
+			column := b.unAliasedColumnExpression(k, resource)
 			whereCriteria = append(whereCriteria, toCriterion(column, v))
 		}
 		DQL += "\nWHERE " + strings.Join(whereCriteria, " AND ")
@@ -215,6 +225,11 @@ func (b *Builder) init(manager dsc.Manager) error {
 	b.source.indexPseudoColumns()
 	b.dest.indexPseudoColumns()
 	b.partitions = make(map[string]bool)
+
+
+	toolbox.DumpIndent(b, true)
+	fmt.Printf("%v\n", b)
+
 
 	for _, partition := range b.Partition.Columns {
 		b.partitions[partition] = true
@@ -272,14 +287,22 @@ func (b *Builder) CountDiffDQL(criteria map[string]interface{}, resource *Resour
 func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) (string, []string) {
 	var projection = make([]string, 0)
 	var groupBy = make([]string, 0)
+	var i = 1
 	var dimension = make(map[string]bool)
 	for _, partition := range b.Partition.Columns {
 		if _, has := dimension[partition]; has {
 			continue
 		}
 		dimension[partition] = true
-		projection = append(projection, partition)
-		groupBy = append(groupBy, partition)
+		aliasedExpression := b.columnExpression(partition, resource)
+		projection = append(projection, aliasedExpression)
+		if resource.PositionReference {
+			groupBy = append(groupBy, fmt.Sprintf("%d", i))
+			i++
+		} else {
+			rawExpression := b.unAliasedColumnExpression(partition, resource)
+			groupBy = append(groupBy, rawExpression)
+		}
 	}
 
 	projectionGenerator(&projection, dimension)
@@ -399,6 +422,8 @@ func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) string 
 }
 
 func (b *Builder) getInsertWhereClause(filter map[string]interface{}) string {
+
+
 	if len(b.UniqueColumns) > 0 {
 		innerWhere := ""
 		var innerCriteria = make([]string, 0)
