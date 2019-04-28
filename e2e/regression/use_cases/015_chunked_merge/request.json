@@ -19,9 +19,9 @@
 		}
 	},
 	"Table": "events",
-	"UniqueColumns": [
-		"id"
-	],
+	"IDColumns": [
+        "id"
+    ],
 	"Partition": {
 	    "Columns": [
 	    "event_type"
@@ -29,6 +29,8 @@
 	    "Threads": 5,
 	    "ProviderSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
 	},
-	"ChunkSize": 4096,
+    "Chunk":{
+        "Size": 4096
+    },
 	"WriterThreads": 2
 }

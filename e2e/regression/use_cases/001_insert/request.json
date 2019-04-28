@@ -19,7 +19,7 @@
 		}
 	},
 	"Table": "events",
-	"UniqueColumns": [
+	"IDColumns": [
 		"id"
 	],
 	"WriterThreads": 2

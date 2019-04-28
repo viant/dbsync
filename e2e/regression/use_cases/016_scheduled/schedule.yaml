@@ -14,7 +14,7 @@ source:
   parameters:
     dbname: db1
 table: events
-uniqueColumns:
+idColumns:
   - id
 writerThreads: 2
 schedule:

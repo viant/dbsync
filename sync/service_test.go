@@ -12,10 +12,8 @@ import (
 )
 
 func TestService_Sync(t *testing.T) {
-
 	dsc.Logf = dsc.StdoutLogger
-
-	requestURL :=  "/Projects/go/workspace/src/github.vianttech.com/adelphic/dbsync/vertica2bq/ci_dm/campaign_performance_hour.yaml"
+	requestURL := ""
 	request, err := NewSyncRequestFromURL(requestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)

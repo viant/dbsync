@@ -19,9 +19,9 @@
 		}
 	},
 	"Table": "events",
-	"UniqueColumns": [
-		"id"
-	],
+	"IDColumns": [
+        "id"
+    ],
 	"Partition": {
     	    "Columns": [
     	    "event_type"

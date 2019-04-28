@@ -10,7 +10,7 @@
 		"PseudoColumns": [
     		{
         		"Name":"date",
-		        "expression": "DATE(timestamp)"
+		        "expression": "DATE(t.timestamp)"
 		    }
 		]
 
@@ -28,14 +28,14 @@
 		"PseudoColumns": [
             {
                 "Name":"date",
-                "expression": "DATE(timestamp)"
+                "expression": "DATE(t.timestamp)"
             }
         ]
 	},
 	"Table": "events",
-	"UniqueColumns": [
-		"id"
-	],
+	"IDColumns": [
+        "id"
+    ],
 	"DiffDepth": 5,
 	"Partition": {
 		"Columns": [

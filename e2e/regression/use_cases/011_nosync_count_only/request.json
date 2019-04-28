@@ -19,9 +19,9 @@
 		}
 	},
 	"Table": "events",
-	"UniqueColumns": [
-		"id"
-	],
+	"IDColumns": [
+        "id"
+    ],
     "CountOnly": true,
 	"WriterThreads": 2
 }

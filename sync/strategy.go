@@ -42,19 +42,24 @@ type DifferenceStrategy struct {
 	DiffDepth int `description:"controls detection of data that is similar"`
 }
 
-//Sync sync
-type Sync struct {
-	UniqueColumns []string
+//ChunkSync represents chunk sync request part
+type ChunkSync struct {
+	SQL       string
+	Size      int `description:"chunk size in row count"`
+	QueueSize int
+}
+
+//Strategy sync strategy
+type Strategy struct {
+	Chunk     ChunkSync
+	IDColumns []string
 	DifferenceStrategy
 	NumericPrecision int
 	DateFormat       string
 	DateLayout       string
 	MergeStyle       string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
-	Partition        PartitionInfo
+	Partition        PartitionSync
 	Force            bool `description:"if set skip checks if data in sync"`
-	ChunkSQL         string
-	ChunkSize        int `description:"chunk size in row count"`
-	ChunkQueueSize   int
 	DiffBatchSize    int
 }
 
@@ -77,4 +82,35 @@ func (c *DiffColumn) Expr() string {
 	default:
 		return fmt.Sprintf("%v(%v) AS %v", c.Func, column, c.Alias)
 	}
+}
+
+func (s *Strategy) Init() error {
+	if s.DiffBatchSize == 0 {
+		s.DiffBatchSize = defaultDiffBatchSize
+	}
+	if s.NumericPrecision == 0 {
+		s.NumericPrecision = 5
+	}
+	if s.DateFormat == "" && s.DateLayout == "" {
+		s.DateLayout = toolbox.DateFormatToLayout("yyyy-MM-dd hh:mm:ss")
+	} else if s.DateFormat != "" {
+		s.DateLayout = toolbox.DateFormatToLayout(s.DateFormat)
+	}
+	if len(s.Partition.Columns) == 0 {
+		s.Partition.Columns = make([]string, 0)
+	}
+	var threads = s.Partition.Threads
+	if threads == 0 {
+		s.Partition.Threads = 1
+	}
+
+	err := s.Chunk.Init()
+	return err
+}
+
+func (c *ChunkSync) Init() error {
+	if c.Size > 0 && c.QueueSize == 0 {
+		c.QueueSize = 2
+	}
+	return nil
 }

@@ -1,0 +1,30 @@
+[
+  {
+    "@timeFormat@timestamp": "yyyy-MM-dd",
+    "@indexBy@": "id"
+  },
+  {
+    "id": 3,
+    "event_type": 4,
+    "quantity": 5.084940046072006,
+    "timestamp": "$FormatTime('now', 'yyyy-MM-dd HH:mm:ss')"
+  },
+  {
+    "id": 5,
+    "event_type": 4,
+    "quantity": 26.21499478816986,
+    "timestamp": "$FormatTime('now', 'yyyy-MM-dd HH:mm:ss')"
+  },
+  {
+    "id": 8,
+    "event_type": 8,
+    "quantity": 16.948733657598495,
+    "timestamp": "$FormatTime('2daysAgo', 'yyyy-MM-dd HH:mm:ss')"
+  },
+  {
+    "id": 9,
+    "event_type": 8,
+    "quantity": 16.948733657598495,
+    "timestamp": "$FormatTime('2daysAgo', 'yyyy-MM-dd HH:mm:ss')"
+  }
+]

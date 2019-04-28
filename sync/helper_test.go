@@ -11,16 +11,15 @@ func Test_round(t *testing.T) {
 
 }
 
-
 func Test_IsMapItemEqual(t *testing.T) {
 
-	var r1 = map[string]interface{} {
-		"k1":1,
-		"k2":1,
+	var r1 = map[string]interface{}{
+		"k1": 1,
+		"k2": 1,
 	}
-	var r2 = map[string]interface{} {
-		"k1":"1",
-		"k2":12,
+	var r2 = map[string]interface{}{
+		"k1": "1",
+		"k2": 12,
 	}
 
 	assert.True(t, IsMapItemEqual(r1, r2, "k1"))

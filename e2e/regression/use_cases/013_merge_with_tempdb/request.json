@@ -19,9 +19,9 @@
 		}
 	},
 	"Table": "events",
-	"UniqueColumns": [
-		"id"
-	],
+	"IDColumns": [
+        "id"
+    ],
 	"TempDatabase":"transfer",
 	"WriterThreads": 2
 }

@@ -11,17 +11,16 @@ pipeline:
   test:
     tag: $pathMatch
     description: '@use_case'
-    range: 1..019
+    range: 1..029
     subPath: use_cases/${index}_*
     template:
       skip-tag:
         action: nop
         init:
           idx: $Int(${index})
-          # uncomment when testing with standalone app
           mysqlIP: 127.0.0.1
         skip: $HasResource(${subPath}/skip.txt)
-        comments: skip tag Id if subdirectory has skip.txt file present
+        #comments: skip tag Id if subdirectory has skip.txt file present
 
       db1-prepare:
         when: '$HasResource(${path}/prepare/${db})'

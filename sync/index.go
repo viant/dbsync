@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"github.com/viant/toolbox"
 	"sync"
 )
 
@@ -9,15 +8,14 @@ type indexedRecords struct {
 	mux    *sync.Mutex
 	source map[string][]Record
 	dest   map[string][]Record
-	key    string
+	key    []string
 }
 
 func (r *indexedRecords) build(records []Record, index map[string][]Record) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	for _, record := range records {
-
-		value := toolbox.AsString(record[r.key])
+		value := keyValue(r.key, record)
 		if _, has := index[value]; !has {
 			index[value] = make([]Record, 0)
 		}
@@ -26,7 +24,7 @@ func (r *indexedRecords) build(records []Record, index map[string][]Record) {
 
 }
 
-func newIndexedRecords(key string) *indexedRecords {
+func newIndexedRecords(key []string) *indexedRecords {
 	return &indexedRecords{
 		mux:    &sync.Mutex{},
 		source: make(map[string][]Record),

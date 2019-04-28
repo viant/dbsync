@@ -2,21 +2,21 @@ package sync
 
 import (
 	"fmt"
-	"github.com/viant/toolbox"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 )
 
-//PartitionInfo represents partition info
-type PartitionInfo struct {
+//PartitionSync represents partition info
+type PartitionSync struct {
 	ProviderSQL string
 	Columns     []string
 	Threads     int
 }
 
 //BatchSize returns batch size for max elements
-func (p *PartitionInfo) BatchSize(max int) int {
+func (p *PartitionSync) BatchSize(max int) int {
 	batchSize := p.Threads
 	if batchSize == 0 {
 		batchSize = 1
@@ -29,12 +29,13 @@ func (p *PartitionInfo) BatchSize(max int) int {
 
 //Partition represents a partition
 type Partition struct {
-	PartitionInfo
-	uniqueColumn   string
-	criteriaValues map[string]interface{}
-	Status         string
-	SyncMethod     string
-	SourceCount    int
+	PartitionSync
+	uniqueColumn string
+	criteria     map[string]interface{}
+	Status       string
+	SyncMethod   string
+	SourceCount  int
+
 	*Info
 	err error
 	*sync.WaitGroup
@@ -45,27 +46,32 @@ type Partition struct {
 
 //Partitions represents partitions
 type Partitions struct {
-	data      []*Partition
-	index     map[string]*Partition
-	keyColumn string
-	channel   chan bool
+	data    []*Partition
+	index   map[string]*Partition
+	key     []string
+	hasKey  bool
+	channel chan bool
 	*sync.Mutex
 	*sync.WaitGroup
 }
 
 //Range range over partition
 func (p *Partitions) Range(handler func(partition *Partition) error) error {
-	for _, partition := range p.data {
+	partitions := p.data
+	for i, partition := range partitions {
+		fmt.Printf("processing partition[%d/%d]\n", i, len(partitions))
 		p.Add(1)
 		p.channel <- true
 		go func(partition *Partition) {
 			defer p.Done()
 			partition.err = handler(partition)
+			fmt.Printf("%v\n", partition.err)
 			<-p.channel
 
 		}(partition)
 	}
 	p.Wait()
+
 	for _, partition := range p.data {
 		if partition.err != nil {
 			return partition.err
@@ -74,31 +80,50 @@ func (p *Partitions) Range(handler func(partition *Partition) error) error {
 	return nil
 }
 
+//Validate checks if partition value for source and dest are valid
+func (p *Partitions) Validate(source, dest []Record) error {
+	if len(source) != 1 || len(dest) != 1 || !p.hasKey {
+		return nil
+	}
+	if !IsMapItemsEqual(source[0], dest[0], p.key) {
+		sourceIndex := keyValue(p.key, source[0])
+		destIndex := keyValue(p.key, dest[0])
+		return fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", p.key, sourceIndex, destIndex)
+	}
+	return nil
+}
+
 //NewPartitions creates a new partitions
 func NewPartitions(partitions []*Partition, threads int) *Partitions {
+	if threads == 0 {
+		threads = 1
+	}
 	var result = &Partitions{
 		data:      partitions,
 		channel:   make(chan bool, threads),
 		Mutex:     &sync.Mutex{},
 		index:     make(map[string]*Partition),
 		WaitGroup: &sync.WaitGroup{},
+		key:       make([]string, 0),
 	}
-	if len(partitions) > 0 && len(partitions[0].criteriaValues) == 1 {
+	if len(partitions) > 0 && len(partitions[0].criteria) > 0 {
+		for key := range partitions[0].criteria {
+			result.key = append(result.key, key)
+		}
+		sort.Strings(result.key)
+		result.hasKey = len(result.key) > 0
 		for _, partition := range partitions {
-			for k, value := range partition.criteriaValues {
-				result.keyColumn = k
-				result.index[toolbox.AsString(value)] = partition
-			}
+
+			result.index[keyValue(result.key, partition.criteria)] = partition
 		}
 	}
-
 	return result
 }
 
-//CriteriaValues returns cloned criteria valiues
-func (p *Partition) CriteriaValues() map[string]interface{} {
+//CloneCriteria returns cloned criteria values
+func (p *Partition) CloneCriteria() map[string]interface{} {
 	var result = make(map[string]interface{})
-	for k, v := range p.criteriaValues {
+	for k, v := range p.criteria {
 		result[k] = v
 	}
 	return result
@@ -116,21 +141,21 @@ func (p *Partition) SetDone(done int32) {
 
 //AddChunk add chunk
 func (p *Partition) AddChunk(chunk *Chunk) {
-	for k, v := range p.criteriaValues {
-		if _, has := chunk.CriteriaValues[k]; has {
+	for k, v := range p.criteria {
+		if _, has := chunk.Criteria[k]; has {
 			continue
 		}
-		chunk.CriteriaValues[k] = v
+		chunk.Criteria[k] = v
 	}
 	chunk.Index = p.ChunkSize()
 	chunk.Suffix = fmt.Sprintf("%v_chunk_%05d", p.Suffix, chunk.Index)
 
-	chunk.CriteriaValues[p.uniqueColumn] = &between{from: chunk.Min(), to: chunk.Max()}
+	chunk.Criteria[p.uniqueColumn] = &between{from: chunk.Min(), to: chunk.Max()}
 	p.Chunks.AddChunk(chunk)
 }
 
 //NewPartition returns new partition
-func NewPartition(source PartitionInfo, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {
+func NewPartition(source PartitionSync, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {
 	suffix := transientTableSuffix
 	if len(source.Columns) > 0 {
 		for _, column := range source.Columns {
@@ -138,12 +163,13 @@ func NewPartition(source PartitionInfo, values map[string]interface{}, chunkQueu
 		}
 	}
 	suffix = strings.Replace(suffix, "-", "", strings.Count(suffix, "-"))
+	suffix = strings.Replace(suffix, "+", "", strings.Count(suffix, "+"))
 	return &Partition{
-		PartitionInfo:  source,
-		Suffix:         suffix,
-		criteriaValues: values,
-		uniqueColumn:   uniqueColumn,
-		WaitGroup:      &sync.WaitGroup{},
-		Chunks:         NewChunks(chunkQueue),
+		PartitionSync: source,
+		Suffix:        suffix,
+		criteria:      values,
+		uniqueColumn:  uniqueColumn,
+		WaitGroup:     &sync.WaitGroup{},
+		Chunks:        NewChunks(chunkQueue),
 	}
 }

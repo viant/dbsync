@@ -121,12 +121,12 @@ func (s *service) buildPartitions(session *Session) error {
 		partitionsRecords = append(partitionsRecords, map[string]interface{}{})
 	}
 	uniqueColumn := ""
-	if len(session.Builder.UniqueColumns) > 0 {
-		uniqueColumn = session.Builder.UniqueColumns[0]
+	if len(session.Builder.IDColumns) > 0 {
+		uniqueColumn = session.Builder.IDColumns[0]
 	}
 	var partitions = make([]*Partition, 0)
 	for _, values := range partitionsRecords {
-		partitions = append(partitions, NewPartition(session.Request.Partition, values, session.Request.ChunkQueueSize, uniqueColumn))
+		partitions = append(partitions, NewPartition(session.Request.Partition, values, session.Request.Chunk.QueueSize, uniqueColumn))
 	}
 	session.Partitions = NewPartitions(partitions, session.Request.Partition.Threads)
 	return nil
@@ -176,7 +176,7 @@ func (s *service) transferData(session *Session, transferJob *TransferJob) error
 	if err := s.createTransientDest(session, transferJob.Suffix); err != nil {
 		return err
 	}
-	if s.Debug {
+	if session.IsDebug() {
 		log.Printf("post: %v\n", transferJob.TargetURL)
 		_ = toolbox.DumpIndent(transferJob.TransferRequest, true)
 	}
@@ -224,13 +224,19 @@ func (s *service) transferDataChunk(session *Session, partition *Partition, inde
 	defer func() { <-partition.channel }()
 	chunk := partition.Chunk(index)
 
-	transferJob := session.buildTransferJob(partition, chunk.CriteriaValues, chunk.Suffix, chunk.Count())
+	transferJob := session.buildTransferJob(partition, chunk.Criteria, chunk.Suffix, chunk.Count())
 	session.Job.Add(transferJob)
 	err := s.transferDataWithRetries(session, transferJob)
 	chunk.Transfer = transferJob
 	chunk.Status = StatusOk
+
 	if err == nil {
-		err = s.appendData(session, chunk.Suffix, partition.Suffix)
+		if chunk.Method == SyncMethodMergeDelete {
+			err = s.removeInconsistency(session, chunk, partition)
+		}
+		if err == nil {
+			err = s.appendData(session, chunk.Suffix, partition.Suffix)
+		}
 	}
 	if err != nil {
 		chunk.Status = StatusError
@@ -238,8 +244,12 @@ func (s *service) transferDataChunk(session *Session, partition *Partition, inde
 	}
 }
 
-func (s *service) mergeData(session *Session, suffix string, criteriaValues map[string]interface{}) error {
-	DML, err := session.Builder.DML(session.Request.MergeStyle, suffix, criteriaValues)
+func (s *service) removeInconsistency(session *Session, chunk *Chunk, partition *Partition) error {
+	return s.deleteData(session, chunk.Suffix, chunk.Criteria)
+}
+
+func (s *service) mergeData(session *Session, suffix string, criteria map[string]interface{}) error {
+	DML, err := session.Builder.DML(session.Request.MergeStyle, suffix, criteria)
 	if s.Config.Debug {
 		log.Printf("DML: %v\n", DML)
 	}
@@ -256,7 +266,7 @@ func (s *service) mergeData(session *Session, suffix string, criteriaValues map[
 func (s *service) mergePartitionData(session *Session, partition *Partition) error {
 	session.Partitions.Lock()
 	defer session.Partitions.Unlock()
-	return s.mergeData(session, partition.Suffix, partition.criteriaValues)
+	return s.mergeData(session, partition.Suffix, partition.criteria)
 }
 
 func (s *service) appendData(session *Session, sourceSuffix, destSuffix string) error {
@@ -274,12 +284,12 @@ func (s *service) appendData(session *Session, sourceSuffix, destSuffix string) 
 }
 
 func (s *service) deletePartitionData(session *Session, partition *Partition) error {
-	return s.deleteData(session, partition.Suffix, partition.criteriaValues)
+	return s.deleteData(session, partition.Suffix, partition.criteria)
 }
 
-func (s *service) deleteData(session *Session, suffix string, criteriaValues map[string]interface{}) error {
-	DML, err := session.Builder.DML(DMLDelete, suffix, criteriaValues)
-	if s.Config.Debug {
+func (s *service) deleteData(session *Session, suffix string, criteria map[string]interface{}) error {
+	DML, err := session.Builder.DML(DMLDelete, suffix, criteria)
+	if session.IsDebug() {
 		log.Printf("DML: %v\n", DML)
 	}
 	if err != nil {
@@ -299,18 +309,21 @@ func (s *service) syncDataPartitions(session *Session) error {
 	session.Job.Stage = "processing partition"
 	return session.Partitions.Range(func(partition *Partition) error {
 		var err error
+
 		if !session.Request.Force {
-			info, err := session.GetSyncInfo(partition.criteriaValues)
+			info, err := session.GetSyncInfo(partition.criteria)
 			if err != nil {
 				return err
 			}
+			partition.Info = info
 			partition.SourceCount = info.SourceCount
 			if info.InSync {
 				return nil
 			}
+
 			session.SetSynMethod(info.Method)
 			if info.SyncFromID > 0 {
-				partition.criteriaValues[session.Builder.UniqueColumns[0]] = &greaterThan{value: info.SyncFromID}
+				partition.criteria[session.Builder.IDColumns[0]] = &greaterThan{value: info.SyncFromID}
 			}
 		}
 
@@ -320,10 +333,19 @@ func (s *service) syncDataPartitions(session *Session) error {
 			err = s.syncDataPartition(session, partition)
 		}
 
+		if session.IsDebug() {
+			log.Printf("[%v] sync method: %v\n", session.Builder.table, session.syncMethod)
+		}
 		if err == nil {
 			switch session.syncMethod {
+			case SyncMethodDeleteInsert:
+				if err = s.deletePartitionData(session, partition); err != nil {
+					return err
+				}
+				fallthrough
 			case SyncMethodInsert:
 				err = s.appendData(session, partition.Suffix, "")
+				break
 			case SyncMethodMergeDelete:
 				if err = s.deletePartitionData(session, partition); err != nil {
 					return err
@@ -341,23 +363,25 @@ func (s *service) syncDataPartition(session *Session, partition *Partition) erro
 	if err := s.createTransientDest(session, partition.Suffix); err != nil {
 		return err
 	}
-	transferJob := session.buildTransferJob(partition, partition.criteriaValues, partition.Suffix, partition.SourceCount)
+
+	transferJob := session.buildTransferJob(partition, partition.criteria, partition.Suffix, partition.SourceCount)
 	session.Job.Add(transferJob)
 	return s.transferDataWithRetries(session, transferJob)
 }
 
-func (s *service) syncDataPartitionWithChunks(session *Session, partition *Partition) error {
-	max := 0
+func (s *service) buildChunks(session *Session, partition *Partition) error {
 
-	limit := session.Request.Sync.ChunkSize
-	if err := s.createTransientDest(session, partition.Suffix); err != nil {
-		return err
+	max := 0
+	limit := session.Request.Chunk.Size
+	partitionCriteria := partition.CloneCriteria()
+
+	if partition.SyncFromID > 0 { //data is sync upto SyncFromID
+		max = partition.SyncFromID + 1
 	}
-	go s.transferDataChunks(session, partition)
-	partitionCriteria := partition.CriteriaValues()
-	for {
-		criteriaValues := partition.CriteriaValues()
-		partitionCriteria[session.Builder.UniqueColumns[0]] = &greaterOrEqual{max}
+
+	for i := 0; ; i++ {
+		criteria := partition.CloneCriteria()
+		partitionCriteria[session.Builder.IDColumns[0]] = &greaterOrEqual{max}
 		checkDQL, err := session.Builder.ChunkDQL(session.Source, max, limit, partitionCriteria)
 		if err != nil {
 			return err
@@ -365,69 +389,92 @@ func (s *service) syncDataPartitionWithChunks(session *Session, partition *Parti
 		if session.IsDebug() {
 			log.Printf("chunk source SQL: %v\n", checkDQL)
 		}
-		sourceCount := &ChunkInfo{}
-		if _, err = session.SourceDB.ReadSingle(sourceCount, checkDQL, nil, nil); err != nil {
+		sourceInfo := &ChunkInfo{}
+		if _, err = session.SourceDB.ReadSingle(sourceInfo, checkDQL, nil, nil); err != nil {
 			return err
 		}
 		if session.IsDebug() {
-			log.Printf("chunk source data: %v\n", sourceCount)
+			log.Printf("[%v] chunk source data: %v\n", session.Builder.table, sourceInfo)
 		}
 
-		if sourceCount.Count() > limit {
-			return fmt.Errorf("invalid chunk SQL: %v, count: %v is greater than chunk limit: %v", checkDQL, sourceCount.Count(), limit)
+		if sourceInfo.Count() > limit {
+			return fmt.Errorf("invalid chunk SQL: %v, count: %v is greater than chunk limit: %v", checkDQL, sourceInfo.Count(), limit)
 		}
 
-		criteriaValues[session.Builder.UniqueColumns[0]] = &between{from: sourceCount.Min(), to: sourceCount.Max()}
+		noMoreSourceData := sourceInfo.Count() == 0 || sourceInfo.Max() == 0
+		if noMoreSourceData {
+			//if max ID of the last chunk is less then this partition max, extra data is in dest partition
+			if partition.Info != nil && max <= partition.MaxValue {
+				criteria[session.Builder.IDColumns[0]] = &between{from: max, to: partition.MaxValue}
+				partition.WaitGroup.Add(1)
+				destInfo := &ChunkInfo{MinValue: max, MaxValue: partition.MaxValue, CountValue: partition.MaxValue - max}
+				chunk := newChunk(sourceInfo, destInfo, session, criteria)
+				if session.IsDebug() {
+					log.Printf("[%v] chunk overfloaw: %v %v", session.Builder.table, chunk.Method, chunk.Criteria)
+				}
+				partition.AddChunk(chunk)
+			}
+			break
+		}
 
-		destDQL := session.Builder.CountDQL("", session.Dest, criteriaValues)
+		minValue := sourceInfo.Min()
+		if i == 0 && partition.Info != nil && partition.MinValue < minValue {
+			minValue = partition.MinValue
+		}
+		criteria[session.Builder.IDColumns[0]] = &between{from: minValue, to: sourceInfo.Max()}
+		destDQL := session.Builder.CountDQL("", session.Dest, criteria)
 		if session.IsDebug() {
 			log.Printf("chunk dest SQL: %v\n", destDQL)
 		}
-		destCount := &ChunkInfo{}
-		if _, err = session.DestDB.ReadSingle(destCount, destDQL, nil, nil); err != nil {
+		destInfo := &ChunkInfo{}
+		if _, err = session.DestDB.ReadSingle(destInfo, destDQL, nil, nil); err != nil {
 			return err
 		}
+		if session.IsDebug() {
+			log.Printf("[%v] chunk dest data: %v\n", session.Builder.table, destInfo)
+		}
+		max = sourceInfo.Max() + 1
+		inSync := destInfo.Count() == sourceInfo.Count() &&
+			destInfo.Max() == sourceInfo.Max() &&
+			destInfo.Min() == sourceInfo.Min()
 
 		if session.IsDebug() {
-			log.Printf("chunk dest data: %v\n", destCount)
+			log.Printf("[%v]src(%v .. %v): inSync: %v (%v, %v) dest(%v .. %v) \n", session.Builder.table, sourceInfo.Min(), sourceInfo.Max(), inSync, destInfo.Count(), sourceInfo.Count(), destInfo.Min(), destInfo.Max())
 		}
-		if sourceCount.Count() == 0 {
-			break
-		}
-		max = sourceCount.Max() + 1
-		inSync := destCount.Count() == sourceCount.Count()
-		if session.IsDebug() {
-			log.Printf("count sync: [%v .. %v]: %v (%v, %v) \n", sourceCount.Min(), sourceCount.Max(), inSync, destCount.Count(), sourceCount.Count())
-		}
-		if session.syncMethod != SyncMethodMergeDelete && ! session.Request.Force {
 
+		if !session.Request.Force {
 			if inSync {
 				if session.Request.CountOnly {
-					log.Printf("[%v .. %v] in sync skipping",  sourceCount.Min(), sourceCount.Max())
+					log.Printf("[%v](%v .. %v) skipping (in sync)", session.Builder.table, sourceInfo.Min(), sourceInfo.Max())
 					continue
 				}
-				info, _ := session.GetSyncInfo(criteriaValues)
+				info, _ := session.GetSyncInfo(criteria)
 				if info.InSync {
-					session.SetSynMethod(SyncMethodMerge)
 					continue
 				}
 				if info.SyncFromID > 0 {
-					criteriaValues[session.Builder.UniqueColumns[0]] = &between{from: info.SyncFromID , to: sourceCount.Max()}
+					criteria[session.Builder.IDColumns[0]] = &between{from: info.SyncFromID, to: sourceInfo.Max()}
 				}
-
 			}
 		}
-
 		partition.WaitGroup.Add(1)
-		chunk := &Chunk{ChunkInfo: *sourceCount}
-		if destCount.Count() == 0 {
-			chunk.Method = SyncMethodInsert
-		} else {
-			session.syncMethod = SyncMethodMerge
-			session.SetSynMethod(SyncMethodMerge)
+		chunk := newChunk(sourceInfo, destInfo, session, criteria)
+		if session.IsDebug() {
+			log.Printf("[%v] chunk sync: %v %v", session.Builder.table, chunk.Method, chunk.Criteria)
 		}
-		chunk.CriteriaValues = criteriaValues
 		partition.AddChunk(chunk)
+	}
+	return nil
+}
+
+func (s *service) syncDataPartitionWithChunks(session *Session, partition *Partition) error {
+	err := s.createTransientDest(session, partition.Suffix)
+	if err != nil {
+		return err
+	}
+	go s.transferDataChunks(session, partition)
+	if err = s.buildChunks(session, partition); err != nil {
+		return err
 	}
 	partition.SetDone(1)
 	if partition.ChunkSize() > 0 {
@@ -435,6 +482,26 @@ func (s *service) syncDataPartitionWithChunks(session *Session, partition *Parti
 	}
 	return nil
 }
+
+func newChunk(sourceInfo *ChunkInfo, destInfo *ChunkInfo, session *Session, criteria map[string]interface{}) *Chunk {
+	chunk := &Chunk{ChunkInfo: *sourceInfo}
+	if destInfo.Count() == 0 {
+		chunk.Method = SyncMethodInsert
+		session.SetSynMethod(SyncMethodInsert)
+	} else if destInfo.Count() >= sourceInfo.Count() && (destInfo.Max() > sourceInfo.Max() || destInfo.Min() < sourceInfo.Min()) {
+		chunk.Method = SyncMethodMergeDelete
+		//Deleting record takes place only on the chunked where clause, thus session sync method is merge
+		session.SetSynMethod(SyncMethodMerge)
+	} else {
+		fmt.Printf("dest: %v, source: %v", destInfo.Count(), sourceInfo.Count())
+		chunk.Method = SyncMethodMerge
+		session.SetSynMethod(SyncMethodMerge)
+	}
+	chunk.Criteria = criteria
+	return chunk
+}
+
+//TODO MERGE_DELETE ONLY ON THE CHUNK LEVEL use case optimization
 
 //New creates a new service or error
 func New(config *Config) (Service, error) {

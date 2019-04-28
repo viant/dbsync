@@ -91,6 +91,19 @@ type TransferJob struct {
 	err             error
 }
 
+//Transfers represents transfers
+type Transfers struct {
+	Transfers []*TransferJob
+	mutex     *sync.RWMutex
+}
+
+func (t *Transfer) Init() error {
+	if t.MaxRetries == 0 {
+		t.MaxRetries = 2
+	}
+	return nil
+}
+
 //SetError sets an error
 func (j *TransferJob) SetError(err error) {
 	if err == nil {
@@ -98,12 +111,6 @@ func (j *TransferJob) SetError(err error) {
 	}
 	j.err = err
 	j.Error = err.Error()
-}
-
-//Transfers represents transfers
-type Transfers struct {
-	Transfers []*TransferJob
-	mutex     *sync.RWMutex
 }
 
 //Add adds transfer job

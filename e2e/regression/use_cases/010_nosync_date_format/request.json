@@ -19,9 +19,9 @@
 		}
 	},
 	"Table": "events",
-	"UniqueColumns": [
-		"id"
-	],
+	"IDColumns": [
+        "id"
+    ],
 	"NumericPrecision": 3,
 	"DateFormat":"yyyy-MM-dd",
 	"WriterThreads": 2

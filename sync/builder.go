@@ -11,7 +11,7 @@ import (
 
 //Builder represents SQL builder
 type Builder struct {
-	Sync             //request sync meta
+	Strategy         //request sync meta
 	tempDatabase     string
 	uniques          map[string]bool
 	partitions       map[string]bool
@@ -26,8 +26,11 @@ type Builder struct {
 	datePartition    string
 	isUpperCase      bool
 	maxIDColumnAlias string
-	countColumnAlias string
-	uniqueCountAlias string
+	minIDColumnAlias string
+
+	countColumnAlias       string
+	uniqueCountAlias       string
+	uniqueNotNullSumtAlias string
 }
 
 //Dialect returns dest database dialect
@@ -50,7 +53,7 @@ func (b *Builder) Table(suffix string) string {
 		return b.table
 	}
 	for _, achar := range []string{" ", "-", ":"} {
-		if count := strings.Count(suffix, achar);count > 0 {
+		if count := strings.Count(suffix, achar); count > 0 {
 			suffix = strings.Replace(suffix, achar, "_", count)
 		}
 	}
@@ -101,22 +104,25 @@ func (b *Builder) unAliasedColumnExpression(column string, resource *Resource) s
 	return column
 }
 
-
 func (b *Builder) defaultChunkDQL() string {
-	if len(b.UniqueColumns) == 0 {
+	if len(b.IDColumns) == 0 {
 		return ""
 	}
 	var projection = []string{
-		fmt.Sprintf("MIN(%v) AS %v", b.UniqueColumns[0], b.alias("min_value")),
-		fmt.Sprintf("MAX(%v) AS %v", b.UniqueColumns[0], b.alias("max_value")),
 		fmt.Sprintf("COUNT(1) AS %v", b.alias("count_value")),
+	}
+	if len(b.uniques) > 0 {
+		projection = append(projection,
+			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.alias("min_value")),
+			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.alias("max_value")))
 	}
 	return fmt.Sprintf(`SELECT %v
 FROM (
 SELECT %v
 FROM %v t $whereClause
+ORDER BY %v
 LIMIT $limit 
-) t`, strings.Join(projection, ",\n\t"), b.UniqueColumns[0], b.QueryTable(""))
+) t`, strings.Join(projection, ",\n\t"), b.IDColumns[0], b.QueryTable(""), b.IDColumns[0])
 }
 
 //ChunkDQL returns chunk DQL
@@ -129,15 +135,12 @@ func (b *Builder) ChunkDQL(resource *Resource, max, limit int, values map[string
 	state.Put("where", "")
 	state.Put("whereClause", "")
 	if len(values) > 0 {
-		var whereCriteria = make([]string, 0)
-		for k, v := range values {
-			column := b.unAliasedColumnExpression(k, resource)
-			whereCriteria = append(whereCriteria, toCriterion(column, v))
-		}
+		var whereCriteria = b.toCriteriaList(values, resource)
+		whereCriteria = append(whereCriteria, b.toCriteriaList(resource.Criteria, resource)...)
 		state.Put("where", " AND "+strings.Join(whereCriteria, " AND "))
 		state.Put("whereClause", " WHERE "+strings.Join(whereCriteria, " AND "))
 	}
-	chunkSQL := b.Sync.ChunkSQL
+	chunkSQL := b.Chunk.SQL
 	if chunkSQL == "" {
 		chunkSQL = b.defaultChunkDQL()
 	}
@@ -145,11 +148,12 @@ func (b *Builder) ChunkDQL(resource *Resource, max, limit int, values map[string
 	return DQL, nil
 }
 
-func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *Resource) string {
-	if len(criteria) == 0 {
-		return ""
-	}
+func (b *Builder) toCriteriaList(criteria map[string]interface{}, resource *Resource) []string {
 	var whereCriteria = make([]string, 0)
+	if len(criteria) == 0 {
+		return whereCriteria
+	}
+
 	keys := toolbox.MapKeysToStringSlice(criteria)
 	sort.Strings(keys)
 	for _, k := range keys {
@@ -157,12 +161,34 @@ func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *Res
 		column := b.unAliasedColumnExpression(k, resource)
 		whereCriteria = append(whereCriteria, toCriterion(column, v))
 	}
-	return "\nWHERE " + strings.Join(whereCriteria, " AND ")
+	return whereCriteria
+}
+
+func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *Resource) string {
+	if len(criteria) == 0 && len(resource.Criteria) == 0 {
+		return ""
+	}
+	criteriaList := b.toCriteriaList(criteria, resource)
+	criteriaList = append(criteriaList, b.toCriteriaList(resource.Criteria, resource)...)
+	return "\nWHERE " + strings.Join(criteriaList, " AND ")
 }
 
 //CountDQL returns count DQL for supplied resource and criteria
 func (b *Builder) CountDQL(suffix string, resource *Resource, criteria map[string]interface{}) string {
-	DQL := fmt.Sprintf("SELECT COUNT(1) AS %v\nFROM %v t %v", b.alias("count_value"), b.QueryTable(suffix), b.toWhereCriteria(criteria, resource))
+	var projection = []string{
+		fmt.Sprintf("COUNT(1) AS %v", b.alias("count_value")),
+	}
+
+	if len(b.uniques) == 1 {
+		projection = append(projection,
+			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.alias("min_value")),
+			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.alias("max_value")))
+	}
+
+	DQL := fmt.Sprintf("SELECT %v\nFROM %v t %v",
+		strings.Join(projection, ",\n\t"),
+		b.QueryTable(suffix),
+		b.toWhereCriteria(criteria, resource))
 	return DQL
 }
 
@@ -184,23 +210,18 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 		}
 		projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, alias, column.Name()))
 	}
-	if len(b.UniqueColumns) > 0 {
-		projection = append(b.UniqueColumns, projection...)
+	if len(b.IDColumns) > 0 {
+		projection = append(b.IDColumns, projection...)
 	}
 	DQL := fmt.Sprintf("SELECT %v %v\nFROM %v t ", resource.Hint, strings.Join(projection, ",\n"), b.QueryTable(suffix))
-	if len(values) > 0 {
-		var whereCriteria = make([]string, 0)
-		keys := toolbox.MapKeysToStringSlice(values)
-		sort.Strings(keys)
-		for _, k := range keys {
-			v := values[k]
-			column := b.unAliasedColumnExpression(k, resource)
-			whereCriteria = append(whereCriteria, toCriterion(column, v))
-		}
+
+	if len(values) > 0 || len(resource.Criteria) > 0 {
+		whereCriteria := b.toCriteriaList(values, resource)
+		whereCriteria = append(whereCriteria, b.toCriteriaList(resource.Criteria, resource)...)
 		DQL += "\nWHERE " + strings.Join(whereCriteria, " AND ")
 	}
 	if dedupeFunction != "" {
-		DQL += fmt.Sprintf("\nGROUP BY %v", strings.Join(b.UniqueColumns, ","))
+		DQL += fmt.Sprintf("\nGROUP BY %v", strings.Join(b.IDColumns, ","))
 	}
 	return DQL
 }
@@ -216,20 +237,16 @@ func (b *Builder) init(manager dsc.Manager) error {
 		return err
 	}
 	b.uniques = make(map[string]bool)
-	if len(b.UniqueColumns) == 0 {
-		b.UniqueColumns = make([]string, 0)
+	if len(b.IDColumns) == 0 {
+		b.IDColumns = make([]string, 0)
 	}
-	for _, column := range b.UniqueColumns {
+	for _, column := range b.IDColumns {
 		b.uniques[column] = true
 	}
+
 	b.source.indexPseudoColumns()
 	b.dest.indexPseudoColumns()
 	b.partitions = make(map[string]bool)
-
-
-	toolbox.DumpIndent(b, true)
-	fmt.Printf("%v\n", b)
-
 
 	for _, partition := range b.Partition.Columns {
 		b.partitions[partition] = true
@@ -244,15 +261,15 @@ func (b *Builder) init(manager dsc.Manager) error {
 		b.columnsByName[column.Name()] = column
 	}
 
-	if len(b.Sync.Columns) == 0 {
-		if b.Sync.CountOnly {
+	if len(b.Columns) == 0 {
+		if b.CountOnly {
 			b.Columns = b.buildDiffColumns(nil)
 		} else {
 			b.Columns = b.buildDiffColumns(b.columns)
 		}
 	} else {
 
-		for _, diffColumn := range b.Sync.Columns {
+		for _, diffColumn := range b.Columns {
 			if diffColumn.DateLayout == "" && diffColumn.DateFormat != "" {
 				diffColumn.DateLayout = toolbox.DateFormatToLayout(diffColumn.DateFormat)
 			}
@@ -268,7 +285,7 @@ func (b *Builder) init(manager dsc.Manager) error {
 //DiffDQL returns sync difference DQL
 func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *Resource) (string, []string) {
 	return b.partitionDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
-		for _, column := range b.Sync.Columns {
+		for _, column := range b.Columns {
 			if _, has := dimension[column.Name]; has {
 				continue
 			}
@@ -337,7 +354,7 @@ func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface
 func (b *Builder) insertNameAndValues() (string, string) {
 	var names = make([]string, 0)
 	var values = make([]string, 0)
-	for _, column := range b.UniqueColumns {
+	for _, column := range b.IDColumns {
 		names = append(names, column)
 		values = append(values, b.columnExpression(column, b.dest))
 	}
@@ -367,7 +384,8 @@ func (b *Builder) updateSetValues() string {
 }
 
 func (b *Builder) baseInsert(suffix string, withReplace bool) string {
-	DQL := b.DQL(suffix, b.dest, nil, true)
+	dedupe := len(b.uniques) > 0
+	DQL := b.DQL(suffix, b.dest, nil, dedupe)
 	names, values := b.insertNameAndValues()
 	replace := ""
 	if withReplace {
@@ -378,7 +396,8 @@ func (b *Builder) baseInsert(suffix string, withReplace bool) string {
 
 //AppendDML returns append DML
 func (b *Builder) AppendDML(sourceSuffix, destSuffix string) string {
-	DQL := b.DQL(sourceSuffix, b.dest, nil, true)
+	dedupe := len(b.uniques) > 0
+	DQL := b.DQL(sourceSuffix, b.dest, nil, dedupe)
 	names, values := b.insertNameAndValues()
 	return fmt.Sprintf("INSERT INTO %v(%v) SELECT %v FROM (%v) t", b.Table(destSuffix), names, values, DQL)
 }
@@ -399,17 +418,31 @@ WHEN NOT MATCHED THEN
   VALUES(%v)
 `
 
+func (b *Builder) filterCriteriaColumn(key, alias string, resource *Resource) string {
+	column := b.unAliasedColumnExpression(key, b.dest)
+	if strings.Contains(column, ".") && !strings.Contains(column, alias+".") {
+		column = strings.Replace(column, "t.", alias+".", len(column))
+	} else {
+		column = "d." + column
+	}
+	return column
+}
+
 func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) string {
-	DQL := b.DQL(suffix, b.dest, nil, true)
+	dedupe := len(b.uniques) > 0
+	DQL := b.DQL(suffix, b.dest, nil, dedupe)
 	var onCriteria = make([]string, 0)
-	for _, column := range b.UniqueColumns {
+
+	for _, column := range b.IDColumns {
 		onCriteria = append(onCriteria, fmt.Sprintf("d.%v = t.%v", column, column))
 	}
 	filterKeys := toolbox.MapKeysToStringSlice(filter)
 	sort.Strings(filterKeys)
+
 	for _, k := range filterKeys {
 		v := filter[k]
-		onCriteria = append(onCriteria, toCriterion("d."+k, v))
+		column := b.filterCriteriaColumn(k, "d", b.dest)
+		onCriteria = append(onCriteria, toCriterion(column, v))
 	}
 	setValues := b.updateSetValues()
 	names, values := b.insertNameAndValues()
@@ -422,21 +455,20 @@ func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) string 
 }
 
 func (b *Builder) getInsertWhereClause(filter map[string]interface{}) string {
-
-
-	if len(b.UniqueColumns) > 0 {
+	if len(b.IDColumns) > 0 {
 		innerWhere := ""
 		var innerCriteria = make([]string, 0)
 		filterKeys := toolbox.MapKeysToStringSlice(filter)
 		sort.Strings(filterKeys)
 		for _, k := range filterKeys {
 			v := filter[k]
-			innerCriteria = append(innerCriteria, toCriterion("t."+k, v))
+			column := b.filterCriteriaColumn(k, "t", b.dest)
+			innerCriteria = append(innerCriteria, toCriterion(column, v))
 		}
 		if len(innerCriteria) > 0 {
 			innerWhere = "WHERE  " + strings.Join(innerCriteria, " AND ")
 		}
-		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v t %v)", strings.Join(b.UniqueColumns, ","), strings.Join(b.UniqueColumns, ","), b.Table(""), innerWhere)
+		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v t %v)", strings.Join(b.IDColumns, ","), strings.Join(b.IDColumns, ","), b.Table(""), innerWhere)
 		return "\nWHERE " + inCriteria
 	}
 	return ""
@@ -452,8 +484,8 @@ func (b *Builder) insertReplaceDML(suffix string, filter map[string]interface{})
 
 func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string {
 	whereClause := b.toWhereCriteria(filter, b.dest)
-	if len(b.UniqueColumns) > 0 {
-		uniqueExpr := strings.Join(b.UniqueColumns, ",")
+	if len(b.IDColumns) > 0 {
+		uniqueExpr := strings.Join(b.IDColumns, ",")
 		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v)", uniqueExpr, uniqueExpr, b.Table(suffix))
 		if whereClause != "" {
 			whereClause += " AND " + inCriteria
@@ -461,6 +493,7 @@ func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string
 			whereClause = " WHERE " + inCriteria
 		}
 	}
+	whereClause = removeTableAliases(whereClause, "t")
 	return fmt.Sprintf("DELETE FROM %v %v", b.Table(""), whereClause)
 }
 
@@ -484,15 +517,23 @@ func (b *Builder) addStandardDiffColumns() {
 		Alias: b.alias("cnt"),
 	})
 
-	for _, unique := range b.UniqueColumns {
+	for _, unique := range b.IDColumns {
 		uniqueAlias := b.alias("max_" + unique)
-		if len(b.UniqueColumns) == 1 {
+		if len(b.IDColumns) == 1 {
 			b.maxIDColumnAlias = uniqueAlias
+			b.minIDColumnAlias = b.alias("min_" + unique)
+
 			b.uniqueCountAlias = b.alias("unique_cnt")
 			b.Columns = append(b.Columns, &DiffColumn{
 				Func:  "COUNT",
 				Name:  unique,
 				Alias: b.uniqueCountAlias,
+			})
+			b.uniqueNotNullSumtAlias = b.alias("non_cnt")
+			b.Columns = append(b.Columns, &DiffColumn{
+				Func:  "SUM",
+				Name:  "(CASE WHEN " + unique + " IS NOT NULL THEN 1 ELSE 0 END)",
+				Alias: b.uniqueNotNullSumtAlias,
 			})
 		}
 		b.Columns = append(b.Columns, &DiffColumn{
@@ -545,7 +586,7 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*DiffColumn {
 func NewBuilder(request *Request, destDB dsc.Manager) (*Builder, error) {
 	builder := &Builder{
 		tempDatabase:  request.TempDatabase,
-		Sync:          request.Sync,
+		Strategy:      request.Strategy,
 		columns:       make([]dsc.Column, 0),
 		columnsByName: make(map[string]dsc.Column),
 		table:         request.Dest.Table,

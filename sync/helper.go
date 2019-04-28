@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/viant/toolbox"
 	"math"
+	"strings"
 	"time"
 )
 
@@ -68,7 +69,7 @@ func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]inte
 	if len(partitions) == 0 {
 		return nil
 	}
-	if len(partitions[0].criteriaValues) != 1 {
+	if len(partitions[0].criteria) != 1 {
 		return nil
 	}
 	criteria := make([]map[string]interface{}, 0)
@@ -76,7 +77,7 @@ func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]inte
 	var key string
 	var value interface{}
 	for _, partition := range partitions {
-		for key, value = range partition.criteriaValues {
+		for key, value = range partition.criteria {
 			criterion = append(criterion, value)
 			if len(criterion) > diffBatchSize {
 				criteria = append(criteria, map[string]interface{}{key: criterion})
@@ -91,7 +92,26 @@ func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]inte
 }
 
 //IsMapItemEqual compares map item
+func IsMapItemsEqual(sourceMap, destMap map[string]interface{}, key []string) bool {
+	for _, k := range key {
+		if !checkMapItem(sourceMap, destMap, k, func(source, dest interface{}) bool {
+			return source == dest
+		}) {
+			return false
+		}
+	}
+	return len(key) > 0
+}
+
+//IsMapItemEqual compares map item
 func IsMapItemEqual(sourceMap, destMap map[string]interface{}, key string) bool {
+	return checkMapItem(sourceMap, destMap, key, func(source, dest interface{}) bool {
+		return source == dest
+	})
+}
+
+//IsMapItemEqual compares map item
+func checkMapItem(sourceMap, destMap map[string]interface{}, key string, check func(source, dest interface{}) bool) bool {
 	if toolbox.IsInt(destMap[key]) || toolbox.IsInt(sourceMap[key]) {
 		destMap[key] = toolbox.AsInt(destMap[key])
 		sourceMap[key] = toolbox.AsInt(sourceMap[key])
@@ -102,5 +122,21 @@ func IsMapItemEqual(sourceMap, destMap map[string]interface{}, key string) bool 
 		destMap[key] = toolbox.AsBoolean(destMap[key])
 		sourceMap[key] = toolbox.AsBoolean(sourceMap[key])
 	}
-	return destMap[key] == sourceMap[key]
+	return check(sourceMap[key], destMap[key])
+}
+
+func keyValue(key []string, criteria map[string]interface{}) string {
+	var result = make([]string, 0)
+	for _, k := range key {
+		result = append(result, toolbox.AsString(criteria[k]))
+	}
+	return strings.Join(result, "_")
+}
+
+func removeTableAliases(expression, alias string) string {
+	count := strings.Count(expression, alias+".")
+	if count == 0 {
+		return expression
+	}
+	return strings.Replace(expression, alias+".", "", count)
 }

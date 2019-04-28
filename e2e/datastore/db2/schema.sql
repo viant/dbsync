@@ -8,3 +8,16 @@ CREATE TABLE events
   query_string TEXT
 );
 
+
+DROP TABLE IF EXISTS nevents;
+CREATE TABLE nevents
+(
+  id           INT,
+  event_type   INT,
+  quantity     DECIMAL(10,7),
+  timestamp    TIMESTAMP,
+  query_string TEXT
+);
+
+
+

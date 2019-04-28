@@ -20,13 +20,15 @@ const (
 
 //Request represnet sync request
 type Request struct {
-	Sync     `yaml:",inline" json:",inline"`
+	Id       string
+	Strategy `yaml:",inline" json:",inline"`
 	Transfer `yaml:",inline" json:",inline"`
 	Dest     *Resource
 	Source   *Resource
 	Table    string
 	Async    bool
 	Debug    bool
+	Criteria map[string]interface{}
 	Schedule *Schedule
 }
 
@@ -90,6 +92,9 @@ func (s *Schedule) SetNextRun(time time.Time) {
 
 //ID returns sync request ID
 func (r *Request) ID() string {
+	if r.Id != "" {
+		return r.Id
+	}
 	_ = r.Dest.Config.Init()
 	if r.Dest.Config.Has("dbname") {
 		return r.Dest.Config.Get("dbname") + ":" + r.Dest.Table
@@ -108,6 +113,11 @@ func (r *Response) SetError(err error) bool {
 
 //Init initialized Request
 func (r *Request) Init() error {
+
+	if r.Dest == nil || r.Source == nil {
+		return nil
+	}
+
 	if r.MergeStyle == "" {
 		if r.Dest != nil {
 			switch r.Dest.DriverName {
@@ -120,43 +130,28 @@ func (r *Request) Init() error {
 			}
 		}
 	}
-	if len(r.Partition.Columns) == 0 {
-		r.Partition.Columns = make([]string, 0)
+	if err := r.Transfer.Init(); err != nil {
+		return err
 	}
-
-	if r.Dest == nil || r.Source == nil {
-		return nil
+	if err := r.Strategy.Init(); err != nil {
+		return err
 	}
-	if r.Table != "" && r.Dest.Table == "" {
-		r.Dest.Table = r.Table
+	if len(r.Criteria) > 0 {
+		if len(r.Dest.Criteria) == 0 {
+			r.Dest.Criteria = r.Criteria
+		}
+		if len(r.Source.Criteria) == 0 {
+			r.Source.Criteria = r.Criteria
+		}
 	}
-	if r.Table != "" && r.Source.Table == "" {
-		r.Source.Table = r.Table
+	if r.Table != "" {
+		if r.Dest.Table == "" {
+			r.Dest.Table = r.Table
+		}
+		if r.Source.Table == "" {
+			r.Source.Table = r.Table
+		}
 	}
-	if r.Transfer.MaxRetries == 0 {
-		r.Transfer.MaxRetries = 2
-	}
-	var threads = r.Partition.Threads
-	if threads == 0 {
-		r.Partition.Threads = 1
-	}
-
-	if r.NumericPrecision == 0 {
-		r.NumericPrecision = 5
-	}
-	if r.DateFormat == "" && r.DateLayout == "" {
-		r.DateLayout = toolbox.DateFormatToLayout("yyyy-MM-dd hh:mm:ss")
-	} else if r.DateFormat != "" {
-		r.DateLayout = toolbox.DateFormatToLayout(r.DateFormat)
-	}
-
-	if r.ChunkSize > 0 && r.ChunkQueueSize == 0 {
-		r.ChunkQueueSize = 2
-	}
-	if r.DiffBatchSize == 0 {
-		r.DiffBatchSize = defaultDiffBatchSize
-	}
-
 	return nil
 }
 
@@ -171,13 +166,22 @@ func (r *Request) Validate() error {
 	if r.Dest.Table == "" {
 		return fmt.Errorf("dest table was empty")
 	}
-	if r.Sync.CountOnly && len(r.Sync.Columns) > 0 {
+	if r.CountOnly && len(r.Columns) > 0 {
 		return fmt.Errorf("countOnly can not be set with custom columns")
+	}
+	if r.Chunk.Size > 0 && len(r.IDColumns) != 1 {
+		return fmt.Errorf("data chunking is only supported with single unique key, chunk size: %v, unique key count: %v", r.Chunk.Size, len(r.IDColumns))
 	}
 	if r.Schedule != nil {
 		if r.Schedule.Frequency == nil {
 			return fmt.Errorf("schedule.Frequency was empty")
 		}
+	}
+	if err := r.Source.Validate(); err != nil {
+		return fmt.Errorf("source: %v", err)
+	}
+	if err := r.Dest.Validate(); err != nil {
+		return fmt.Errorf("dest: %v", err)
 	}
 	return nil
 }

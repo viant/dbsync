@@ -19,10 +19,12 @@
 		}
 	},
 	"Table": "events",
-	"UniqueColumns": [
-		"id"
-	],
-	"ChunkSize": 4096,
+	"IDColumns": [
+        "id"
+    ],
+	"Chunk":{
+	    "Size": 4096
+	},
 	"WriterThreads": 2
 
 }

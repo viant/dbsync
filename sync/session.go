@@ -16,7 +16,11 @@ const (
 	//SyncMethodMergeDelete merge delete sync method
 	SyncMethodMergeDelete = "mergeDelete"
 	//SyncMethodMerge merge sync method
-	SyncMethodMerge      = "merge"
+	SyncMethodMerge = "merge"
+
+	//SyncMethodInsertDelete merge delete sync method
+	SyncMethodDeleteInsert = "deleteInsert"
+
 	defaultDiffBatchSize = 512
 )
 
@@ -32,10 +36,13 @@ type Session struct {
 	DestDB     dsc.Manager
 	Partitions *Partitions
 	*Config
-	isChunkedTransfer bool
-	syncMethod        string
-	err               error
-	closed            uint32
+	isChunkedTransfer  bool
+	hasID              bool
+	hasIDs             bool
+	syncMethod         string
+	err                error
+	closed             uint32
+	checkingDataAppend bool
 }
 
 //IsDebug returns true if debug is on
@@ -73,19 +80,18 @@ func (s *Session) IsClosed() bool {
 
 //SetSynMethod sets sync method
 func (s *Session) SetSynMethod(method string) {
-	if s.syncMethod == SyncMethodMergeDelete {
+	if s.syncMethod == SyncMethodMerge {
 		return
 	}
 	s.Job.Method = method
 	s.syncMethod = method
 }
 
-func (s *Session) hasOnlyAddition(sourceData, destData Record, criteriaValue map[string]interface{}, status *Info) bool {
-	if s.Builder.maxIDColumnAlias == "" ||
-		(s.Partitions.keyColumn != "" && len(criteriaValue) > 1) ||
-		(s.Partitions.keyColumn == "" && len(criteriaValue) > 0) {
+func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[string]interface{}, status *Info) bool {
+	if s.checkingDataAppend {
 		return false
 	}
+	s.checkingDataAppend = true
 
 	sourceMaxID := toolbox.AsInt(sourceData[s.Builder.maxIDColumnAlias])
 	destMaxID := toolbox.AsInt(destData[s.Builder.maxIDColumnAlias])
@@ -93,11 +99,12 @@ func (s *Session) hasOnlyAddition(sourceData, destData Record, criteriaValue map
 		return false
 	}
 
-	narrowedCriteria := cloneMap(criteriaValue)
+	narrowedCriteria := cloneMap(criteria)
 	narrowedStatus := &Info{}
+
 	if sourceMaxID > destMaxID { //Check if upto the same id data is the same
-		narrowedCriteria := cloneMap(criteriaValue)
-		narrowedCriteria[s.Builder.UniqueColumns[0]] = &lessOrEqual{destMaxID}
+		narrowedCriteria := cloneMap(criteria)
+		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{destMaxID}
 		narrowedStatus, err := s.GetSyncInfo(narrowedCriteria)
 		if err != nil {
 			return false
@@ -105,6 +112,7 @@ func (s *Session) hasOnlyAddition(sourceData, destData Record, criteriaValue map
 		if narrowedStatus.InSync {
 			status.Method = SyncMethodInsert
 			status.SyncFromID = destMaxID
+			status.MinValue = destMaxID + 1
 			status.SourceCount -= narrowedStatus.SourceCount
 			return true
 		}
@@ -113,6 +121,7 @@ func (s *Session) hasOnlyAddition(sourceData, destData Record, criteriaValue map
 	if destMaxID, err := s.findInSyncMaxID(destMaxID, narrowedCriteria, narrowedStatus); err == nil && destMaxID > 0 {
 		status.Method = SyncMethodMerge
 		status.SyncFromID = destMaxID
+		status.MinValue = destMaxID + 1
 		status.SourceCount -= narrowedStatus.SourceCount
 		return true
 	}
@@ -130,7 +139,7 @@ func (s *Session) findInSyncMaxID(destMaxID int, narrowedCriteria map[string]int
 		if destMaxID <= 0 {
 			break
 		}
-		narrowedCriteria[s.Builder.UniqueColumns[0]] = &lessOrEqual{destMaxID}
+		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{destMaxID}
 		info, err := s.GetSyncInfo(narrowedCriteria)
 		if err != nil {
 			return 0, nil
@@ -156,17 +165,17 @@ type Info struct {
 	Inconsistency string
 	SourceCount   int
 	SyncFromID    int
+	MinValue      int
+	MaxValue      int
 	depth         int
 }
 
-func (s *Session) runDiffSQL(criteriaValue map[string]interface{}, source, dest *[]Record) ([]string, error) {
-	destDQL, groupColumns := s.Builder.DiffDQL(criteriaValue, s.Dest)
-
-	sourceSQL, _ := s.Builder.DiffDQL(criteriaValue, s.Source)
+func (s *Session) runDiffSQL(criteria map[string]interface{}, source, dest *[]Record) ([]string, error) {
+	destDQL, groupColumns := s.Builder.DiffDQL(criteria, s.Dest)
+	sourceSQL, _ := s.Builder.DiffDQL(criteria, s.Source)
 	if s.IsDebug() {
 		log.Printf("diff SQL: %v\n", sourceSQL)
 	}
-
 	err := s.DestDB.ReadAll(dest, destDQL, nil, nil)
 	if err != nil {
 		return nil, err
@@ -174,38 +183,35 @@ func (s *Session) runDiffSQL(criteriaValue map[string]interface{}, source, dest 
 	if err = s.SourceDB.ReadAll(source, sourceSQL, nil, nil); err != nil {
 		return nil, err
 	}
+
 	if s.IsDebug() {
-		log.Printf("diff source data: %v\n", source)
-		log.Printf("diff dest   data: %v\n", dest)
+		log.Printf("[%v] diff source data: %v\n", s.Builder.table, source)
+		log.Printf("[%v] diff dest   data: %v\n", s.Builder.table, dest)
 	}
 
-
-	if key := s.Partitions.keyColumn; key != "" && len(*source) == 1 && len(*dest) == 1 {
-		if ! IsMapItemEqual((*source)[0], (*dest)[0], key) {
-			return nil, fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", key, (*source)[0][key], (*dest)[0][key])
-		}
+	if err := s.Partitions.Validate(*source, *dest); err != nil {
+		return nil, fmt.Errorf("[%v] %v", s.Builder.table, err)
 	}
 
 	return groupColumns, nil
 }
 
-func (s *Session) sumRowCount(data []Record) int {
-	result := 0
-	for _, sourceRecord := range data {
-		countValue, ok := sourceRecord[s.Builder.countColumnAlias]
-		if ok {
-			result += toolbox.AsInt(countValue)
-		}
-	}
-	return result
+func (s *Session) sumRowCount(records Records) int {
+	return records.Sum(s.Builder.countColumnAlias)
 }
-func (s *Session) sumRowDistinctCount(data []Record) int {
+
+func (s *Session) sumRowDistinctCount(records Records) int {
+	return records.Sum(s.Builder.uniqueCountAlias)
+}
+
+func (s *Session) sumRowNotNullDistinctSum(records Records) int {
+	return records.Sum(s.Builder.uniqueNotNullSumtAlias)
+}
+
+func (s *Session) recordsCumsum(data []Record, column string) int {
 	result := 0
-	if s.Builder.uniqueCountAlias == "" {
-		return -1
-	}
 	for _, sourceRecord := range data {
-		countValue, ok := sourceRecord[s.Builder.uniqueCountAlias]
+		countValue, ok := sourceRecord[column]
 		if ok {
 			result += toolbox.AsInt(countValue)
 		}
@@ -213,52 +219,131 @@ func (s *Session) sumRowDistinctCount(data []Record) int {
 	return result
 }
 
-func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []string, criteriaValue map[string]interface{}) (*Info, error) {
+func (s *Session) setInfoRange(source, dest map[string]interface{}, info *Info) {
+	if !s.hasID {
+		return
+	}
+	maxKey := s.Builder.maxIDColumnAlias
+	info.MaxValue = toolbox.AsInt(source[maxKey])
+	if info.MaxValue < toolbox.AsInt(dest[maxKey]) {
+		info.MaxValue = toolbox.AsInt(dest[maxKey])
+	}
+	minKey := s.Builder.minIDColumnAlias
+	info.MinValue = toolbox.AsInt(source[minKey])
+	if destMin := toolbox.AsInt(dest[minKey]); destMin != 0 && destMin < info.MinValue {
+		info.MinValue = destMin
+	}
+}
+
+func (s *Session) isMergeDeleteStrategy(source, dest map[string]interface{}) bool {
+	countKey := s.Builder.countColumnAlias
+	if toolbox.AsInt(source[countKey]) < toolbox.AsInt(dest[countKey]) {
+		return true
+	}
+
+	if !IsMapItemEqual(source, dest, countKey) {
+		return false
+	}
+	maxKey := s.Builder.maxIDColumnAlias
+	if maxKey == "" {
+		return false
+	}
+	if toolbox.AsInt(source[maxKey]) < toolbox.AsInt(dest[maxKey]) {
+		return true
+	}
+	return false
+}
+
+func (s *Session) validateSourceData(sourceRecords []Record, criteria map[string]interface{}) error {
+	if !s.hasID {
+		return nil
+	}
+	if s.sumRowDistinctCount(sourceRecords) != s.sumRowNotNullDistinctSum(sourceRecords) {
+		return fmt.Errorf("[%v](%v) invalid source data: unique column has NULL values, rowCount: %v, distinct ids: %v, not null ids sum: %v\n",
+			s.Request.Table,
+			criteria,
+			s.sumRowCount(sourceRecords),
+			s.sumRowDistinctCount(sourceRecords),
+			s.sumRowNotNullDistinctSum(sourceRecords))
+	}
+	return nil
+}
+
+func (s *Session) validateDestinationData(destRecords []Record, criteria map[string]interface{}) error {
+	if !s.hasID {
+		return nil
+	}
+	destRowCount := s.sumRowCount(destRecords)
+	destDistinctRowCount := s.sumRowDistinctCount(destRecords)
+	if destRowCount > destDistinctRowCount {
+		destDistinctRowSum := s.sumRowNotNullDistinctSum(destRecords)
+		if destDistinctRowSum != destDistinctRowCount {
+			return fmt.Errorf("[%v](%v) invalid dest, data has unique duplicates; rowCount: %v, distinct ids: %v\n",
+				s.Request.Table,
+				criteria,
+				destRowCount,
+				destDistinctRowCount)
+		}
+		return fmt.Errorf("[%v](%v) invalid dest, data has unique NULL values; rowCount: %v, distinct ids: %v, distinct sum: %v\n",
+			s.Request.Table,
+			criteria,
+			destRowCount,
+			destDistinctRowCount,
+			destDistinctRowSum)
+	}
+	return nil
+}
+
+func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumns []string, criteria map[string]interface{}) (*Info, error) {
+	var err error
 	result := &Info{
 		depth: 1,
 	}
 	defer func() {
 		if s.IsDebug() {
-			log.Printf("%v method: %v\n", criteriaValue, result.Method)
+			log.Printf("[%v] %v method: %v\n", s.Builder.table, criteria, result.Method)
 		}
 	}()
-	result.SourceCount = s.sumRowCount(sourceData)
-	if len(destData) == 0 {
+	result.SourceCount = s.sumRowCount(sourceRecords)
+	if len(destRecords) == 0 {
 		result.Method = SyncMethodInsert
 		return result, nil
 	}
-
-
-	if key := s.Partitions.keyColumn; key != "" && len(sourceData) == 1 && len(destData) == 1 {
-		if ! IsMapItemEqual(sourceData[0], destData[0], key) {
-			return nil, fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", key, sourceData[0][key], destData[0][key])
-		}
-	}
-
-	isEqual := s.IsEqual(groupColumns, sourceData, destData, result)
+	isEqual := s.IsEqual(groupColumns, sourceRecords, destRecords, result)
 	if s.IsDebug() {
-		log.Printf("equal: %v,  %v , %v\n", isEqual, sourceData, destData)
+		log.Printf("[%v] equal: %v,  %v , %v\n", s.Builder.table, isEqual, sourceRecords, destRecords)
 	}
 	if isEqual {
 		result.InSync = true
 		return result, nil
 	}
-
+	if err := s.Partitions.Validate(sourceRecords, destRecords); err != nil {
+		return nil, fmt.Errorf("[%v] %v", s.Builder.table, err)
+	}
 	if result.Method != "" {
 		return result, nil
 	}
-	result.Method = SyncMethodMerge
-	if len(sourceData) == 1 && len(destData) == 1 {
 
-		if toolbox.AsInt(sourceData[0][s.Builder.countColumnAlias]) < toolbox.AsInt(destData[0][s.Builder.countColumnAlias]) {
-			destRowCount := s.sumRowCount(destData)
-			destDistinctRowCount := s.sumRowDistinctCount(destData)
-			if destRowCount > destDistinctRowCount {
-				return nil, fmt.Errorf("destination %v[%v], has duplicates rowCount: %v, distinct ids: %v\n", s.Request.Table, criteriaValue, destRowCount, destDistinctRowCount)
-			}
+	if !s.hasIDs {
+		result.Method = SyncMethodDeleteInsert
+		return result, nil
+	}
+
+	result.Method = SyncMethodMerge
+	if len(sourceRecords) == 1 && len(destRecords) == 1 {
+
+		s.setInfoRange(sourceRecords[0], destRecords[0], result)
+		if err = s.validateSourceData(sourceRecords, criteria); err == nil {
+			err = s.validateDestinationData(destRecords, criteria)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if s.isMergeDeleteStrategy(sourceRecords[0], destRecords[0]) {
 			result.Method = SyncMethodMergeDelete
 		} else {
-			if s.hasOnlyAddition(sourceData[0], destData[0], criteriaValue, result) {
+			if s.hasOnlyDataAppend(sourceRecords[0], destRecords[0], criteria, result) {
 				return result, nil
 			}
 			result.Method = SyncMethodMerge
@@ -268,27 +353,24 @@ func (s *Session) buildSyncInfo(sourceData, destData []Record, groupColumns []st
 }
 
 //GetSyncInfo returns a sync info
-func (s *Session) GetSyncInfo(criteriaValue map[string]interface{}) (*Info, error) {
-	if len(criteriaValue) == 1 {
-
-
-		if value, has := criteriaValue[s.Partitions.keyColumn]; has {
-			partition, ok := s.Partitions.index[toolbox.AsString(value)]
-			if ok && partition.Info != nil {
-				return partition.Info, nil
-			}
+func (s *Session) GetSyncInfo(criteria map[string]interface{}) (*Info, error) {
+	if len(s.Partitions.key) > 0 {
+		keyValue := keyValue(s.Partitions.key, criteria)
+		partition, ok := s.Partitions.index[keyValue]
+		if ok && partition.Info != nil {
+			return partition.Info, nil
 		}
 	}
 
 	var sourceData = make([]Record, 0)
 	var destData = make([]Record, 0)
 
-	groupColumns, err := s.runDiffSQL(criteriaValue, &sourceData, &destData)
+	groupColumns, err := s.runDiffSQL(criteria, &sourceData, &destData)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.buildSyncInfo(sourceData, destData, groupColumns, criteriaValue)
+	return s.buildSyncInfo(sourceData, destData, groupColumns, criteria)
 }
 
 func (s *Session) readSyncInfoBatch(batchCriteria map[string]interface{}, index *indexedRecords) error {
@@ -306,14 +388,17 @@ func (s *Session) readSyncInfoBatch(batchCriteria map[string]interface{}, index 
 //BatchSyncInfo returns batch sync info
 func (s *Session) BatchSyncInfo() error {
 	var err error
-	batchedCriteria := batchCriteria(s.Partitions.data, s.Request.Sync.DiffBatchSize)
+	batchedCriteria := batchCriteria(s.Partitions.data, s.Request.DiffBatchSize)
 	if len(batchedCriteria) == 0 {
 		return nil
 	}
 	batchSize := s.Request.Partition.BatchSize(len(batchedCriteria))
 	limiter := toolbox.NewBatchLimiter(batchSize, len(batchedCriteria))
-	index := newIndexedRecords(s.Partitions.keyColumn)
-	groupColumns := []string{s.Partitions.keyColumn}
+
+	index := newIndexedRecords(s.Partitions.key)
+
+	groupColumns := s.Partitions.key
+
 	for _, batchCriteria := range batchedCriteria {
 		go func() {
 			limiter.Acquire()
@@ -331,7 +416,7 @@ func (s *Session) BatchSyncInfo() error {
 			continue
 		}
 		destRecords := index.dest[key]
-		if partition.Info, err = s.buildSyncInfo(sourceRecords, destRecords, groupColumns, partition.criteriaValues); err != nil {
+		if partition.Info, err = s.buildSyncInfo(sourceRecords, destRecords, groupColumns, partition.criteria); err != nil {
 			return err
 		}
 	}
@@ -357,10 +442,10 @@ func (s *Session) IsEqual(index []string, source, dest []Record, status *Info) b
 			}
 		}
 		if discrepant { //Try apply date format or numeric rounding to compare again
-			for _, column := range s.Builder.Sync.Columns {
+			for _, column := range s.Builder.Columns {
 				key := column.Alias
 
-				if ! IsMapItemEqual(destRecord, sourceRecord, key) {
+				if !IsMapItemEqual(destRecord, sourceRecord, key) {
 					if column.DateLayout != "" {
 						destTime, err := toolbox.ToTime(destRecord[key], column.DateLayout)
 						if err != nil {
@@ -410,8 +495,8 @@ func (s *Session) destConfig() *dsc.Config {
 	return &result
 }
 
-func (s *Session) buildTransferJob(partition *Partition, criteriaValue map[string]interface{}, suffix string, sourceCount int) *TransferJob {
-	DQL := s.Builder.DQL("", s.Source, criteriaValue, false)
+func (s *Session) buildTransferJob(partition *Partition, criteria map[string]interface{}, suffix string, sourceCount int) *TransferJob {
+	DQL := s.Builder.DQL("", s.Source, criteria, false)
 	if s.IsDebug() {
 		log.Printf("DQL:%v\n", DQL)
 	}
@@ -474,6 +559,8 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 		Job:      job,
 		Config:   config,
 		Request:  request,
+		hasID:    len(request.IDColumns) == 1,
+		hasIDs:   len(request.IDColumns) > 1,
 		Response: response,
 		Source:   request.Source,
 		SourceDB: sourceDB,
@@ -481,10 +568,10 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 		DestDB:   destDB,
 		Builder:  builder,
 	}
-	multiChunk := request.Sync.ChunkSize
+	multiChunk := request.Chunk.Size
 	if multiChunk == 0 {
 		multiChunk = 1
 	}
-	session.isChunkedTransfer = request.Sync.ChunkSize > 0
+	session.isChunkedTransfer = request.Chunk.Size > 0
 	return session, nil
 }

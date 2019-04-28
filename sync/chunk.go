@@ -16,12 +16,12 @@ type ChunkInfo struct {
 //Chunk represents a chunk
 type Chunk struct {
 	ChunkInfo
-	Index          int
-	Method         string
-	Status         string
-	Suffix         string
-	CriteriaValues map[string]interface{}
-	Transfer       *TransferJob
+	Index    int
+	Method   string
+	Status   string
+	Suffix   string
+	Criteria map[string]interface{}
+	Transfer *TransferJob
 }
 
 //Chunks represents chunks
