@@ -36,13 +36,12 @@ type Session struct {
 	DestDB     dsc.Manager
 	Partitions *Partitions
 	*Config
-	isChunkedTransfer  bool
-	hasID              bool
-	hasIDs             bool
-	syncMethod         string
-	err                error
-	closed             uint32
-	checkingDataAppend bool
+	isChunkedTransfer bool
+	hasID             bool
+	hasIDs            bool
+	syncMethod        string
+	err               error
+	closed            uint32
 }
 
 //IsDebug returns true if debug is on
@@ -88,11 +87,6 @@ func (s *Session) SetSynMethod(method string) {
 }
 
 func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[string]interface{}, status *Info) bool {
-	if s.checkingDataAppend {
-		return false
-	}
-	s.checkingDataAppend = true
-
 	sourceMaxID := toolbox.AsInt(sourceData[s.Builder.maxIDColumnAlias])
 	destMaxID := toolbox.AsInt(destData[s.Builder.maxIDColumnAlias])
 	if destMaxID == 0 {
@@ -105,7 +99,7 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 	if sourceMaxID > destMaxID { //Check if upto the same id data is the same
 		narrowedCriteria := cloneMap(criteria)
 		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{destMaxID}
-		narrowedStatus, err := s.GetSyncInfo(narrowedCriteria)
+		narrowedStatus, err := s.GetSyncInfo(narrowedCriteria, false)
 		if err != nil {
 			return false
 		}
@@ -140,7 +134,7 @@ func (s *Session) findInSyncMaxID(destMaxID int, narrowedCriteria map[string]int
 			break
 		}
 		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{destMaxID}
-		info, err := s.GetSyncInfo(narrowedCriteria)
+		info, err := s.GetSyncInfo(narrowedCriteria, false)
 		if err != nil {
 			return 0, nil
 		}
@@ -294,7 +288,7 @@ func (s *Session) validateDestinationData(destRecords []Record, criteria map[str
 	return nil
 }
 
-func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumns []string, criteria map[string]interface{}) (*Info, error) {
+func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumns []string, criteria map[string]interface{}, optimizeAppend bool) (*Info, error) {
 	var err error
 	result := &Info{
 		depth: 1,
@@ -342,7 +336,7 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 
 		if s.isMergeDeleteStrategy(sourceRecords[0], destRecords[0]) {
 			result.Method = SyncMethodMergeDelete
-		} else {
+		} else if optimizeAppend {
 			if s.hasOnlyDataAppend(sourceRecords[0], destRecords[0], criteria, result) {
 				return result, nil
 			}
@@ -353,8 +347,8 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 }
 
 //GetSyncInfo returns a sync info
-func (s *Session) GetSyncInfo(criteria map[string]interface{}) (*Info, error) {
-	if len(s.Partitions.key) > 0 {
+func (s *Session) GetSyncInfo(criteria map[string]interface{}, optimizeAppend bool) (*Info, error) {
+	if s.Partitions.hasKey {
 		keyValue := keyValue(s.Partitions.key, criteria)
 		partition, ok := s.Partitions.index[keyValue]
 		if ok && partition.Info != nil {
@@ -370,7 +364,7 @@ func (s *Session) GetSyncInfo(criteria map[string]interface{}) (*Info, error) {
 		return nil, err
 	}
 
-	return s.buildSyncInfo(sourceData, destData, groupColumns, criteria)
+	return s.buildSyncInfo(sourceData, destData, groupColumns, criteria, optimizeAppend)
 }
 
 func (s *Session) readSyncInfoBatch(batchCriteria map[string]interface{}, index *indexedRecords) error {
@@ -392,13 +386,10 @@ func (s *Session) BatchSyncInfo() error {
 	if len(batchedCriteria) == 0 {
 		return nil
 	}
+
 	batchSize := s.Request.Partition.BatchSize(len(batchedCriteria))
 	limiter := toolbox.NewBatchLimiter(batchSize, len(batchedCriteria))
-
 	index := newIndexedRecords(s.Partitions.key)
-
-	groupColumns := s.Partitions.key
-
 	for _, batchCriteria := range batchedCriteria {
 		go func() {
 			limiter.Acquire()
@@ -409,6 +400,7 @@ func (s *Session) BatchSyncInfo() error {
 
 		}()
 	}
+	limiter.Wait()
 
 	for key, partition := range s.Partitions.index {
 		sourceRecords, has := index.source[key]
@@ -416,7 +408,8 @@ func (s *Session) BatchSyncInfo() error {
 			continue
 		}
 		destRecords := index.dest[key]
-		if partition.Info, err = s.buildSyncInfo(sourceRecords, destRecords, groupColumns, partition.criteria); err != nil {
+		partition.Info, err = s.buildSyncInfo(sourceRecords, destRecords, s.Partitions.key, partition.criteria, true)
+		if err != nil {
 			return err
 		}
 	}
@@ -560,7 +553,7 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 		Config:   config,
 		Request:  request,
 		hasID:    len(request.IDColumns) == 1,
-		hasIDs:   len(request.IDColumns) > 1,
+		hasIDs:   len(request.IDColumns) > 0,
 		Response: response,
 		Source:   request.Source,
 		SourceDB: sourceDB,

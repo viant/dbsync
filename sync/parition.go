@@ -154,6 +154,14 @@ func (p *Partition) AddChunk(chunk *Chunk) {
 	p.Chunks.AddChunk(chunk)
 }
 
+//SetSynMethod sets sync method
+func (p *Partition) SetSynMethod(method string) {
+	if p.Method == SyncMethodMerge {
+		return
+	}
+	p.Method = method
+}
+
 //NewPartition returns new partition
 func NewPartition(source PartitionSync, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {
 	suffix := transientTableSuffix

@@ -63,7 +63,10 @@ func toCriterion(k string, v interface{}) string {
 		return fmt.Sprintf("%v = %v", k, v)
 	} else {
 		literal := strings.TrimSpace(toolbox.AsString(v))
-		if strings.Contains(literal, ">") || strings.Contains(literal, "<") {
+		lowerLiteral := strings.ToLower(literal)
+		if strings.Contains(literal, ">") ||
+			strings.Contains(literal, "<") ||
+			strings.Contains(lowerLiteral, " null") {
 			return fmt.Sprintf("%v %v", k, v)
 		} else {
 			return fmt.Sprintf("%v = '%v'", k, v)
