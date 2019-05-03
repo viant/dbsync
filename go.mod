@@ -18,6 +18,7 @@ require (
 	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5 // indirect
 	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
+	golang.org/x/tools v0.0.0-20190430004104-b9fed7929fc1
 	google.golang.org/api v0.3.2 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )

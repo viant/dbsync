@@ -22,7 +22,7 @@ const (
 type Request struct {
 	Id       string
 	Strategy `yaml:",inline" json:",inline"`
-	Transfer `yaml:",inline" json:",inline"`
+	Transfer Transfer
 	Dest     *Resource
 	Source   *Resource
 	Table    string
@@ -166,7 +166,7 @@ func (r *Request) Validate() error {
 	if r.Dest.Table == "" {
 		return fmt.Errorf("dest table was empty")
 	}
-	if r.CountOnly && len(r.Columns) > 0 {
+	if r.Diff.CountOnly && len(r.Diff.Columns) > 0 {
 		return fmt.Errorf("countOnly can not be set with custom columns")
 	}
 	if r.Chunk.Size > 0 && len(r.IDColumns) != 1 {

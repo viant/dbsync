@@ -22,7 +22,6 @@ var statsHistory = flag.Int("statsHistory", 10, "max stats history")
 
 func main() {
 	flag.Parse()
-	dsc.Logf = dsc.StdoutLogger
 
 
 	go func() {

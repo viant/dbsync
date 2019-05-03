@@ -1,6 +1,4 @@
 {
-    "Id":"depthXX",
-    "Debug": true,
 	"BatchSize": 2048,
 	"Dest": {
 		"Credentials": "mysql-e2e",
@@ -24,7 +22,13 @@
 	"IDColumns": [
         "id"
     ],
-	"DiffDepth": 5,
-	"WriterThreads": 2
-
+	"Partition": {
+	    "Columns": [
+	    "event_type"
+	    ],
+	    "Threads": 5,
+	    "ProviderSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
+	},
+	"WriterThreads": 2,
+	"Suffix":"ns1"
 }

@@ -58,14 +58,12 @@ type Partitions struct {
 //Range range over partition
 func (p *Partitions) Range(handler func(partition *Partition) error) error {
 	partitions := p.data
-	for i, partition := range partitions {
-		fmt.Printf("processing partition[%d/%d]\n", i, len(partitions))
+	for _, partition := range partitions {
 		p.Add(1)
 		p.channel <- true
 		go func(partition *Partition) {
 			defer p.Done()
 			partition.err = handler(partition)
-			fmt.Printf("%v\n", partition.err)
 			<-p.channel
 
 		}(partition)

@@ -65,31 +65,6 @@ func round(value interface{}, numericPrecision int) float64 {
 	return math.Round(f/unit) * unit
 }
 
-func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]interface{} {
-	if len(partitions) == 0 {
-		return nil
-	}
-	if len(partitions[0].criteria) != 1 {
-		return nil
-	}
-	criteria := make([]map[string]interface{}, 0)
-	criterion := []interface{}{}
-	var key string
-	var value interface{}
-	for _, partition := range partitions {
-		for key, value = range partition.criteria {
-			criterion = append(criterion, value)
-			if len(criterion) > diffBatchSize {
-				criteria = append(criteria, map[string]interface{}{key: criterion})
-				criterion = []interface{}{}
-			}
-		}
-	}
-	if len(criterion) > 0 {
-		criteria = append(criteria, map[string]interface{}{key: criterion})
-	}
-	return criteria
-}
 
 //IsMapItemEqual compares map item
 func IsMapItemsEqual(sourceMap, destMap map[string]interface{}, key []string) bool {

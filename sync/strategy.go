@@ -39,7 +39,8 @@ type DiffColumn struct {
 type DifferenceStrategy struct {
 	Columns   []*DiffColumn
 	CountOnly bool
-	DiffDepth int `description:"controls detection of data that is similar"`
+	Depth     int `description:"controls detection of data that is similar"`
+	BatchSize int
 }
 
 //ChunkSync represents chunk sync request part
@@ -53,14 +54,14 @@ type ChunkSync struct {
 type Strategy struct {
 	Chunk     ChunkSync
 	IDColumns []string
-	DifferenceStrategy
+	Diff DifferenceStrategy
 	NumericPrecision int
 	DateFormat       string
 	DateLayout       string
 	MergeStyle       string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
 	Partition        PartitionSync
+
 	Force            bool `description:"if set skip checks if data in sync"`
-	DiffBatchSize    int
 }
 
 //Expr returns expression
@@ -85,8 +86,8 @@ func (c *DiffColumn) Expr() string {
 }
 
 func (s *Strategy) Init() error {
-	if s.DiffBatchSize == 0 {
-		s.DiffBatchSize = defaultDiffBatchSize
+	if s.Diff.BatchSize == 0 {
+		s.Diff.BatchSize = defaultDiffBatchSize
 	}
 	if s.NumericPrecision == 0 {
 		s.NumericPrecision = 5

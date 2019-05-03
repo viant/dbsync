@@ -27,8 +27,9 @@ type RunStat struct {
 	TimeTakenMs      int
 	SourceCount      int
 	TransferredCount int
-	Method           string
-	Error            string
+	Methods    map[string]int
+	PartitionTransferred int
+	Error      string
 }
 
 //Add add sync stat
@@ -49,14 +50,16 @@ func (s *Stats) Add(syncStat *RunStat) {
 //NewSyncStat creates a new stats for
 func NewSyncStat(job *Job) *RunStat {
 	job.Update()
-	return &RunStat{
+	run :=  &RunStat{
 		StartTime:        job.StartTime,
 		EndTime:          job.StartTime.Add(job.Elapsed),
 		TimeTakenMs:      int(job.Elapsed / time.Millisecond),
 		SourceCount:      job.Progress.SourceCount,
 		TransferredCount: int(job.Progress.DestCount),
 		Error:            job.Error,
+		Methods :   make(map[string]int),
 	}
+	return run
 }
 
 //Get returns stats for supplied id

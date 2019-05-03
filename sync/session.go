@@ -35,6 +35,7 @@ type Session struct {
 	SourceDB   dsc.Manager
 	DestDB     dsc.Manager
 	Partitions *Partitions
+	batchedPartition bool
 	*Config
 	isChunkedTransfer bool
 	hasID             bool
@@ -55,6 +56,7 @@ func (s *Session) SetError(err error) bool {
 		return err != nil
 	}
 	s.err = err
+	log.Printf("[%v] %v\n", s.Builder.taskId, err.Error())
 	atomic.StoreUint32(&s.closed, 1)
 	s.Response.SetError(err)
 	s.Job.Error = err.Error()
@@ -93,6 +95,7 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 		return false
 	}
 
+	sourceMinID :=toolbox.AsInt(sourceData[s.Builder.minIDColumnAlias])
 	narrowedCriteria := cloneMap(criteria)
 	narrowedStatus := &Info{}
 
@@ -112,7 +115,9 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 		}
 	}
 
-	if destMaxID, err := s.findInSyncMaxID(destMaxID, narrowedCriteria, narrowedStatus); err == nil && destMaxID > 0 {
+	idRange := NewIdRange(sourceMinID, destMaxID)
+
+	if destMaxID, err := s.findInSyncMaxID(idRange, narrowedCriteria, narrowedStatus); err == nil && destMaxID > 0 {
 		status.Method = SyncMethodMerge
 		status.SyncFromID = destMaxID
 		status.MinValue = destMaxID + 1
@@ -122,32 +127,27 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 	return false
 }
 
-func (s *Session) findInSyncMaxID(destMaxID int, narrowedCriteria map[string]interface{}, status *Info) (int, error) {
-	if s.Request.DiffDepth == 0 {
+func (s *Session) findInSyncMaxID(idRange *IdRange, narrowedCriteria map[string]interface{}, status *Info) (int, error) {
+	if s.Request.Diff.Depth == 0 {
 		return 0, nil
 	}
+
 	inSyncDestMaxID := 0
-	destMaxID = int(float64(destMaxID) * 0.5)
-	delta := int(float64(destMaxID) * 0.5)
-	for i := 0; i < s.Request.DiffDepth; i++ {
-		if destMaxID <= 0 {
+	candidateMaxID := idRange.Next(false)
+	for i := 0; i < s.Request.Diff.Depth; i++ {
+		if idRange.Max <= 0 {
 			break
 		}
-		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{destMaxID}
+		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{candidateMaxID}
 		info, err := s.GetSyncInfo(narrowedCriteria, false)
-		if err != nil {
+		if err != nil || info.SourceCount  == 0  {
 			return 0, nil
 		}
 		if info.InSync {
-			if destMaxID > inSyncDestMaxID {
-				inSyncDestMaxID = destMaxID
-				status.SourceCount = info.SourceCount
-			}
-			destMaxID += delta
-		} else {
-			destMaxID -= delta
+			inSyncDestMaxID = info.MaxValue
+			status.SourceCount = info.SourceCount
 		}
-		delta = int(float64(delta) * 0.5)
+		candidateMaxID = idRange.Next(info.InSync)
 	}
 	return inSyncDestMaxID, nil
 }
@@ -167,9 +167,6 @@ type Info struct {
 func (s *Session) runDiffSQL(criteria map[string]interface{}, source, dest *[]Record) ([]string, error) {
 	destDQL, groupColumns := s.Builder.DiffDQL(criteria, s.Dest)
 	sourceSQL, _ := s.Builder.DiffDQL(criteria, s.Source)
-	if s.IsDebug() {
-		log.Printf("diff SQL: %v\n", sourceSQL)
-	}
 	err := s.DestDB.ReadAll(dest, destDQL, nil, nil)
 	if err != nil {
 		return nil, err
@@ -178,15 +175,10 @@ func (s *Session) runDiffSQL(criteria map[string]interface{}, source, dest *[]Re
 		return nil, err
 	}
 
-	if s.IsDebug() {
-		log.Printf("[%v] diff source data: %v\n", s.Builder.table, source)
-		log.Printf("[%v] diff dest   data: %v\n", s.Builder.table, dest)
-	}
-
+	s.Log(nil, fmt.Sprintf("Diff SQL(%v) src:%v\ndst:%v\n\tsrc:%v\n\tdst:%v", criteria, sourceSQL, destDQL, source, dest))
 	if err := s.Partitions.Validate(*source, *dest); err != nil {
 		return nil, fmt.Errorf("[%v] %v", s.Builder.table, err)
 	}
-
 	return groupColumns, nil
 }
 
@@ -202,7 +194,7 @@ func (s *Session) sumRowNotNullDistinctSum(records Records) int {
 	return records.Sum(s.Builder.uniqueNotNullSumtAlias)
 }
 
-func (s *Session) recordsCumsum(data []Record, column string) int {
+func (s *Session) recordsSum(data []Record, column string) int {
 	result := 0
 	for _, sourceRecord := range data {
 		countValue, ok := sourceRecord[column]
@@ -213,7 +205,9 @@ func (s *Session) recordsCumsum(data []Record, column string) int {
 	return result
 }
 
+
 func (s *Session) setInfoRange(source, dest map[string]interface{}, info *Info) {
+	fmt.Printf("setInfoRange %v\n ", s.hasID	)
 	if !s.hasID {
 		return
 	}
@@ -222,6 +216,8 @@ func (s *Session) setInfoRange(source, dest map[string]interface{}, info *Info) 
 	if info.MaxValue < toolbox.AsInt(dest[maxKey]) {
 		info.MaxValue = toolbox.AsInt(dest[maxKey])
 	}
+
+	fmt.Printf("MMM:%v\n", info.MaxValue )
 	minKey := s.Builder.minIDColumnAlias
 	info.MinValue = toolbox.AsInt(source[minKey])
 	if destMin := toolbox.AsInt(dest[minKey]); destMin != 0 && destMin < info.MinValue {
@@ -294,26 +290,40 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 		depth: 1,
 	}
 	defer func() {
-		if s.IsDebug() {
-			log.Printf("[%v] %v method: %v\n", s.Builder.table, criteria, result.Method)
+		if ! result.InSync {
+			s.Log(nil, fmt.Sprintf("sync method: %v, %v", result.Method, criteria))
 		}
 	}()
 	result.SourceCount = s.sumRowCount(sourceRecords)
-	if len(destRecords) == 0 {
+	if len(destRecords) == 0  {
+		if len(sourceRecords) == 0 {
+			result.InSync = true
+			return result, nil
+		}
 		result.Method = SyncMethodInsert
 		return result, nil
 	}
-	isEqual := s.IsEqual(groupColumns, sourceRecords, destRecords, result)
-	if s.IsDebug() {
-		log.Printf("[%v] equal: %v,  %v , %v\n", s.Builder.table, isEqual, sourceRecords, destRecords)
+
+	hasRecord := len(sourceRecords) == 1 && len(destRecords) == 1
+	if hasRecord {
+		s.setInfoRange(sourceRecords[0], destRecords[0], result)
 	}
+
+	isEqual := s.IsEqual(groupColumns, sourceRecords, destRecords, result)
 	if isEqual {
+		s.Log(nil, fmt.Sprintf("is equal: %v", criteria))
 		result.InSync = true
 		return result, nil
 	}
+
+	if s.IsDebug() {
+		s.Log(nil, fmt.Sprintf("out of sync: %v\n\tsrc:%v\n\tdst:%v\n", criteria, sourceRecords, destRecords))
+	}
+
 	if err := s.Partitions.Validate(sourceRecords, destRecords); err != nil {
 		return nil, fmt.Errorf("[%v] %v", s.Builder.table, err)
 	}
+
 	if result.Method != "" {
 		return result, nil
 	}
@@ -324,9 +334,7 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 	}
 
 	result.Method = SyncMethodMerge
-	if len(sourceRecords) == 1 && len(destRecords) == 1 {
-
-		s.setInfoRange(sourceRecords[0], destRecords[0], result)
+	if hasRecord {
 		if err = s.validateSourceData(sourceRecords, criteria); err == nil {
 			err = s.validateDestinationData(destRecords, criteria)
 		}
@@ -356,9 +364,9 @@ func (s *Session) GetSyncInfo(criteria map[string]interface{}, optimizeAppend bo
 		}
 	}
 
+
 	var sourceData = make([]Record, 0)
 	var destData = make([]Record, 0)
-
 	groupColumns, err := s.runDiffSQL(criteria, &sourceData, &destData)
 	if err != nil {
 		return nil, err
@@ -382,24 +390,29 @@ func (s *Session) readSyncInfoBatch(batchCriteria map[string]interface{}, index 
 //BatchSyncInfo returns batch sync info
 func (s *Session) BatchSyncInfo() error {
 	var err error
-	batchedCriteria := batchCriteria(s.Partitions.data, s.Request.DiffBatchSize)
+	batchedCriteria := batchCriteria(s.Partitions.data, s.Request.Diff.BatchSize)
 	if len(batchedCriteria) == 0 {
 		return nil
 	}
-
 	batchSize := s.Request.Partition.BatchSize(len(batchedCriteria))
 	limiter := toolbox.NewBatchLimiter(batchSize, len(batchedCriteria))
 	index := newIndexedRecords(s.Partitions.key)
-	for _, batchCriteria := range batchedCriteria {
-		go func() {
+
+	for i, batchCriteria := range batchedCriteria {
+		s.Log(nil, fmt.Sprintf("processing batch criteria %d/%d", i, len(batchedCriteria)))
+		go func(i int) {
 			limiter.Acquire()
-			defer limiter.Done()
+			defer func() {
+				s.Log(nil, fmt.Sprintf("completed batch criteria processing %d/%d", i, len(batchedCriteria)))
+				limiter.Done()
+			}()
 			if e := s.readSyncInfoBatch(batchCriteria, index); e != nil {
 				err = e
 			}
 
-		}()
+		}(i)
 	}
+
 	limiter.Wait()
 
 	for key, partition := range s.Partitions.index {
@@ -413,7 +426,23 @@ func (s *Session) BatchSyncInfo() error {
 			return err
 		}
 	}
+	s.batchedPartition = true
 	return nil
+}
+
+func (s *Session) Log(partition *Partition, message string) {
+	if ! s.IsDebug() {
+		return
+	}
+	suffix := ""
+	if partition != nil {
+		suffix = partition.Suffix
+	}
+	log.Printf("[%v:%v] %v\n", s.Builder.taskId, suffix, message)
+}
+
+func (s *Session) Error(partition *Partition, message string) {
+	log.Printf("[%v:%v] %v\n", s.Builder.taskId, partition.Suffix, message)
 }
 
 //IsEqual checks if source and dest dataset is equal
@@ -435,7 +464,7 @@ func (s *Session) IsEqual(index []string, source, dest []Record, status *Info) b
 			}
 		}
 		if discrepant { //Try apply date format or numeric rounding to compare again
-			for _, column := range s.Builder.Columns {
+			for _, column := range s.Builder.Diff.Columns {
 				key := column.Alias
 
 				if !IsMapItemEqual(destRecord, sourceRecord, key) {
@@ -472,7 +501,7 @@ func (s *Session) getDbName(manager dsc.Manager) string {
 }
 
 func (s *Session) destConfig() *dsc.Config {
-	if s.Request.TempDatabase == "" {
+	if s.Request.Transfer.TempDatabase == "" {
 		return s.Dest.Config
 	}
 	result := *s.Dest.Config
@@ -481,22 +510,19 @@ func (s *Session) destConfig() *dsc.Config {
 	for k, v := range s.Dest.Config.Parameters {
 		result.Parameters[k] = v
 		if textValue, ok := v.(string); ok {
-			result.Parameters[k] = strings.Replace(textValue, dbName, s.Request.TempDatabase, 1)
+			result.Parameters[k] = strings.Replace(textValue, dbName, s.Request.Transfer.TempDatabase, 1)
 		}
 	}
-	result.Descriptor = strings.Replace(result.Descriptor, dbName, s.Request.TempDatabase, 1)
+	result.Descriptor = strings.Replace(result.Descriptor, dbName, s.Request.Transfer.TempDatabase, 1)
 	return &result
 }
 
 func (s *Session) buildTransferJob(partition *Partition, criteria map[string]interface{}, suffix string, sourceCount int) *TransferJob {
 	DQL := s.Builder.DQL("", s.Source, criteria, false)
-	if s.IsDebug() {
-		log.Printf("DQL:%v\n", DQL)
-	}
-
+	s.Log(partition, fmt.Sprintf("DQL:%v\n", DQL))
 	destTable := s.Builder.Table(suffix)
-	if s.Request.TempDatabase != "" {
-		destTable = strings.Replace(destTable, s.Request.TempDatabase+".", "", 1)
+	if s.Request.Transfer.TempDatabase != "" {
+		destTable = strings.Replace(destTable, s.Request.Transfer.TempDatabase+".", "", 1)
 	}
 	transferRequest := &TransferRequest{
 		Source: &Source{
@@ -508,8 +534,8 @@ func (s *Session) buildTransferJob(partition *Partition, criteria map[string]int
 			Config: s.destConfig(),
 		},
 		Async:       s.Request.Async,
-		WriterCount: s.Request.WriterThreads,
-		BatchSize:   s.Request.BatchSize,
+		WriterCount: s.Request.Transfer.WriterThreads,
+		BatchSize:   s.Request.Transfer.BatchSize,
 		Mode:        "insert",
 	}
 
@@ -518,10 +544,10 @@ func (s *Session) buildTransferJob(partition *Partition, criteria map[string]int
 		Progress: Progress{
 			SourceCount: sourceCount,
 		},
-		MaxRetries:      s.Request.MaxRetries,
+		MaxRetries:      s.Request.Transfer.MaxRetries,
 		TransferRequest: transferRequest,
 		Suffix:          suffix,
-		StatusURL:       fmt.Sprintf(transferStatusURL, s.Request.EndpointIP),
+		StatusURL:       fmt.Sprintf(transferStatusURL, s.Request.Transfer.EndpointIP),
 		TargetURL:       fmt.Sprintf(transferURL, s.Request.Transfer.EndpointIP),
 	}
 

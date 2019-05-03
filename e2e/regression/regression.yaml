@@ -11,7 +11,7 @@ pipeline:
   test:
     tag: $pathMatch
     description: '@use_case'
-    range: 1..029
+    range: 1..030
     subPath: use_cases/${index}_*
     template:
       skip-tag:

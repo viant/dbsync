@@ -11,7 +11,9 @@ import (
 
 //Builder represents SQL builder
 type Builder struct {
-	Strategy         //request sync meta
+	Strategy //request sync meta
+	taskId           string
+	transferSuffix   string
 	tempDatabase     string
 	uniques          map[string]bool
 	partitions       map[string]bool
@@ -58,9 +60,9 @@ func (b *Builder) Table(suffix string) string {
 		}
 	}
 	if b.tempDatabase != "" {
-		return b.tempDatabase + "." + b.table + suffix
+		return b.tempDatabase + "." + b.table + b.transferSuffix + suffix
 	}
-	return b.table + suffix
+	return b.table + b.transferSuffix + suffix
 }
 
 //QueryTable returns query table
@@ -73,9 +75,9 @@ func (b *Builder) QueryTable(suffix string) string {
 	}
 
 	if b.tempDatabase != "" {
-		return b.tempDatabase + "." + b.table + suffix
+		return b.tempDatabase + "." + b.table + b.transferSuffix + suffix
 	}
-	return b.table + suffix
+	return b.table + b.transferSuffix + suffix
 }
 
 //DDL returns transient table DDL for supplied suffix
@@ -147,6 +149,8 @@ func (b *Builder) ChunkDQL(resource *Resource, max, limit int, values map[string
 	DQL := state.ExpandAsText(chunkSQL)
 	return DQL, nil
 }
+
+
 
 func (b *Builder) toCriteriaList(criteria map[string]interface{}, resource *Resource) []string {
 	var whereCriteria = make([]string, 0)
@@ -261,15 +265,15 @@ func (b *Builder) init(manager dsc.Manager) error {
 		b.columnsByName[column.Name()] = column
 	}
 
-	if len(b.Columns) == 0 {
-		if b.CountOnly {
-			b.Columns = b.buildDiffColumns(nil)
+	if len(b.Diff.Columns) == 0 {
+		if b.Diff.CountOnly {
+			b.Diff.Columns = b.buildDiffColumns(nil)
 		} else {
-			b.Columns = b.buildDiffColumns(b.columns)
+			b.Diff.Columns = b.buildDiffColumns(b.columns)
 		}
 	} else {
 
-		for _, diffColumn := range b.Columns {
+		for _, diffColumn := range b.Diff.Columns {
 			if diffColumn.DateLayout == "" && diffColumn.DateFormat != "" {
 				diffColumn.DateLayout = toolbox.DateFormatToLayout(diffColumn.DateFormat)
 			}
@@ -285,7 +289,7 @@ func (b *Builder) init(manager dsc.Manager) error {
 //DiffDQL returns sync difference DQL
 func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *Resource) (string, []string) {
 	return b.partitionDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
-		for _, column := range b.Columns {
+		for _, column := range b.Diff.Columns {
 			if _, has := dimension[column.Name]; has {
 				continue
 			}
@@ -506,41 +510,46 @@ func (b *Builder) alias(alias string) string {
 
 func (b *Builder) addStandardDiffColumns() {
 	b.countColumnAlias = b.alias("cnt")
-	for _, candidate := range b.Columns {
+	for _, candidate := range b.Diff.Columns {
 		if candidate.Name == b.countColumnAlias {
 			return
 		}
 	}
-	b.Columns = append(b.Columns, &DiffColumn{
+	b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
 		Func:  "COUNT",
 		Name:  "1",
 		Alias: b.alias("cnt"),
 	})
 
 	for _, unique := range b.IDColumns {
-		uniqueAlias := b.alias("max_" + unique)
 		if len(b.IDColumns) == 1 {
-			b.maxIDColumnAlias = uniqueAlias
+			b.maxIDColumnAlias =  b.alias("max_" + unique)
 			b.minIDColumnAlias = b.alias("min_" + unique)
 
 			b.uniqueCountAlias = b.alias("unique_cnt")
-			b.Columns = append(b.Columns, &DiffColumn{
+			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
 				Func:  "COUNT",
 				Name:  unique,
 				Alias: b.uniqueCountAlias,
 			})
 			b.uniqueNotNullSumtAlias = b.alias("non_cnt")
-			b.Columns = append(b.Columns, &DiffColumn{
+			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
 				Func:  "SUM",
 				Name:  "(CASE WHEN " + unique + " IS NOT NULL THEN 1 ELSE 0 END)",
 				Alias: b.uniqueNotNullSumtAlias,
 			})
+			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
+				Func:  "MAX",
+				Name:  unique,
+				Alias: b.maxIDColumnAlias,
+			})
+			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
+				Func:  "MIN",
+				Name:  unique,
+				Alias: b.minIDColumnAlias ,
+			})
+
 		}
-		b.Columns = append(b.Columns, &DiffColumn{
-			Func:  "MAX",
-			Name:  unique,
-			Alias: uniqueAlias,
-		})
 
 	}
 }
@@ -584,16 +593,22 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*DiffColumn {
 
 //NewBuilder creates a new builder
 func NewBuilder(request *Request, destDB dsc.Manager) (*Builder, error) {
+	transferSuffix := request.Transfer.Suffix
+	if transferSuffix != "" && ! strings.HasPrefix(transferSuffix, "_") {
+		transferSuffix = "_" + transferSuffix
+	}
 	builder := &Builder{
-		tempDatabase:  request.TempDatabase,
-		Strategy:      request.Strategy,
-		columns:       make([]dsc.Column, 0),
-		columnsByName: make(map[string]dsc.Column),
-		table:         request.Dest.Table,
-		source:        request.Source,
-		dest:          request.Dest,
-		from:          request.Source.From,
-		isUpperCase:   true,
+		tempDatabase:   request.Transfer.TempDatabase,
+		Strategy:       request.Strategy,
+		columns:        make([]dsc.Column, 0),
+		columnsByName:  make(map[string]dsc.Column),
+		table:          request.Dest.Table,
+		source:         request.Source,
+		dest:           request.Dest,
+		from:           request.Source.From,
+		isUpperCase:    true,
+		transferSuffix: transferSuffix,
+		taskId:request.ID(),
 	}
 	if err := builder.init(destDB); err != nil {
 		return nil, err

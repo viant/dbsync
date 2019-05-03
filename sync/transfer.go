@@ -17,6 +17,7 @@ type Transfer struct {
 	EndpointIP    string
 	MaxRetries    int
 	TempDatabase  string
+	Suffix        string
 }
 
 //Source source

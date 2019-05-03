@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const maxTaskHistory  = 10
+
 //Service represents a transfer service
 type Service struct {
 	mux      *sync.RWMutex
@@ -27,7 +29,7 @@ func (s *Service) Tasks() *TasksResponse {
 	defer s.mux.Unlock()
 	var taskCount = len(s.tasks)
 	for k, task := range s.tasks {
-		if taskCount > 10 && task.CanEvict() {
+		if taskCount > maxTaskHistory && task.CanEvict() {
 			delete(s.tasks, k)
 		}
 		response.Tasks = append(response.Tasks, task)
