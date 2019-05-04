@@ -83,25 +83,42 @@ The last three are used to check if data inconsistency, duplication, id constrai
 ##### Narrowing change dataset process
 
 Narrowing process try to find max ID in destination dataset which is in sync with the source.
-Note that this process is only applicable for single ID based table.
+Note that this process is only applicable for single numeric ID based table.
 
 
-######  Insert strategy
+######  Insert merge strategy
+
+<img src="insert_strategy.png" alt="insert strategy" width="40%">
+
 In case when source and dest dataset are discrepant and source ID is greater than dest ID, 
 synchronizer takes dest max id, to check if up to that ID both dataset are equal, if so 
-it uses INSERT merge strategy and transfer only source data where source ID is greater then dest max ID.
+it uses INSERT strategy and transfer only source data where source ID is greater then dest max ID.
 
-<img src="insert_strategy.png" alt="append discrepant" width="40%">
 
-######  Merge strategy
- 
-When insert strategy can not be applied, synchronizer would try to reduce/expand dest dataset range
-to ID lower or equal to delta defined as half dataset ID distance,
-if probed data is in sync, narrowed ID is used and delta is increased by half, otherwise decrease for next try.
-Number of iteration in this process is controlled by depth parameter (0 by default).
+######  Update/Insert merge strategy
 
 <img src="merge_strategy.png" alt="append discrepant" width="40%">
  
+When source ID is greater then dest ID and [insert strategy](#Insert_strategy) can not be applied, 
+synchronizer would try to reduce/expand dest dataset range where upper bound is limited by 
+dest max ID and delta defined as half dataset ID distance (max id +/- delta),
+if probed data is in sync, narrowed ID is used and delta is increased by half, otherwise decrease for next try.
+Number of iteration in this process is controlled by depth parameter (0 by default).
+
+When narrowed dataset is determined, merge(inser/update) strategy is used, 
+and synchronizer transfers only source data where source ID is greater then narrowed ID.
+
+###### Delete Merge strategy
+
+<img src="delete_merge_strategy.png" alt="delete merge strategy" width="40%">
+
+When source ID is lower than dest ID, or source row count is lower than dest, delete/merge strategy is used.
+In case of non-chunked transfer all source dataset is copied to dest transient table, followed by deletion 
+of any dest table records which are not be found in transient table, then data is merged.
+
+When chunked-transfer is used only discrepant chunk are transferred, 
+thus deletion is reduced to discrepant chunks.
+
 
 ###  Managing partition strategy
  
