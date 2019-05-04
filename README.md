@@ -70,7 +70,7 @@ When **countOnly** option is selected, total rows COUNT is used, this is especia
 table uses data appends only.
 
 
-In either case for table with single ID column the following aggregates are added:
+In either case for single column ID based table the following aggregates are added:
  - max id: MAX(id) 
  - min id: MIN(id) 
  - total rows count: COUNT(1)
