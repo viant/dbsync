@@ -48,7 +48,7 @@ which can could be one of the following:
 
 ###### Transfer service contract
 
-<img src="transfer/contract.png" alt="transfer contract" width="40vw">
+<img src="transfer/contract.png" alt="transfer contract" width="60vw">
 
 
 ### Usage
@@ -88,7 +88,7 @@ In case when source and dest dataset are discrepant and source ID is greater tha
 synchronizer takes dest max id, to check if up to that ID both dataset are equal, if so 
 it uses INSERT merge strategy and transfer only source data where source ID is greater then dest max ID.
 
-<img src="append_discrepant.png" alt="append discrepant" width="40vw">
+<img src="append_discrepant.png" alt="append discrepant" width="60vw">
 
 
 
