@@ -6,6 +6,7 @@ import (
 	"github.com/viant/toolbox"
 	"log"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -26,17 +27,18 @@ const (
 
 //Session represents a ssession
 type Session struct {
-	Job        *Job
-	Response   *Response
-	Request    *Request
-	Builder    *Builder
-	Source     *Resource
-	Dest       *Resource
-	SourceDB   dsc.Manager
-	DestDB     dsc.Manager
-	Partitions *Partitions
+	Job              *Job
+	Response         *Response
+	Request          *Request
+	Builder          *Builder
+	Source           *Resource
+	Dest             *Resource
+	SourceDB         dsc.Manager
+	DestDB           dsc.Manager
+	Partitions       *Partitions
 	batchedPartition bool
 	*Config
+	mux               *sync.Mutex
 	isChunkedTransfer bool
 	hasID             bool
 	hasIDs            bool
@@ -95,7 +97,7 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 		return false
 	}
 
-	sourceMinID :=toolbox.AsInt(sourceData[s.Builder.minIDColumnAlias])
+	sourceMinID := toolbox.AsInt(sourceData[s.Builder.minIDColumnAlias])
 	narrowedCriteria := cloneMap(criteria)
 	narrowedStatus := &Info{}
 
@@ -140,7 +142,7 @@ func (s *Session) findInSyncMaxID(idRange *IdRange, narrowedCriteria map[string]
 		}
 		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{candidateMaxID}
 		info, err := s.GetSyncInfo(narrowedCriteria, false)
-		if err != nil || info.SourceCount  == 0  {
+		if err != nil || info.SourceCount == 0 {
 			return 0, nil
 		}
 		if info.InSync {
@@ -205,9 +207,7 @@ func (s *Session) recordsSum(data []Record, column string) int {
 	return result
 }
 
-
 func (s *Session) setInfoRange(source, dest map[string]interface{}, info *Info) {
-	fmt.Printf("setInfoRange %v\n ", s.hasID	)
 	if !s.hasID {
 		return
 	}
@@ -216,8 +216,6 @@ func (s *Session) setInfoRange(source, dest map[string]interface{}, info *Info) 
 	if info.MaxValue < toolbox.AsInt(dest[maxKey]) {
 		info.MaxValue = toolbox.AsInt(dest[maxKey])
 	}
-
-	fmt.Printf("MMM:%v\n", info.MaxValue )
 	minKey := s.Builder.minIDColumnAlias
 	info.MinValue = toolbox.AsInt(source[minKey])
 	if destMin := toolbox.AsInt(dest[minKey]); destMin != 0 && destMin < info.MinValue {
@@ -290,12 +288,12 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 		depth: 1,
 	}
 	defer func() {
-		if ! result.InSync {
+		if !result.InSync {
 			s.Log(nil, fmt.Sprintf("sync method: %v, %v", result.Method, criteria))
 		}
 	}()
 	result.SourceCount = s.sumRowCount(sourceRecords)
-	if len(destRecords) == 0  {
+	if len(destRecords) == 0 {
 		if len(sourceRecords) == 0 {
 			result.InSync = true
 			return result, nil
@@ -362,8 +360,11 @@ func (s *Session) GetSyncInfo(criteria map[string]interface{}, optimizeAppend bo
 		if ok && partition.Info != nil {
 			return partition.Info, nil
 		}
+		//TODO analyze why would ever get here
+		return &Info{
+			InSync: true,
+		}, nil
 	}
-
 
 	var sourceData = make([]Record, 0)
 	var destData = make([]Record, 0)
@@ -418,6 +419,7 @@ func (s *Session) BatchSyncInfo() error {
 	for key, partition := range s.Partitions.index {
 		sourceRecords, has := index.source[key]
 		if !has {
+			s.Log(partition, "no source data")
 			continue
 		}
 		destRecords := index.dest[key]
@@ -431,7 +433,7 @@ func (s *Session) BatchSyncInfo() error {
 }
 
 func (s *Session) Log(partition *Partition, message string) {
-	if ! s.IsDebug() {
+	if !s.IsDebug() {
 		return
 	}
 	suffix := ""
@@ -586,6 +588,7 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 		Dest:     request.Dest,
 		DestDB:   destDB,
 		Builder:  builder,
+		mux:      &sync.Mutex{},
 	}
 	multiChunk := request.Chunk.Size
 	if multiChunk == 0 {

@@ -65,7 +65,6 @@ func round(value interface{}, numericPrecision int) float64 {
 	return math.Round(f/unit) * unit
 }
 
-
 //IsMapItemEqual compares map item
 func IsMapItemsEqual(sourceMap, destMap map[string]interface{}, key []string) bool {
 	for _, k := range key {

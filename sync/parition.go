@@ -8,15 +8,15 @@ import (
 	"sync/atomic"
 )
 
-//PartitionSync represents partition info
-type PartitionSync struct {
+//PartitionStrategy represents partition info
+type PartitionStrategy struct {
 	ProviderSQL string
 	Columns     []string
 	Threads     int
 }
 
 //BatchSize returns batch size for max elements
-func (p *PartitionSync) BatchSize(max int) int {
+func (p *PartitionStrategy) BatchSize(max int) int {
 	batchSize := p.Threads
 	if batchSize == 0 {
 		batchSize = 1
@@ -29,7 +29,7 @@ func (p *PartitionSync) BatchSize(max int) int {
 
 //Partition represents a partition
 type Partition struct {
-	PartitionSync
+	PartitionStrategy
 	uniqueColumn string
 	criteria     map[string]interface{}
 	Status       string
@@ -161,7 +161,7 @@ func (p *Partition) SetSynMethod(method string) {
 }
 
 //NewPartition returns new partition
-func NewPartition(source PartitionSync, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {
+func NewPartition(source PartitionStrategy, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {
 	suffix := transientTableSuffix
 	if len(source.Columns) > 0 {
 		for _, column := range source.Columns {
@@ -171,11 +171,11 @@ func NewPartition(source PartitionSync, values map[string]interface{}, chunkQueu
 	suffix = strings.Replace(suffix, "-", "", strings.Count(suffix, "-"))
 	suffix = strings.Replace(suffix, "+", "", strings.Count(suffix, "+"))
 	return &Partition{
-		PartitionSync: source,
-		Suffix:        suffix,
-		criteria:      values,
-		uniqueColumn:  uniqueColumn,
-		WaitGroup:     &sync.WaitGroup{},
-		Chunks:        NewChunks(chunkQueue),
+		PartitionStrategy: source,
+		Suffix:            suffix,
+		criteria:          values,
+		uniqueColumn:      uniqueColumn,
+		WaitGroup:         &sync.WaitGroup{},
+		Chunks:            NewChunks(chunkQueue),
 	}
 }

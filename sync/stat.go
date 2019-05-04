@@ -22,14 +22,14 @@ type StatRegistry struct {
 
 //RunStat represents sync stats
 type RunStat struct {
-	StartTime        time.Time
-	EndTime          time.Time
-	TimeTakenMs      int
-	SourceCount      int
-	TransferredCount int
-	Methods    map[string]int
+	StartTime            time.Time
+	EndTime              time.Time
+	TimeTakenMs          int
+	SourceCount          int
+	TransferredCount     int
+	Methods              map[string]int
 	PartitionTransferred int
-	Error      string
+	Error                string
 }
 
 //Add add sync stat
@@ -50,14 +50,14 @@ func (s *Stats) Add(syncStat *RunStat) {
 //NewSyncStat creates a new stats for
 func NewSyncStat(job *Job) *RunStat {
 	job.Update()
-	run :=  &RunStat{
+	run := &RunStat{
 		StartTime:        job.StartTime,
 		EndTime:          job.StartTime.Add(job.Elapsed),
 		TimeTakenMs:      int(job.Elapsed / time.Millisecond),
 		SourceCount:      job.Progress.SourceCount,
 		TransferredCount: int(job.Progress.DestCount),
 		Error:            job.Error,
-		Methods :   make(map[string]int),
+		Methods:          make(map[string]int),
 	}
 	return run
 }

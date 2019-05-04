@@ -253,6 +253,8 @@ func (s *service) removeInconsistency(session *Session, chunk *Chunk, partition 
 }
 
 func (s *service) mergeData(session *Session, suffix string, criteria map[string]interface{}) error {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	DML, err := session.Builder.DML(session.Request.MergeStyle, suffix, criteria)
 	session.Log(nil, fmt.Sprintf("DML:\n\t%v", DML))
 	dialect := dsc.GetDatastoreDialect(session.DestDB.Config().DriverName)
@@ -270,7 +272,6 @@ func (s *service) mergePartitionData(session *Session, partition *Partition) err
 	defer session.Partitions.Unlock()
 	return s.mergeData(session, partition.Suffix, partition.criteria)
 }
-
 
 func (s *service) appendData(session *Session, sourceSuffix, destSuffix string) error {
 	DML := session.Builder.AppendDML(sourceSuffix, destSuffix)
@@ -301,7 +302,7 @@ func (s *service) deleteData(session *Session, suffix string, criteria map[strin
 func (s *service) syncDataPartitions(session *Session) error {
 	optimizeSync := !session.Request.Force
 
-	if optimizeSync  {
+	if optimizeSync {
 		session.Job.Stage = "batching partitions sync status"
 		if err := session.BatchSyncInfo(); err != nil {
 			return err
@@ -368,10 +369,6 @@ func (s *service) syncDataPartition(session *Session, partition *Partition) erro
 	return s.transferDataWithRetries(session, transferJob)
 }
 
-
-
-
-
 func (s *service) buildChunks(session *Session, partition *Partition) error {
 	max := 0
 	limit := session.Request.Chunk.Size
@@ -381,11 +378,10 @@ func (s *service) buildChunks(session *Session, partition *Partition) error {
 		max = partition.SyncFromID + 1
 	}
 
-	optimizeSync := ! session.Request.Force
+	optimizeSync := !session.Request.Force
 	hasOverflowData := partition.Method == SyncMethodMergeDelete
 
-	for ; ; {
-
+	for {
 
 		i := len(partition.chunks)
 		criteria := partition.CloneCriteria()
@@ -401,7 +397,7 @@ func (s *service) buildChunks(session *Session, partition *Partition) error {
 			return err
 		}
 
-		if isLimitSQLBroken := sourceInfo.Count() > limit; isLimitSQLBroken  {
+		if isLimitSQLBroken := sourceInfo.Count() > limit; isLimitSQLBroken {
 			message := fmt.Sprintf("invalid chunk SQL: %v, count: %v is greater than chunk limit: %v", sourceDQL, sourceInfo.Count(), limit)
 			session.Log(partition, message)
 			return fmt.Errorf("%s", message)
@@ -413,10 +409,8 @@ func (s *service) buildChunks(session *Session, partition *Partition) error {
 			minValue = partition.MinValue
 		}
 
-
-
 		chunkMax := sourceInfo.Max()
-		if ! hasOverflowData || (sourceInfo.Count() == limit) {
+		if !hasOverflowData || (sourceInfo.Count() == limit) {
 			criteria[session.Builder.IDColumns[0]] = &between{from: minValue, to: chunkMax}
 			destDQL = session.Builder.CountDQL("", session.Dest, criteria)
 		}

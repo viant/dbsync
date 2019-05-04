@@ -56,7 +56,7 @@ func toCriterion(k string, v interface{}) string {
 				whereValues = append(whereValues, fmt.Sprintf(`%v`, intValue))
 			} else {
 				itemLiteral := toolbox.AsString(item)
-				if strings.HasPrefix(itemLiteral, "(")  && strings.HasSuffix(itemLiteral, ")") {
+				if strings.HasPrefix(itemLiteral, "(") && strings.HasSuffix(itemLiteral, ")") {
 					whereValues = append(whereValues, fmt.Sprintf(`%v`, item))
 				} else {
 					whereValues = append(whereValues, fmt.Sprintf(`'%v'`, item))
@@ -79,7 +79,6 @@ func toCriterion(k string, v interface{}) string {
 	}
 }
 
-
 func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]interface{} {
 	if len(partitions) == 0 {
 		return nil
@@ -99,13 +98,12 @@ func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]inte
 }
 
 type criteriaBatch struct {
-	batchSize int
+	batchSize    int
 	criteria     []map[string]interface{}
 	values       map[string][]interface{}
 	uniqueValues map[interface{}]bool
-	size      int
+	size         int
 }
-
 
 func (b *criteriaBatch) append(key string, value interface{}) {
 	if _, ok := b.values[key]; !ok {
@@ -118,35 +116,32 @@ func (b *criteriaBatch) append(key string, value interface{}) {
 	}
 }
 
-
 func (b *criteriaBatch) flush() {
 	if b.size == 0 {
 		return
 	}
 	var criterion = make(map[string]interface{})
-	for k, v:= range b.values {
+	for k, v := range b.values {
 		criterion[k] = v
 	}
-	b.criteria  = append(b.criteria, criterion)
+	b.criteria = append(b.criteria, criterion)
 	b.size = 0
 	b.values = make(map[string][]interface{})
 }
 
-
 func (b *criteriaBatch) hasValue(value interface{}) bool {
-	if _, ok := b.uniqueValues[value];ok {
+	if _, ok := b.uniqueValues[value]; ok {
 		return ok
 	}
 	b.uniqueValues[value] = true
 	return false
 }
 
-
-func newCriteriaBatch(batchSize int) *criteriaBatch{
+func newCriteriaBatch(batchSize int) *criteriaBatch {
 	return &criteriaBatch{
-		batchSize:batchSize,
-		criteria :make([]map[string]interface{},0),
-		values       :make(map[string][]interface{}),
-		uniqueValues :make(map[interface{}]bool),
+		batchSize:    batchSize,
+		criteria:     make([]map[string]interface{}, 0),
+		values:       make(map[string][]interface{}),
+		uniqueValues: make(map[interface{}]bool),
 	}
 }

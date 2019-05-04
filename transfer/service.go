@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const maxTaskHistory  = 10
+const maxTaskHistory = 10
 
 //Service represents a transfer service
 type Service struct {

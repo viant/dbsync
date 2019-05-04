@@ -11,7 +11,7 @@ import (
 
 //Builder represents SQL builder
 type Builder struct {
-	Strategy //request sync meta
+	Strategy         //request sync meta
 	taskId           string
 	transferSuffix   string
 	tempDatabase     string
@@ -149,8 +149,6 @@ func (b *Builder) ChunkDQL(resource *Resource, max, limit int, values map[string
 	DQL := state.ExpandAsText(chunkSQL)
 	return DQL, nil
 }
-
-
 
 func (b *Builder) toCriteriaList(criteria map[string]interface{}, resource *Resource) []string {
 	var whereCriteria = make([]string, 0)
@@ -523,7 +521,7 @@ func (b *Builder) addStandardDiffColumns() {
 
 	for _, unique := range b.IDColumns {
 		if len(b.IDColumns) == 1 {
-			b.maxIDColumnAlias =  b.alias("max_" + unique)
+			b.maxIDColumnAlias = b.alias("max_" + unique)
 			b.minIDColumnAlias = b.alias("min_" + unique)
 
 			b.uniqueCountAlias = b.alias("unique_cnt")
@@ -546,7 +544,7 @@ func (b *Builder) addStandardDiffColumns() {
 			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
 				Func:  "MIN",
 				Name:  unique,
-				Alias: b.minIDColumnAlias ,
+				Alias: b.minIDColumnAlias,
 			})
 
 		}
@@ -574,11 +572,11 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*DiffColumn {
 			diffColumn.Func = "SUM"
 			prefix = "sum_"
 			diffColumn.Default = 0
-			diffColumn.NumericPrecision = b.NumericPrecision
+			diffColumn.NumericPrecision = b.Diff.NumericPrecision
 		case "TIMESTAMP", "TIME", "DATE", "DATETIME":
 			diffColumn.Func = "MAX"
 			prefix = "max_"
-			diffColumn.DateLayout = b.DateLayout
+			diffColumn.DateLayout = b.Diff.DateLayout
 
 		default:
 			diffColumn.Func = "COUNT"
@@ -594,7 +592,7 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*DiffColumn {
 //NewBuilder creates a new builder
 func NewBuilder(request *Request, destDB dsc.Manager) (*Builder, error) {
 	transferSuffix := request.Transfer.Suffix
-	if transferSuffix != "" && ! strings.HasPrefix(transferSuffix, "_") {
+	if transferSuffix != "" && !strings.HasPrefix(transferSuffix, "_") {
 		transferSuffix = "_" + transferSuffix
 	}
 	builder := &Builder{
@@ -608,7 +606,7 @@ func NewBuilder(request *Request, destDB dsc.Manager) (*Builder, error) {
 		from:           request.Source.From,
 		isUpperCase:    true,
 		transferSuffix: transferSuffix,
-		taskId:request.ID(),
+		taskId:         request.ID(),
 	}
 	if err := builder.init(destDB); err != nil {
 		return nil, err

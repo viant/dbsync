@@ -35,16 +35,19 @@ type DiffColumn struct {
 	Alias            string
 }
 
-//DifferenceStrategy represents difference strategy
-type DifferenceStrategy struct {
-	Columns   []*DiffColumn
-	CountOnly bool
-	Depth     int `description:"controls detection of data that is similar"`
-	BatchSize int
+//DiffStrategy represents difference strategy
+type DiffStrategy struct {
+	Columns          []*DiffColumn
+	CountOnly        bool
+	Depth            int `description:"controls detection of data that is similar"`
+	BatchSize        int
+	NumericPrecision int
+	DateFormat       string
+	DateLayout       string
 }
 
-//ChunkSync represents chunk sync request part
-type ChunkSync struct {
+//ChunkStrategy represents chunk sync request part
+type ChunkStrategy struct {
 	SQL       string
 	Size      int `description:"chunk size in row count"`
 	QueueSize int
@@ -52,16 +55,12 @@ type ChunkSync struct {
 
 //Strategy sync strategy
 type Strategy struct {
-	Chunk     ChunkSync
-	IDColumns []string
-	Diff DifferenceStrategy
-	NumericPrecision int
-	DateFormat       string
-	DateLayout       string
-	MergeStyle       string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
-	Partition        PartitionSync
-
-	Force            bool `description:"if set skip checks if data in sync"`
+	Chunk      ChunkStrategy
+	IDColumns  []string
+	Diff       DiffStrategy
+	MergeStyle string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
+	Partition  PartitionStrategy
+	Force      bool `description:"if set skip checks if data in sync"`
 }
 
 //Expr returns expression
@@ -89,13 +88,13 @@ func (s *Strategy) Init() error {
 	if s.Diff.BatchSize == 0 {
 		s.Diff.BatchSize = defaultDiffBatchSize
 	}
-	if s.NumericPrecision == 0 {
-		s.NumericPrecision = 5
+	if s.Diff.NumericPrecision == 0 {
+		s.Diff.NumericPrecision = 5
 	}
-	if s.DateFormat == "" && s.DateLayout == "" {
-		s.DateLayout = toolbox.DateFormatToLayout("yyyy-MM-dd hh:mm:ss")
-	} else if s.DateFormat != "" {
-		s.DateLayout = toolbox.DateFormatToLayout(s.DateFormat)
+	if s.Diff.DateFormat == "" && s.Diff.DateLayout == "" {
+		s.Diff.DateLayout = toolbox.DateFormatToLayout("yyyy-MM-dd hh:mm:ss")
+	} else if s.Diff.DateFormat != "" {
+		s.Diff.DateLayout = toolbox.DateFormatToLayout(s.Diff.DateFormat)
 	}
 	if len(s.Partition.Columns) == 0 {
 		s.Partition.Columns = make([]string, 0)
@@ -109,7 +108,7 @@ func (s *Strategy) Init() error {
 	return err
 }
 
-func (c *ChunkSync) Init() error {
+func (c *ChunkStrategy) Init() error {
 	if c.Size > 0 && c.QueueSize == 0 {
 		c.QueueSize = 2
 	}
