@@ -48,7 +48,7 @@ which can could be one of the following:
 
 ####### Transfer service contract
 
-![transfer contract](transfer/contract.png){:height="10%" width="10%"}
+<img src="transfer/contract.png" alt="transfer contract" with="30%>
 
 
 ### Usage
