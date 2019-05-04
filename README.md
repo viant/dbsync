@@ -84,7 +84,7 @@ The last three are used to check if data inconsistency, duplication, id constrai
 
 This process is only applicable for single ID based table.
 
-######  Insert merge strategy
+######  Insert strategy
 In case when source and dest dataset are discrepant and source ID is greater than dest ID, 
 synchronizer takes dest max id, to check if up to that ID both dataset are equal, if so 
 it uses INSERT merge strategy and transfer only source data where source ID is greater then dest max ID.
