@@ -42,8 +42,9 @@ which can could be one of the following:
 
 ### Contract
 
+1. Sync service contract
 ![contract](sync/contract.png)
-
+2. Transfer service contract
 
 
 ### Usage
