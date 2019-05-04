@@ -99,7 +99,7 @@ it uses INSERT strategy and transfer only source data where source ID is greater
 
 <img src="merge_strategy.png" alt="append discrepant" width="40%">
  
-When source ID is greater then dest ID and [insert strategy](#Insert_strategy) can not be applied, 
+When source ID is greater then dest ID and [insert strategy](#insert-merge-strategy) can not be applied, 
 synchronizer would try to reduce/expand dest dataset range where upper bound is limited by 
 dest max ID and delta defined as half dataset ID distance (max id +/- delta),
 if probed data is in sync, narrowed ID is used and delta is increased by half, otherwise decrease for next try.
