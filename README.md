@@ -55,7 +55,7 @@ which can could be one of the following:
 
 
 
-### Managing diff strategy
+### Managing data diff strategy
 
 Detecting data discrepancy uses aggregate function on all or just specified columns.
 Data comparision can be applied on the whole table, virtual partition(s) or chunk level.
