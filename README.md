@@ -42,21 +42,26 @@ which can could be one of the following:
 
 ### Contract
 
-1. Sync service contract
-![contract](sync/contract.png)
-2. Transfer service contract
+#######  Sync service contract
+![dbsync contract](sync/contract.png)
+
+####### Transfer service contract
+![transfer contract](transfer/contract.png)
 
 
 ### Usage
 
 
-##### Diff customization
 
-##### Managing cross vendor data type discrepancy
+##### Managing diff strategy
 
-##### Partitioned synchronization
+##### Managing partition strategy
  
-##### Chunked synchronization
+##### Managing chunk strategy
+
+##### Managing transfer
+
+##### Pseudo columns
 
 ##### Non PK tables synchronization
 
@@ -64,13 +69,20 @@ which can could be one of the following:
 
 ##### Query based synchronization
 
+
+
 ### Running e2e tests
 
 
+
 ### Deployment
-1. Docker compose
-2. Cloud run
-3. Kubernetes
+1. Standalone services
+2. Docker compose
+3. Cloud run
+4. Kubernetes
+
+### Supported database
+
 
 ### Custom build
 
