@@ -43,10 +43,12 @@ which can could be one of the following:
 ### Contract
 
 #######  Sync service contract
+
 ![dbsync contract](sync/contract.png)
 
 ####### Transfer service contract
-![transfer contract](transfer/contract.png){:height="50%" width="50%"}
+
+![transfer contract](transfer/contract.png){:height="10%" width="10%"}
 
 
 ### Usage
