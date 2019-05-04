@@ -46,7 +46,7 @@ which can could be one of the following:
 ![dbsync contract](sync/contract.png)
 
 ####### Transfer service contract
-![transfer contract](transfer/contract.png)
+![transfer contract](transfer/contract.png){:height="50%" width="50%"}
 
 
 ### Usage
