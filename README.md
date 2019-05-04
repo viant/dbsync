@@ -11,7 +11,7 @@ This is achieved by both determining the smallest changed dataset and by dividin
 
 ### Introduction
 
-![syncronization diagram](dbsync.png)
+![synchronization diagram](dbsync.png)
 
 ##### 1. Synchronization status
 
@@ -55,21 +55,56 @@ which can could be one of the following:
 
 
 
-##### Managing diff strategy
+### Managing diff strategy
 
-##### Managing partition strategy
+Detecting data discrepancy uses aggregate function on all or just specified columns.
+Data comparision can be applied on the whole table, virtual partition(s) or chunk level.
+
+By default all dest table columns are used to identified data discrepancy, 
+the following aggregate function rules apply:
+ - for any numeric data type SUM aggregate function is used
+ - for any time/date data type MAX aggregate function is used
+ - for other data type COUNT DISTINCT is used
+
+When **countOnly** option is selected, total rows COUNT is used, this is especially useful when source
+table uses data appends only.
+
+
+In either case for table with single ID column the following aggregates are added:
+ - max id: MAX(id) 
+ - min id: MIN(id) 
+ - total rows count: COUNT(1)
+ - unique distinct count: COUNT(distinct ID) 
+ - unique not null sum: SUM(CASE WHEN ID IS NULL THEN 1 ELSE 0 END) 
+
+The last three are used to check if data inconsistency, duplication, id constraint violation.
+
+
+###### Narrowing change dataset process
+
+This process is only applicable for single ID based table.
+
+In case when source and dest dataset are discrepant and source ID is greater than dest ID, 
+synchronizer takes dest max id, to check if up to that ID both dataset are equal, if so 
+it uses INSERT merge strategy and transfer only source data where source ID is greater then dest max ID.
+
+[Append discrepant](append_discrepant.png)
+
+
+
+###  Managing partition strategy
  
-##### Managing chunk strategy
+###  Managing chunk strategy
 
-##### Managing transfer
+### Managing transfer
 
-##### Pseudo columns
+### Pseudo columns
 
-##### Non PK tables synchronization
+### Non PK tables synchronization
 
-##### Applying custom filters
+### Applying custom filters
 
-##### Query based synchronization
+### Query based synchronization
 
 
 
