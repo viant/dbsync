@@ -48,7 +48,7 @@ which can could be one of the following:
 
 ###### Transfer service contract
 
-<img src="transfer/contract.png" alt="transfer contract" with="100px">
+<img src="transfer/contract.png" alt="transfer contract" width="40%">
 
 
 ### Usage
