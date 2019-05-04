@@ -88,7 +88,7 @@ In case when source and dest dataset are discrepant and source ID is greater tha
 synchronizer takes dest max id, to check if up to that ID both dataset are equal, if so 
 it uses INSERT merge strategy and transfer only source data where source ID is greater then dest max ID.
 
-[Append discrepant](append_discrepant.png)
+![Append discrepant](append_discrepant.png)
 
 
 
