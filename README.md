@@ -71,8 +71,8 @@ table uses data appends only.
 
 
 In either case for single column ID based table the following aggregates are added:
- - max id: MAX(id) 
- - min id: MIN(id) 
+ - max ID: MAX(id) 
+ - min ID: MIN(id) 
  - total rows count: COUNT(1)
  - unique distinct count: COUNT(distinct ID) 
  - unique not null sum: SUM(CASE WHEN ID IS NULL THEN 1 ELSE 0 END) 
@@ -91,7 +91,7 @@ Note that this process is only applicable for single numeric ID based table.
 <img src="insert_strategy.png" alt="insert strategy" width="40%">
 
 In case when source and dest dataset are discrepant and source ID is greater than dest ID, 
-synchronizer takes dest max id, to check if up to that ID both dataset are equal, if so 
+synchronizer takes dest max ID, to check if up to that ID both dataset are equal, if so 
 it uses INSERT strategy and transfer only source data where source ID is greater then dest max ID.
 
 
