@@ -86,7 +86,7 @@ Narrowing process try to find max ID in destination dataset which is in sync wit
 Note that this process is only applicable for single numeric ID based table.
 
 
-######  Insert merge strategy
+######  Insert strategy
 
 <img src="insert_strategy.png" alt="insert strategy" width="40%">
 
@@ -95,11 +95,11 @@ synchronizer takes dest max id, to check if up to that ID both dataset are equal
 it uses INSERT strategy and transfer only source data where source ID is greater then dest max ID.
 
 
-######  Update/Insert merge strategy
+######  Merge strategy
 
 <img src="merge_strategy.png" alt="append discrepant" width="40%">
  
-When source ID is greater then dest ID and [insert strategy](#updateinsert-merge-strategy) can not be applied, 
+When source ID is greater then dest ID and [insert strategy](#insert-strategy) can not be applied, 
 synchronizer would try to reduce/expand dest dataset range where upper bound is limited by 
 dest max ID and delta defined as half dataset ID distance (max id +/- delta),
 if probed data is in sync, narrowed ID is used and delta is increased by half, otherwise decrease for next try.
@@ -108,7 +108,7 @@ Number of iteration in this process is controlled by depth parameter (0 by defau
 When narrowed dataset is determined, merge(inser/update) strategy is used, 
 and synchronizer transfers only source data where source ID is greater then narrowed ID.
 
-###### Delete Merge strategy
+###### Delete/Merge strategy
 
 <img src="delete_merge_strategy.png" alt="delete merge strategy" width="40%">
 
