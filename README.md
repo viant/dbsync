@@ -17,7 +17,7 @@ This is achieved by both determining the smallest changed dataset and by dividin
 
 In this step, synchronizer uses aggregation function to compare source and destination table.
 In case of data discrepancy, the process narrows down source dataset to the one that has been changed.
-When chunks are used, on top of narrowing source dataset, only out of sync chunks are transferred to destination database.
+When chunks or partition or both are used, on top of narrowing source dataset, only out of sync data segments are transferred to destination database.
 
 ##### 2. Data transfer
 
