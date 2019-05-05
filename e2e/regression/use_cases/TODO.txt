@@ -1,4 +1,11 @@
-remove inconisistency use case
+unique nulls
+inconisistent partition
 muli null values
 order position vs non position
-tank with extra data in dest
+
+example:
+target examples
+postgress
+oracle
+aerospike
+bigquery

@@ -1,0 +1,22 @@
+Id based data comparision with numeric precision
+
+db1 is a source and db2 is destination database
+
+
+Input:
+    - db1.events has 2 records
+    - db2.events has 2 records, the first record has different quantity decimal precision
+           (33.2341 <-> 33.23432374000549)
+
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - diff.numericPrecision = 3
+
+
+Output:
+   -  db2.events are not synchronized since no changed data has been identified
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 0
+      - dest count: 0
+      - transferred: 0

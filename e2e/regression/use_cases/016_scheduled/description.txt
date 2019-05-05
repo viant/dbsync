@@ -1,0 +1,17 @@
+Id based schedule synch
+db1 is a source and db3 is destination database
+
+Input:
+    - db1.events 17 records
+    - db3.events no records
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - every 1 run frequency
+
+Output:
+   -  db3.events has all records synchronized from db1.events
+   -  job status: http://localhost:8081/v1/api/job/db3:events
+      - source count: 17
+      - dest count: 0
+      - transferred: 17

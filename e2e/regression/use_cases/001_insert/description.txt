@@ -1,0 +1,15 @@
+Id based synchronization with insert strategy test, db1 is a source and db2 is destination database.
+
+Input:
+
+    - db1.events 9999 records
+    - db2.events no records
+    - sync request with id based synchronization
+        and job id: $index
+
+Output:
+   -  db2.events has all records synchronized from db1.events
+   -  job status: http://localhost:8081/v1/api/job/$index
+        - source count: 9999
+        - dest count: 0
+        - transferred: 9999

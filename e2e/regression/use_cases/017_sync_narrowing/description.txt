@@ -1,0 +1,17 @@
+Id based sync narrowing with merge strategy
+db1 is a source and db2 is destination database
+
+Input:
+    - db1.events 9999 records
+    - db2.events 9999 records, with one entry changed( "id": 9995 -> "quantity": 21.5475951731205 and 33}
+    - sync request with
+        - id based synchronization
+        - job id: depthXX
+        - diff.depth = 5
+
+Output:
+   -  db2.events has all records synchronized from db1.events
+   -  job status: http://localhost:8081/v1/api/job/depthXX
+      - source count: 315
+      - dest count: 315
+      - transferred: 315

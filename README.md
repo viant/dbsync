@@ -6,7 +6,7 @@
 While there are many database solutions providing replication within the same vendor.
 this project provides SQL based cross database vendor data synchronization.
 You may easily synchronize small or large(billions+ records) tables/views in a cost effective way.
-This is achieved by both determining the smallest changed dataset and by dividing dataset in the smaller chunks.
+This is achieved by both determining the smallest changed dataset and by dividing dataset in the partition or/and a smaller chunks.
 
 
 ### Introduction
@@ -23,8 +23,9 @@ When chunks are used, on top of narrowing source dataset, only out of sync chunk
 
 Changed dataset is moved from source to transient table in destination database with transfer service.
 Transfer service streamlines data copy with parallel writes and compacted collections.
-On top of that large dataset can be divided in to smaller transferable chunks by sync process, which 
-provides additional level of the read paralelization and 
+It uses batched inserts or batched load job (BigQuery) to reduce unnecessary round trips.
+On top of that large dataset can be divided in to partition or/and smaller transferable chunks, which 
+provides additional level of the read paralelization. 
 
 ##### 3. Data Merge
 
@@ -46,19 +47,123 @@ which can could be one of the following:
 
 ![dbsync contract](sync/contract.png)
 
+##### Sync service configuration 
+* --url URL location with scheduled synchronization
+* --urlRefresh scehdule location refresh in ms
+* --port service port
+* --debug enabled debug
+* --statsHistory number of completed sync info stored in memory (/v1/api/history/{ID})
+
 ###### Transfer service contract
 
 <img src="transfer/contract.png" alt="transfer contract" width="40%">
 
 
+
+
 ### Usage
 
 
+##### On demand with JSON request
 
-### Managing data diff strategy
+```bash
+curl -X POST -d=@request.json http://syncHost:8081/v1/api/sync
+```
+
+[data.json](usage/request.json)
+```json
+{
+    "Table": "events",
+	"IDColumns": [
+		"id"
+	],
+    "Source": {
+        "Credentials": "mysql-e2e",
+        "Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+        "DriverName": "mysql",
+        "Parameters": {
+            "dbname": "db1"
+        }
+    },
+	"Dest": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db2"
+		}
+	},
+	"Transfer": {
+    	"EndpointIP": "127.0.0.1:8080",
+	    "WriterThreads": 2,
+    	"BatchSize": 2048
+	}
+}
+
+```
+
+##### On demand with YAML request
+
+```bash
+curl -X POST -H=Content-Type=app/yaml -d=@request.json http://syncHost:8081/v1/api/sync
+```
+
+[request.yaml](usage/request.yaml)
+```yaml
+table: events
+idColumns: 
+  - id
+source: 
+  credentials: mysql-e2e
+  descriptor: [username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true
+  driverName: mysql
+  parameters: 
+    dbname: db1
+dest: 
+  credentials: mysql-e2e
+  descriptor: [username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true
+  driverName: mysql
+  parameters: 
+    dbname: db2
+    
+transfer: 
+  endpointIP: 127.0.0.1:8080
+  writerThreads: 2
+  batchSize: 2048
+
+```
+
+
+##### Scheduled sync 
+
+Place scheduled request in folder
+
+[scheduled.yaml](usage/scheduled.yaml)
+```yaml
+table: events
+idColumns:
+  - id
+source:
+  ...
+dest:
+   ...
+transfer:
+  endpointIP: 127.0.0.1:8080
+  batchSize: 2048
+  writerThreads: 2
+diff:
+  countOnly: true  
+schedule:
+  frequency:
+    value: 1
+    unit: hour
+```
+
+
+### Data diff strategy
 
 Detecting data discrepancy uses aggregate function on all or just specified columns.
-Data comparision can be applied on the whole table, virtual partition(s) or chunk level.
+Data comparision can be applied on the whole table, virtual partition(s) or a chunk level.
 
 By default all dest table columns are used to identified data discrepancy, 
 the following aggregate function rules apply:
@@ -120,13 +225,61 @@ When chunked-transfer is used only discrepant chunk are transferred,
 thus deletion is reduced to discrepant chunks.
 
 
-###  Managing partition strategy
- 
-###  Managing chunk strategy
+###### Diff Contract settings
+- diff.columns: custom columns with aggregate function used to compare source and destination
+- diff.countOnly: flag to use only row COUNT comparision
+- diff.depth:  specifies number attempts to find max dest ID synchronized with the source
+- diff.batchSize: number of partition  (512)
+- diff.numericPrecision: default required decimal precision when comparing decimal data (can be also specified on diff.columns level)
+- diff.dateFormat: default date format used to compare date/time data type (can be also specified on diff.columns level)
+- diff.dateLayout: default date layout used to compare date/time data type (can be also specified on diff.columns level)
 
-### Managing transfer
+
+##### Custom data comparision
+
+In scenario where each source data mutation also updates specified column(s) i.e UPDATED, it is more effective to just use
+column(s) in question instead of all of them. 
+Note that, since table is single ID based beside COUNT(1), MAX(ID), MIN(ID) is also used in data comparision.
+
+[custom_diff.yaml](usage/custom_diff.yaml)
+
+```yaml
+table: sites
+idColumns:
+  - id
+source:
+  ...
+dest:
+  ...
+  
+diff:
+  depth: 2
+  columns:
+    - name: UPDATED
+      func: MAX
+```
+
+
+###  Partitioned synchronization
+
+Partition synchronization uses partition values as filter to divide dataset into a smaller partition bound
+segments. Partition column values are generated by a sqlProvider. 
+Only out of syn partition are synchronized, diff computation could be batched into one SQL for number of parition
+which is controlled with batchSize on strategy diff level (512 by default).
+
+While each discrepant partition is synchronized individually, multiple partition can be processed concurrently which 
+is controlled with threads strategy  partition level setting (2 by default) 
+
+
+
+###  Chunk
+
+Chunk synchronization uses ID based range to divide a dataset into a smaller segments.
+Range span is controlled with   
+
 
 ### Pseudo columns
+
 
 ### Non PK tables synchronization
 
@@ -134,7 +287,16 @@ thus deletion is reduced to discrepant chunks.
 
 ### Query based synchronization
 
+### Managing transfer
 
+
+### ORDER/GROUP BY position support
+
+Some dataase do not support GROUP/ORDER BY position, in that case actual unaliased expression has to be used
+resource.positionReference informs query builder if databae vendor support this option.
+ 
+- source.positionReference flags if source database support GROUP/ORDER BY position
+- dest.positionReference flags if dest database support GROUP/ORDER BY position
 
 ### Running e2e tests
 
@@ -143,11 +305,24 @@ thus deletion is reduced to discrepant chunks.
 ### Deployment
 1. Standalone services
 2. Docker compose
-3. Cloud run
-4. Kubernetes
+3. Cloud run - TODO provide examples
+4. Kubernetes - TODO provide examples
 
 ### Supported database
+  - all drivers supporting database/sql
 
+#### Default build RDBMS drivers
+  - BigQuery
+  - Oracle
+  - MySQL
+  - Postgress
+  - Vertica 
+  - ODBC
 
 ### Custom build
+- TODO 
 
+
+### Checking data sync quality
+
+ 

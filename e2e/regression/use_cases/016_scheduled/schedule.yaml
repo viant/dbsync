@@ -1,22 +1,22 @@
-batchSize: 2048
-dest:
-  credentials: mysql-e2e
-  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
-  driverName: mysql
-  parameters:
-    dbname: db3
-endpointIP: 127.0.0.1:8080
-full: false
+table: events
+idColumns:
+  - id
 source:
   credentials: mysql-e2e
   descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
   driverName: mysql
   parameters:
     dbname: db1
-table: events
-idColumns:
-  - id
-writerThreads: 2
+dest:
+  credentials: mysql-e2e
+  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+  driverName: mysql
+  parameters:
+    dbname: db3
+transfer:
+  endpointIP: 127.0.0.1:8080
+  batchSize: 2048
+  writerThreads: 2
 schedule:
   frequency:
     value: 1

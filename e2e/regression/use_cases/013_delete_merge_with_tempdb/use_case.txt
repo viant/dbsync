@@ -1,0 +1,1 @@
+delete merge strategy data sync with temp database

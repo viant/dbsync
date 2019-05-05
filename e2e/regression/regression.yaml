@@ -57,11 +57,11 @@ pipeline:
         dest:
           URL: $sourcePath/sync/app/cron/
 
-      wait:
-        when: $HasResource($path/wait.json)
+      jobStatus:
+        when: $HasResource($path/status.json)
         action: rest/runner:send
-        request: '@wait'
-        comments: wait for job sync
+        request: '@status'
+        comments: get job sync status
 
 
       db1-expect:

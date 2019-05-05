@@ -1,15 +1,10 @@
 {
-	"BatchSize": 2048,
-	"Dest": {
-		"Credentials": "mysql-e2e",
-		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
-		"DriverName": "mysql",
-		"Parameters": {
-			"dbname": "db2"
-		}
-	},
-	"EndpointIP": "127.0.0.1:8080",
-	"Full": false,
+    "Id":"$index",
+	"Table": "events",
+	"IDColumns": [
+        "id"
+    ],
+    "debug":true,
 	"Source": {
 		"Credentials": "mysql-e2e",
 		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
@@ -18,10 +13,20 @@
 			"dbname": "db1"
 		}
 	},
-	"Table": "events",
-	"IDColumns": [
-        "id"
-    ],
-	"NumericPrecision": 3,
-	"WriterThreads": 2
+	"Dest": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db2"
+		}
+	},
+	"Diff": {
+    	"NumericPrecision": 3
+	},
+    "Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 2,
+        "BatchSize": 2048
+    }
 }

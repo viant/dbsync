@@ -25,6 +25,7 @@ pipeline:
     systemPaths:
       - /usr/local/bin
     commands:
+      - export GO111MODULE=on
       - unset GOPATH
       - export LD_LIBRARY_PATH=${env.HOME}/Downloads/instantclient_12_2
       - export PKG_CONFIG_PATH=${env.HOME}/Downloads/instantclient_12_2

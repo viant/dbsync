@@ -1,5 +1,27 @@
 {
-	"BatchSize": 2048,
+
+    "Id": "$index",
+	"Table": "events",
+	"IDColumns": [
+        "id"
+    ],
+
+	"Debug":true,
+
+    "Source": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db1"
+		},
+		"PseudoColumns": [
+            {
+                "Name":"date",
+                "expression": "DATE_FORMAT(t.timestamp, '%Y')"
+            }
+        ]
+	},
 	"Dest": {
 		"Credentials": "mysql-e2e",
 		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
@@ -10,40 +32,26 @@
 		"PseudoColumns": [
     		{
         		"Name":"date",
-		        "expression": "DATE(t.timestamp)"
+		        "expression": "DATE_FORMAT(t.timestamp, '%Y')"
 		    }
 		]
 
 	},
-	"EndpointIP": "127.0.0.1:8080",
-	"CountOnly": true,
-	"Debug":true,
-	"Source": {
-		"Credentials": "mysql-e2e",
-		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
-		"DriverName": "mysql",
-		"Parameters": {
-			"dbname": "db1"
-		},
-		"PseudoColumns": [
-            {
-                "Name":"date",
-                "expression": "DATE(t.timestamp)"
-            }
-        ]
-	},
-	"Table": "events",
-	"IDColumns": [
-        "id"
-    ],
-	"DiffDepth": 5,
 	"Partition": {
 		"Columns": [
 			"date"
 		],
 		"Threads": 1,
-        "ProviderSQL": "SELECT '$FormatTime(now, yyyy-MM-dd)' AS date"
+        "ProviderSQL": "SELECT DATE_FORMAT(NOW(), '%Y') AS date"
 	},
-	"WriterThreads": 1
+	"Diff": {
+       	"CountOnly": true
+	},
+    "Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 1,
+        "TempDatabase":"transfer",
+        "BatchSize": 2048
+    }
 
 }

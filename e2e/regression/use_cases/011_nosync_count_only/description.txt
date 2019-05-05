@@ -1,0 +1,23 @@
+Id based data comparision with countOnly
+
+db1 is a source and db2 is destination database
+
+
+Input:
+    - db1.events has 2 records
+    - db2.events has 2 records with discrepant quantity and event type
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - diff.countOnly: true
+
+Output:
+   -  db2.events are not synchronized since no changed data has been identified
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 0
+      - dest count: 0
+      - transferred: 0
+
+Comments:
+    Since countOnly data comparision check rows count and MAX(ID), MIN(ID), no change has been detected in this scenario,
+    make sure to use countOnly when source data ingestion type is only append.

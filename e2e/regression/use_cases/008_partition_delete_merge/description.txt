@@ -1,0 +1,22 @@
+Id and partition based synchronization with delete merge strategy
+
+db1 is a source and db2 is destination database
+
+
+Input:
+    - db1.events has  9999 records (10 separate partitions)
+    - db2.events has 10000 records (one extra record with ID 19999 with the last partition)
+
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - partition on event_type column, 5 partition threads
+          and sqlProvider defined as: SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1
+
+
+Output:
+   -  db2.events has all data synchronized from db1.events with merge strategy
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 1000
+      - dest count: 1001
+      - transferred: 1000

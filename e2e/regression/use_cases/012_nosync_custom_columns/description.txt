@@ -1,0 +1,22 @@
+Id based data comparision with custom columns
+
+db1 is a source and db2 is destination database
+
+
+Input:
+    - db1.events has 2 records
+    - db2.events has 2 records with discrepant quantity and event type is swapped
+            thus SUM and COUNT do not detect discrepancy
+
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - diff.columns: SUM(event_type), COUNT(DISTINCT event_type)
+
+
+Output:
+   -  db2.events are not synchronized since no changed data has been identified
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 0
+      - dest count: 0
+      - transferred: 0

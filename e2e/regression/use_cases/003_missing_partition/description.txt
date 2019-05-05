@@ -1,0 +1,18 @@
+Id and partition based synchronization with insert strategy
+db1 is a source and db2 is destination database
+
+Input:
+    - db1.events 9999 records (9 distinct partitions)
+    - db2.events with records for only 5 distinct partitions
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - partition on event_type column, 5 partition threads
+          and sqlProvider defined as: SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1
+
+Output:
+   -  db2.events has all missing partition records synchronized from db1.events
+    -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 3999
+      - dest count: 0
+      - transferred: 3999

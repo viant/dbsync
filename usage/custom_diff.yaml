@@ -1,0 +1,22 @@
+table: events
+tempDatabase: transfer
+idColumns:
+  - id
+source:
+  credentials: ora-e2e
+  descriptor: "[username]/[password]@${oracleHost}:1521/ORCL"
+  driverName: oci8
+  parameters:
+    dbname: db1
+
+dest:
+  credentials: gcp-e2e
+  driverName: bigquery
+  parameters:
+    datasetId: db
+
+diff:
+  depth: 2
+  columns:
+    - name: UPDATED
+      func: MAX
