@@ -3,7 +3,7 @@
 
 ### Motivation
 
-While there are many database solutions providing replication within the same vendor.
+While there are many database solutions providing replication within the same vendor,
 this project provides SQL based cross database vendor data synchronization.
 You may easily synchronize small or large(billions+ records) tables/views in a cost effective way.
 This is achieved by both determining the smallest changed dataset and by dividing dataset in the partition or/and a smaller chunks.
