@@ -30,7 +30,7 @@ provides additional level of the read paralelization.
 ##### 3. Data Merge
 
 During checking synchronization status, sync process determines merge strategy based on the changed dataset
-which can could be one of the following:
+which is one of the following:
 
 - insert - append data to destination table
 - merge  - append or update data in destination table
