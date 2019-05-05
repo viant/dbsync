@@ -29,13 +29,17 @@ func (j *Job) Update() {
 	}
 	destCount := 0
 	sourceCount := 0
+	transffered := 0
 	transfers := j.Transfers.Transfers
 	for _, transfer := range transfers {
 		destCount += int(transfer.DestCount)
 		sourceCount += transfer.SourceCount
+		transffered += int(transfer.Transferred)
 	}
 	j.Progress.SourceCount = sourceCount
-	j.Progress.SetDestCount(destCount)
+	j.Progress.DestCount = destCount
+	j.Progress.SetTransferredCount(transffered)
+
 }
 
 //NewJob creates a new job

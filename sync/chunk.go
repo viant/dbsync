@@ -55,6 +55,13 @@ func (c *ChunkInfo) Count() int {
 	return toolbox.AsInt(c.CountValue)
 }
 
+func (c *Chunk) SetSyncMethod(method string) {
+	if c.Method == SyncMethodDeleteMerge {
+		return
+	}
+	c.Method = method
+}
+
 //String returns chunk info
 func (c *ChunkInfo) String() string {
 	return fmt.Sprintf(`{"min":%v, "max":%v, "count":%v}`, c.Min(), c.Max(), c.Count())
@@ -79,6 +86,13 @@ func (s *Chunks) ChunkSize() int {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	return len(s.chunks)
+}
+
+func (c *ChunkInfo) Validate(DQL string, limit int) error {
+	if isLimitSQLBroken := c.Count() > limit; isLimitSQLBroken {
+		return fmt.Errorf("invalid chunk SQL: %v, count: %v is greater than chunk limit: %v", DQL, c.Count(), limit)
+	}
+	return nil
 }
 
 //NewChunks creates a new chunks

@@ -14,15 +14,12 @@ import (
 const (
 	//SyncMethodInsert insert sync method
 	SyncMethodInsert = "insert"
-	//SyncMethodMergeDelete merge delete sync method
-	SyncMethodMergeDelete = "mergeDelete"
+	//SyncMethodDeleteMerge delete merge sync method
+	SyncMethodDeleteMerge = "deleteMerge"
 	//SyncMethodMerge merge sync method
 	SyncMethodMerge = "merge"
-
 	//SyncMethodInsertDelete merge delete sync method
 	SyncMethodDeleteInsert = "deleteInsert"
-
-	defaultDiffBatchSize = 512
 )
 
 //Session represents a ssession
@@ -105,14 +102,12 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 		narrowedCriteria := cloneMap(criteria)
 		narrowedCriteria[s.Builder.IDColumns[0]] = &lessOrEqual{destMaxID}
 		narrowedStatus, err := s.GetSyncInfo(narrowedCriteria, false)
-		if err != nil {
+		if err != nil || narrowedStatus.SourceCount == 0 {
 			return false
 		}
+
 		if narrowedStatus.InSync {
-			status.Method = SyncMethodInsert
-			status.SyncFromID = destMaxID
-			status.MinValue = destMaxID + 1
-			status.SourceCount -= narrowedStatus.SourceCount
+			status.SetDestMaxID(destMaxID, SyncMethodInsert, narrowedStatus)
 			return true
 		}
 	}
@@ -120,10 +115,7 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 	idRange := NewIdRange(sourceMinID, destMaxID)
 
 	if destMaxID, err := s.findInSyncMaxID(idRange, narrowedCriteria, narrowedStatus); err == nil && destMaxID > 0 {
-		status.Method = SyncMethodMerge
-		status.SyncFromID = destMaxID
-		status.MinValue = destMaxID + 1
-		status.SourceCount -= narrowedStatus.SourceCount
+		status.SetDestMaxID(destMaxID, SyncMethodMerge, narrowedStatus)
 		return true
 	}
 	return false
@@ -133,7 +125,6 @@ func (s *Session) findInSyncMaxID(idRange *IdRange, narrowedCriteria map[string]
 	if s.Request.Diff.Depth == 0 {
 		return 0, nil
 	}
-
 	inSyncDestMaxID := 0
 	candidateMaxID := idRange.Next(false)
 	for i := 0; i < s.Request.Diff.Depth; i++ {
@@ -148,22 +139,11 @@ func (s *Session) findInSyncMaxID(idRange *IdRange, narrowedCriteria map[string]
 		if info.InSync {
 			inSyncDestMaxID = info.MaxValue
 			status.SourceCount = info.SourceCount
+			status.DestCount = info.DestCount
 		}
 		candidateMaxID = idRange.Next(info.InSync)
 	}
 	return inSyncDestMaxID, nil
-}
-
-//Info represents a sync info
-type Info struct {
-	InSync        bool
-	Method        string
-	Inconsistency string
-	SourceCount   int
-	SyncFromID    int
-	MinValue      int
-	MaxValue      int
-	depth         int
 }
 
 func (s *Session) runDiffSQL(criteria map[string]interface{}, source, dest *[]Record) ([]string, error) {
@@ -228,16 +208,17 @@ func (s *Session) isMergeDeleteStrategy(source, dest map[string]interface{}) boo
 	if toolbox.AsInt(source[countKey]) < toolbox.AsInt(dest[countKey]) {
 		return true
 	}
-
+	if maxIDColumnAlias := s.Builder.maxIDColumnAlias; maxIDColumnAlias != "" {
+		if toolbox.AsInt(source[maxIDColumnAlias]) < toolbox.AsInt(dest[maxIDColumnAlias]) {
+			return true
+		}
+		minIDColumnAlias := s.Builder.minIDColumnAlias
+		if toolbox.AsInt(source[minIDColumnAlias]) > toolbox.AsInt(dest[minIDColumnAlias]) {
+			return true
+		}
+	}
 	if !IsMapItemEqual(source, dest, countKey) {
 		return false
-	}
-	maxKey := s.Builder.maxIDColumnAlias
-	if maxKey == "" {
-		return false
-	}
-	if toolbox.AsInt(source[maxKey]) < toolbox.AsInt(dest[maxKey]) {
-		return true
 	}
 	return false
 }
@@ -284,15 +265,15 @@ func (s *Session) validateDestinationData(destRecords []Record, criteria map[str
 
 func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumns []string, criteria map[string]interface{}, optimizeAppend bool) (*Info, error) {
 	var err error
-	result := &Info{
-		depth: 1,
-	}
+	result := &Info{}
 	defer func() {
 		if !result.InSync {
 			s.Log(nil, fmt.Sprintf("sync method: %v, %v", result.Method, criteria))
 		}
 	}()
 	result.SourceCount = s.sumRowCount(sourceRecords)
+	result.DestCount = s.sumRowCount(destRecords)
+
 	if len(destRecords) == 0 {
 		if len(sourceRecords) == 0 {
 			result.InSync = true
@@ -339,9 +320,8 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 		if err != nil {
 			return nil, err
 		}
-
 		if s.isMergeDeleteStrategy(sourceRecords[0], destRecords[0]) {
-			result.Method = SyncMethodMergeDelete
+			result.Method = SyncMethodDeleteMerge
 		} else if optimizeAppend {
 			if s.hasOnlyDataAppend(sourceRecords[0], destRecords[0], criteria, result) {
 				return result, nil
@@ -354,13 +334,12 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 
 //GetSyncInfo returns a sync info
 func (s *Session) GetSyncInfo(criteria map[string]interface{}, optimizeAppend bool) (*Info, error) {
-	if s.Partitions.hasKey {
+	if s.Partitions.hasKey && len(s.Partitions.index) > 0 {
 		keyValue := keyValue(s.Partitions.key, criteria)
 		partition, ok := s.Partitions.index[keyValue]
 		if ok && partition.Info != nil {
 			return partition.Info, nil
 		}
-		//TODO analyze why would ever get here
 		return &Info{
 			InSync: true,
 		}, nil
@@ -395,16 +374,17 @@ func (s *Session) BatchSyncInfo() error {
 	if len(batchedCriteria) == 0 {
 		return nil
 	}
-	batchSize := s.Request.Partition.BatchSize(len(batchedCriteria))
+	batchSize := s.Request.Partition.MaxThreads(len(batchedCriteria))
 	limiter := toolbox.NewBatchLimiter(batchSize, len(batchedCriteria))
 	index := newIndexedRecords(s.Partitions.key)
 
 	for i, batchCriteria := range batchedCriteria {
-		s.Log(nil, fmt.Sprintf("processing batch criteria %d/%d", i, len(batchedCriteria)))
+		s.Log(nil, fmt.Sprintf("processing batch criteria %d/%d", i+1, len(batchedCriteria)))
+
 		go func(i int) {
 			limiter.Acquire()
 			defer func() {
-				s.Log(nil, fmt.Sprintf("completed batch criteria processing %d/%d", i, len(batchedCriteria)))
+				s.Log(nil, fmt.Sprintf("completed batch criteria processing %d/%d", i+1, len(batchedCriteria)))
 				limiter.Done()
 			}()
 			if e := s.readSyncInfoBatch(batchCriteria, index); e != nil {
@@ -417,9 +397,10 @@ func (s *Session) BatchSyncInfo() error {
 	limiter.Wait()
 
 	for key, partition := range s.Partitions.index {
+
 		sourceRecords, has := index.source[key]
 		if !has {
-			s.Log(partition, "no source data")
+			s.Log(partition, fmt.Sprintf("no source data, %v, %v", index.source, index.dest))
 			continue
 		}
 		destRecords := index.dest[key]
@@ -519,7 +500,7 @@ func (s *Session) destConfig() *dsc.Config {
 	return &result
 }
 
-func (s *Session) buildTransferJob(partition *Partition, criteria map[string]interface{}, suffix string, sourceCount int) *TransferJob {
+func (s *Session) buildTransferJob(partition *Partition, criteria map[string]interface{}, suffix string, sourceCount, destCount int) *TransferJob {
 	DQL := s.Builder.DQL("", s.Source, criteria, false)
 	s.Log(partition, fmt.Sprintf("DQL:%v\n", DQL))
 	destTable := s.Builder.Table(suffix)
@@ -545,6 +526,7 @@ func (s *Session) buildTransferJob(partition *Partition, criteria map[string]int
 		StartTime: time.Now(),
 		Progress: Progress{
 			SourceCount: sourceCount,
+			DestCount:   destCount,
 		},
 		MaxRetries:      s.Request.Transfer.MaxRetries,
 		TransferRequest: transferRequest,

@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"github.com/viant/dbsync/sync/pseudo"
 	"github.com/viant/dsc"
 	"strings"
 )
@@ -12,8 +13,8 @@ type Resource struct {
 	Table             string
 	From              string
 	Hint              string
-	PseudoColumns     []*PseudoColumn
-	columnExpression  map[string]*PseudoColumn
+	PseudoColumns     []*pseudo.Column
+	columnExpression  map[string]*pseudo.Column
 	PositionReference bool
 	Criteria          map[string]interface{}
 }
@@ -31,7 +32,7 @@ func (r *Resource) Validate() error {
 }
 
 func (r *Resource) indexPseudoColumns() {
-	r.columnExpression = make(map[string]*PseudoColumn)
+	r.columnExpression = make(map[string]*pseudo.Column)
 	if len(r.PseudoColumns) == 0 {
 		return
 	}

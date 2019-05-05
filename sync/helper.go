@@ -15,7 +15,7 @@ func waitForSync(syncTaskID int, job *TransferJob) error {
 		job.TimeTaken = time.Now().Sub(job.StartTime)
 		err := toolbox.RouteToService("get", URL, nil, response)
 		if response != nil && response.WriteCount > 0 {
-			job.SetDestCount(response.WriteCount)
+			job.SetTransferredCount(response.WriteCount)
 		}
 		if err != nil || response.Status != "running" {
 			break

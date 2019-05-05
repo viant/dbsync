@@ -1,7 +1,6 @@
 package main
 
 import (
-	"dbsync/sync"
 	"flag"
 	"fmt"
 	_ "github.com/alexbrainman/odbc"
@@ -9,6 +8,7 @@ import (
 	"github.com/google/gops/agent"
 	_ "github.com/mattn/go-oci8"
 	_ "github.com/viant/bgc"
+	"dbsync/sync"
 	"log"
 	"os"
 )

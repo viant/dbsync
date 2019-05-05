@@ -2,40 +2,22 @@ package sync
 
 import (
 	"fmt"
+	"github.com/viant/dbsync/sync/strategy"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 )
 
-//PartitionStrategy represents partition info
-type PartitionStrategy struct {
-	ProviderSQL string
-	Columns     []string
-	Threads     int
-}
-
-//BatchSize returns batch size for max elements
-func (p *PartitionStrategy) BatchSize(max int) int {
-	batchSize := p.Threads
-	if batchSize == 0 {
-		batchSize = 1
-	}
-	if max < batchSize {
-		batchSize = max
-	}
-	return batchSize
-}
-
 //Partition represents a partition
 type Partition struct {
-	PartitionStrategy
+	strategy.Partition
 	uniqueColumn string
 	criteria     map[string]interface{}
 	Status       string
 	SyncMethod   string
 	SourceCount  int
-
+	DestCount    int
 	*Info
 	err error
 	*sync.WaitGroup
@@ -161,7 +143,7 @@ func (p *Partition) SetSynMethod(method string) {
 }
 
 //NewPartition returns new partition
-func NewPartition(source PartitionStrategy, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {
+func NewPartition(source strategy.Partition, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {
 	suffix := transientTableSuffix
 	if len(source.Columns) > 0 {
 		for _, column := range source.Columns {
@@ -171,11 +153,11 @@ func NewPartition(source PartitionStrategy, values map[string]interface{}, chunk
 	suffix = strings.Replace(suffix, "-", "", strings.Count(suffix, "-"))
 	suffix = strings.Replace(suffix, "+", "", strings.Count(suffix, "+"))
 	return &Partition{
-		PartitionStrategy: source,
-		Suffix:            suffix,
-		criteria:          values,
-		uniqueColumn:      uniqueColumn,
-		WaitGroup:         &sync.WaitGroup{},
-		Chunks:            NewChunks(chunkQueue),
+		Partition:    source,
+		Suffix:       suffix,
+		criteria:     values,
+		uniqueColumn: uniqueColumn,
+		WaitGroup:    &sync.WaitGroup{},
+		Chunks:       NewChunks(chunkQueue),
 	}
 }

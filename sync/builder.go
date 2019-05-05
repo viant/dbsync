@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"github.com/viant/dbsync/sync/diff"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
@@ -513,7 +514,7 @@ func (b *Builder) addStandardDiffColumns() {
 			return
 		}
 	}
-	b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
+	b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 		Func:  "COUNT",
 		Name:  "1",
 		Alias: b.alias("cnt"),
@@ -525,23 +526,23 @@ func (b *Builder) addStandardDiffColumns() {
 			b.minIDColumnAlias = b.alias("min_" + unique)
 
 			b.uniqueCountAlias = b.alias("unique_cnt")
-			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
+			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "COUNT",
 				Name:  unique,
 				Alias: b.uniqueCountAlias,
 			})
 			b.uniqueNotNullSumtAlias = b.alias("non_cnt")
-			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
+			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "SUM",
 				Name:  "(CASE WHEN " + unique + " IS NOT NULL THEN 1 ELSE 0 END)",
 				Alias: b.uniqueNotNullSumtAlias,
 			})
-			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
+			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "MAX",
 				Name:  unique,
 				Alias: b.maxIDColumnAlias,
 			})
-			b.Diff.Columns = append(b.Diff.Columns, &DiffColumn{
+			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "MIN",
 				Name:  unique,
 				Alias: b.minIDColumnAlias,
@@ -552,8 +553,8 @@ func (b *Builder) addStandardDiffColumns() {
 	}
 }
 
-func (b *Builder) buildDiffColumns(columns []dsc.Column) []*DiffColumn {
-	var result = make([]*DiffColumn, 0)
+func (b *Builder) buildDiffColumns(columns []dsc.Column) []*diff.Column {
+	var result = make([]*diff.Column, 0)
 
 	if len(columns) == 0 {
 		return result
@@ -563,7 +564,7 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*DiffColumn {
 		if b.uniques[column.Name()] {
 			continue
 		}
-		diffColumn := &DiffColumn{
+		diffColumn := &diff.Column{
 			Name: column.Name(),
 		}
 		prefix := ""

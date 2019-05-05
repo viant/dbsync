@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+type Criteria map[string]interface{}
+
 type between struct {
 	from int
 	to   int
@@ -20,7 +22,7 @@ type lessOrEqual struct {
 }
 
 func (c lessOrEqual) String() string {
-	return fmt.Sprintf(" <= %v", c.value)
+	return fmt.Sprintf(" >= %v", c.value)
 }
 
 type greaterThan struct {
@@ -28,7 +30,7 @@ type greaterThan struct {
 }
 
 func (c greaterThan) String() string {
-	return fmt.Sprintf(" > %v", c.value)
+	return fmt.Sprintf(" < %v", c.value)
 }
 
 type greaterOrEqual struct {
@@ -36,7 +38,7 @@ type greaterOrEqual struct {
 }
 
 func (c greaterOrEqual) String() string {
-	return fmt.Sprintf(" >= %v", c.value)
+	return fmt.Sprintf(" =< %v", c.value)
 }
 
 func toCriterion(k string, v interface{}) string {

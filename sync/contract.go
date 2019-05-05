@@ -166,6 +166,11 @@ func (r *Request) Validate() error {
 	if r.Dest.Table == "" {
 		return fmt.Errorf("dest table was empty")
 	}
+
+	if r.Transfer.EndpointIP == "" {
+		return fmt.Errorf("transfer.endpointIP was empty")
+	}
+
 	if r.Diff.CountOnly && len(r.Diff.Columns) > 0 {
 		return fmt.Errorf("countOnly can not be set with custom columns")
 	}
