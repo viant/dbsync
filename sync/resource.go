@@ -2,7 +2,7 @@ package sync
 
 import (
 	"fmt"
-	"github.com/viant/dbsync/sync/pseudo"
+	"dbsync/sync/pseudo"
 	"github.com/viant/dsc"
 	"strings"
 )

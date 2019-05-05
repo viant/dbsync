@@ -1,7 +1,7 @@
 package sync
 
 import (
-	"github.com/viant/dbsync/sync/strategy"
+	"dbsync/sync/strategy"
 )
 
 const (

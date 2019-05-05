@@ -1,7 +1,7 @@
 package strategy
 
 import (
-	"github.com/viant/dbsync/sync/diff"
+	"dbsync/sync/diff"
 	"github.com/viant/toolbox"
 )
 

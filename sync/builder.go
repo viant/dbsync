@@ -2,7 +2,7 @@ package sync
 
 import (
 	"fmt"
-	"github.com/viant/dbsync/sync/diff"
+	"dbsync/sync/diff"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"

@@ -2,7 +2,7 @@ package sync
 
 import (
 	"fmt"
-	"github.com/viant/dbsync/sync/strategy"
+	"dbsync/sync/strategy"
 	"sort"
 	"strings"
 	"sync"
