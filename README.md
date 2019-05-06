@@ -675,7 +675,7 @@ Add default import to the following service entry points:
 
 ### Checking data sync quality
 
-In order to compare dataset between source and dest database, you can use endly runner with compare workflow.
+In order to compare dataset between source and dest database, you can use [endly](http://github.com/viant/endly/) runner with compare workflow.
 It uses [dsunit](http://github.com/viant/dsunit/) and  [asserly](http://github.com/viant/assertly/) testing framework for comprehensive data validation. 
 
 
