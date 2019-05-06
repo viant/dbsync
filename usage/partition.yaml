@@ -1,0 +1,45 @@
+table: events
+tempDatabase: transfer
+idColumns:
+  - id
+
+partition:
+  threads: 10
+  providerSQL:  SELECT DATE(timestamp)::varchar AS date, event_type
+                FROM db.events
+                WHERE DATE(timestamp) > sysdate - 3
+                GROUP BY 1, 2
+                ORDER BY 1 DESC, 2 DESC
+  columns:
+    - date
+    - event_type
+
+diff:
+  countOnly: true
+  batchSize: 1024
+
+source:
+  datastore: db
+  driverName: odbc
+  descriptor: driver=Vertica;Database=[database];ServerName=[server];port=5433;user=[username];password=[password]
+  positionReference: true
+  pseudoColumns:
+    - name: date
+      expression: TO_CHAR(t.timestamp, 'YYYY-MM-DD')
+
+
+dest:
+  driverName: bigquery
+  positionReference: true
+  parameters:
+    datasetId: db
+  pseudoColumns:
+    - name: date
+      expression: DATE(t.timestamp)
+
+transfer:
+  endpointIP: 10.55.1.181:8080
+  writerThreads: 3
+  writerCount: 3
+  batchSize: 4194304
+

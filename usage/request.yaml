@@ -3,13 +3,13 @@ idColumns:
   - id
 source:
   credentials: mysql-e2e
-  descriptor: [username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true
+  descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
   driverName: mysql
   parameters:
     dbname: db1
 dest:
   credentials: mysql-e2e
-  descriptor: [username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true
+  descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
   driverName: mysql
   parameters:
     dbname: db2
