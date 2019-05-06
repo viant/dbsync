@@ -1,8 +1,14 @@
 Chunk criteria synchronizes source with destination with criteria: event_type <= 8, and chunk size 10.
 
-- Data between db1 and db2 is in sync upto ID 4, thus only 3 chunks are used.
-- Each chunk uses insert method to transfer data to transient 'chunk table'.
-- After combining all chunks table to temp transient table,  INSERT is used to append data to target db2.event table.
+    - data between db1 and db2 is in sync upto ID 4, thus only 3 chunks are used.
+    - each chunk uses insert method to transfer data to transient 'chunk table'.
+    - after combining all chunks table to temp transient table,  INSERT is used to append data to target db2.event table.
+    - sync request with
+         - non-id based synchronization
+         - job id: $index
+         - criteria: "event_type": " <= 8 "
+         - chunk.size: 5
+         - diff.countOnly: true
 
 Input:
     db1.events - 21 records from ID 1 to 21

@@ -1,0 +1,20 @@
+Id and multi partition based sync with pseudo column
+db1 is a source and db2 is destination database
+
+Input:
+    - db1.events has 20 records with ID 1-20
+    - db2.events has 4 records with ID  1-4
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - partition on date pseudo column and event_type, 1 partition threads
+            sqlProvider defined as: SELECT DATE_FORMAT(DATE(t.timestamp), '%Y-%m-%d') AS date, event_type FROM events t
+        - diff.countOnly: true
+
+Output:
+   -  db2.events has all records synchronized from db1.events
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 16
+      - dest count: 0
+      - transferred: 16
+

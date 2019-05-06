@@ -1,12 +1,14 @@
-non-id and multi partition based sync with pseudo column
+id and partitioned based sync with transfer table suffix
 db1 is a source and db2 is destination database
 
 Input:
-    - db1.events has 20 records with ID 1-20
-    - db2.events has 4 records with ID  1-4
+    - db1.events has 10
+    - db2.events has no records
     - sync request with
-        - multi id based synchronization
+        - id based synchronization
         - job id: $index
+        - partition on event_type
+            sqlProvider: SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1
         - diff.countOnly: true
 
 Output:

@@ -1,0 +1,17 @@
+non-id based sync with delete insert method
+db1 is a source and db2 is destination database
+
+Input:
+    - db1.nevents has 5 records with ID 3-7
+    - db2.nevents has 99 records  with ID 1-100
+    - sync request with
+        - non-id based synchronization
+        - job id: $index
+
+Output:
+   -  db2.nevents has all records synchronized from db1.events
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 5
+      - dest count: 99
+      - transferred: 5
+

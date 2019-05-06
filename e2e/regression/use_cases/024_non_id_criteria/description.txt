@@ -1,0 +1,20 @@
+non-id based sync with criteria
+db1 is a source and db2 is destination database
+
+Input:
+    - db1.nevents has 5 records with ID 3-7 (2 records with event = 4)
+    - db2.nevents has 7 records  with ID 1-9 (1 records with event = 4)
+    - sync request with
+        - non-id based synchronization
+        - job id: $index
+        - partition: SELECT '$FormatTime(now, yyyy-MM-dd)' AS date
+        - diff.countOnly: true
+        - criteria: event_type = 4 (top level)
+
+Output:
+   -  db2.nevents has all records synchronized from db1.events
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 2
+      - dest count: 1
+      - transferred: 2
+

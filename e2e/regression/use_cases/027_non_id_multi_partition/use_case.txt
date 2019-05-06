@@ -1,1 +1,1 @@
-Basic initial data sync
+non-id and multi partition based sync with pseudo column

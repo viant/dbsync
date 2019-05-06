@@ -1,0 +1,18 @@
+multi id based sync
+db1 is a source and db2 is destination database
+
+Input:
+    - db1.events has 20 records with ID 1-20
+    - db2.events has 4 records with ID  1-4
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - diff.countOnly: true
+
+Output:
+   -  db2.events has all records synchronized from db1.events
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 20
+      - dest count: 4
+      - transferred: 20
+

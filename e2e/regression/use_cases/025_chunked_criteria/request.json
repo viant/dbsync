@@ -1,16 +1,13 @@
 {
-	"BatchSize": 2048,
-	"Dest": {
-		"Credentials": "mysql-e2e",
-		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
-		"DriverName": "mysql",
-		"Parameters": {
-			"dbname": "db2"
-		}
-	},
-	"EndpointIP": "127.0.0.1:8080",
-	"CountOnly": true,
-	"Debug":true,
+    "Id": "$index",
+    "Table": "events",
+    "IDColumns": [
+      "id"
+    ],
+
+    "Criteria": {
+      "event_type": " <= 8 "
+    },
 	"Source": {
 		"Credentials": "mysql-e2e",
 		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
@@ -19,15 +16,24 @@
 			"dbname": "db1"
 		}
 	},
-	"Criteria": {
-      "event_type": " <= 8 "
+	"Dest": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db2"
+		}
+	},
+    "Diff": {
+        "CountOnly": true
     },
-	"Table": "events",
-    "IDColumns": [
-      "id"
-    ],
     "Chunk":{
         "Size": 5
     },
-	"WriterThreads": 1
+	"Transfer": {
+            "EndpointIP": "127.0.0.1:8080",
+            "WriterThreads": 1,
+            "TempDatabase":"transfer",
+            "BatchSize": 2048
+    }
 }

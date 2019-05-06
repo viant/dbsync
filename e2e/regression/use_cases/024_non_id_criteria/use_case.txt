@@ -1,1 +1,1 @@
-Basic initial data sync
+non id based sync with criteria

@@ -1,5 +1,31 @@
 {
-	"BatchSize": 2048,
+    "Id": "$index",
+	"Table": "events",
+    "IDColumns": [
+        "id"
+    ],
+    "Partition": {
+        "Columns": [
+            "date",
+            "event_type"
+        ],
+        "Threads": 1,
+        "ProviderSQL": "SELECT DATE_FORMAT(DATE(t.timestamp), '%Y-%m-%d') AS date, event_type FROM events t"
+    },
+    "Source": {
+        "Credentials": "mysql-e2e",
+        "Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+        "DriverName": "mysql",
+        "Parameters": {
+            "dbname": "db1"
+        },
+        "PseudoColumns": [
+            {
+                "Name":"date",
+                "expression": "DATE(t.timestamp)"
+            }
+        ]
+    },
 	"Dest": {
 		"Credentials": "mysql-e2e",
 		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
@@ -8,40 +34,19 @@
 			"dbname": "db2"
 		},
 		"PseudoColumns": [
-                    {
-                        "Name":"date",
-                        "expression": "DATE(t.timestamp)"
-                    }
+            {
+                "Name":"date",
+                "expression": "DATE(t.timestamp)"
+            }
         ]
 	},
-	"EndpointIP": "127.0.0.1:8080",
-	"CountOnly": true,
-	"Debug":true,
-	"Source": {
-		"Credentials": "mysql-e2e",
-		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
-		"DriverName": "mysql",
-		"Parameters": {
-			"dbname": "db1"
-		},
-		"PseudoColumns": [
-                    {
-                        "Name":"date",
-                        "expression": "DATE(t.timestamp)"
-                    }
-        ]
-	},
-	"Table": "events",
-	"Partition": {
-    		"Columns": [
-    			"date",
-    			"event_type"
-    		],
-    		"Threads": 1,
-            "ProviderSQL": "SELECT DATE_FORMAT(DATE(t.timestamp), '%Y-%m-%d') AS date, event_type FROM events t"
+    "Diff": {
+        "CountOnly": true
     },
-	"IDColumns": [
-        "id"
-    ],
-	"WriterThreads": 1
+	"Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 1,
+        "TempDatabase":"transfer",
+            "BatchSize": 2048
+    }
 }

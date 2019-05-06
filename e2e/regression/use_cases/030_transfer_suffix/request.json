@@ -1,23 +1,23 @@
 {
-
     "Id": "$index",
 	"Table": "events",
 	"IDColumns": [
         "id"
     ],
-    "Source": {
+	"Partition": {
+	    "Columns": [
+	        "event_type"
+	    ],
+	    "Threads": 1,
+	    "ProviderSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
+	},
+	"Source": {
 		"Credentials": "mysql-e2e",
 		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
 		"DriverName": "mysql",
 		"Parameters": {
 			"dbname": "db1"
-		},
-		"PseudoColumns": [
-            {
-                "Name":"date",
-                "expression": "DATE_FORMAT(t.timestamp, '%Y')"
-            }
-        ]
+		}
 	},
 	"Dest": {
 		"Credentials": "mysql-e2e",
@@ -25,30 +25,16 @@
 		"DriverName": "mysql",
 		"Parameters": {
 			"dbname": "db2"
-		},
-		"PseudoColumns": [
-    		{
-        		"Name":"date",
-		        "expression": "DATE_FORMAT(t.timestamp, '%Y')"
-		    }
-		]
-
+		}
 	},
-	"Partition": {
-		"Columns": [
-			"date"
-		],
-		"Threads": 1,
-        "ProviderSQL": "SELECT DATE_FORMAT(NOW(), '%Y') AS date"
-	},
-	"Diff": {
-       	"CountOnly": true
-	},
-    "Transfer": {
+   "Diff": {
+        "CountOnly": true
+    },
+	"Transfer": {
         "EndpointIP": "127.0.0.1:8080",
         "WriterThreads": 1,
         "TempDatabase":"transfer",
-        "BatchSize": 2048
-    }
-
+        "BatchSize": 2048,
+        "Suffix":"ns1"
+     }
 }
