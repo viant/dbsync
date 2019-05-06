@@ -24,6 +24,7 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 - [Supported databases](#supported-databases)
 - [Deployment](#deployment)
 - [Checking data sync quality](#checking-data-sync-quality)
+- [GoCover](#gocover)
 - [License](#license)
 - [Credits and Acknowledgements](#credits-and-acknowledgements)
 
@@ -31,11 +32,11 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 
 ### Motivation
 
-Brute force data synchronization is a trivial task, which can be acomplised by coping data from source to destination followed by removal records from dest table that do not exist in source and merging the rest.
-
-While there are many database solutions providing replication within the same vendor,  this project provides SQL based cross database vendor data synchronization.
-for small and large(billions+ records) tables/views in a cost effective way.  This is achieved by both determining the smallest changed dataset and by dividing dataset in the partition or smaller chunks.
-
+With cloud echo system, data synchronization between various database and cloud vendor becomes more and more frequent task.
+Brute force method can be accomplished simply by coping data from source to destination followed by removal records from dest table that do not exist in source and merging the rest.
+While dealing with large dataset or high sync frequency , data sync cost (ingress bandwidth, actual data transfer cost) can not be simply ignored, thus brute force approach may not be the best strategy.
+This project provides SQL based cross database vendor data synchronization for small and large(billions+ records) tables/views in a cost effective way.  
+This is achieved by both determining the smallest changed dataset and by dividing transferable dataset in the partitioned/chunked segments. Both read and writes can be easily parallelized.
 
 ### Introduction
 
@@ -578,21 +579,98 @@ in addition some NoSQL database supported by viant/dsc can be used as source wit
 
 ### Deployment
 1. Standalone services
-2. Docker compose
-3. Cloud run - TODO provide examples
-4. Kubernetes - TODO provide examples
+
+
+
+2. Bulding docker images
+
+
+3. Docker compose
+
+
+4. Cloud run - TODO provide examples
+
+5. Kubernetes - TODO provide examples
 
 
 ##### Custom build
 
-
 If database/sql driver is not listed in the in the currently imported list, you can add import for additional drivers and customize a service build. 
- 
-- TODO add HOWTO 
+
+Add default import to the following service entry points:
+  
+- [sync service](sync/app/app.go)  
+- [trasfer service](transfer/app/app.go)
+
+
 
 ### Checking data sync quality
 
- - TODO add HOWTO
+In order to compare dataset between source and dest database, you can use endly runner with compare workflow.
+It uses [dsunit](http://github.com/viant/dsunit/) and  [asserly](http://github.com/viant/assertly/) testing framework for comprehensive data validation. 
+
+
+```bash
+endly -r=compare
+```
+[compare.yaml](usage/compare.yaml)
+```yaml
+init:
+  date: '2019-01-01'
+pipeline:
+  register:
+    
+    verticadb:
+      action: dsunit:register
+      datastore: db1
+      config:
+        driverName: odbc
+        descriptor: driver=Vertica;Database=[database];ServerName=[server];port=5433;user=[username];password=[password]
+    
+    bigquerydb:
+      action: dsunit:register
+      datastore: db2
+      config:
+        driverName: bigquery
+        parameters:
+          datasetId: db
+
+  compare:
+    action: dsunit:compare
+    maxRowDiscrepancy: 1000000
+    directives:
+      "@indexBy@": date
+      "@numericPrecisionPoint@": 1
+      "@coalesceWithZero@": true
+      "@caseSensitive@": false
+      "@timeFormat@date": 'yyyy-MM-dd'
+    omitEmpty: true
+    source1:
+      datastore: db1
+      SQL: SELECT
+              DATE(timestamp) AS date,
+              COUNT(*) AS cnt,
+              SUM(revenue) AS revenue,
+              SUM(payment) AS payment,
+              SUM(charges) AS charges 
+           FROM  db.events
+           WHERE DATE(timestamp) >= '$date'
+           GROUP BY 1
+           ORDER  BY 1
+    source2:
+      datastore: db2
+      SQL: SELECT
+              DATE(timestamp) AS date,
+              COUNT(*) AS cnt,
+              SUM(revenue) AS revenue,
+              SUM(payment) AS payment,
+              SUM(charges) AS charges
+            FROM  db.events
+            WHERE DATE(timestamp) >= '$date'
+            GROUP BY 1
+            ORDER  BY 1
+```
+
  
 
 ## GoCover

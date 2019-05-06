@@ -1,0 +1,54 @@
+init:
+  date: '2019-01-01'
+pipeline:
+  register:
+
+    verticadb:
+      action: dsunit:register
+      datastore: db1
+      config:
+        driverName: odbc
+        descriptor: driver=Vertica;Database=[database];ServerName=[server];port=5433;user=[username];password=[password]
+
+    bigquerydb:
+      action: dsunit:register
+      datastore: db2
+      config:
+        driverName: bigquery
+        parameters:
+          datasetId: db
+
+  compare:
+    action: dsunit:compare
+    maxRowDiscrepancy: 1000000
+    directives:
+      "@indexBy@": date
+      "@numericPrecisionPoint@": 1
+      "@coalesceWithZero@": true
+      "@caseSensitive@": false
+      "@timeFormat@date": 'yyyy-MM-dd'
+    omitEmpty: true
+    source1:
+      datastore: db1
+      SQL: SELECT
+              DATE(timestamp) AS date,
+              COUNT(*) AS cnt,
+              SUM(revenue) AS revenue,
+              SUM(payment) AS payment,
+              SUM(charges) AS charges
+           FROM  db.events
+           WHERE DATE(timestamp) >= '$date'
+           GROUP BY 1
+           ORDER  BY 1
+    source2:
+      datastore: db2
+      SQL: SELECT
+              DATE(timestamp) AS date,
+              COUNT(*) AS cnt,
+              SUM(revenue) AS revenue,
+              SUM(payment) AS payment,
+              SUM(charges) AS charges
+            FROM  db.events
+            WHERE DATE(timestamp) >= '$date'
+            GROUP BY 1
+            ORDER  BY 1
