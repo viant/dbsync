@@ -613,7 +613,6 @@ in addition some NoSQL database supported by viant/dsc can be used as source wit
   - Oracle
   - MySQL
   - Postgress
-  - Vertica 
   - ODBC
 
 
