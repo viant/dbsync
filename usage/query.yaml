@@ -1,0 +1,19 @@
+table: events
+idColumns:
+  - id
+source:
+  drom: SELECT * FROM events WHERE ID > 5
+  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+  driverName: mysql
+  parameters:
+    dbname: db1
+dest:
+  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+  driverName: mysql
+  parameters:
+    dbname: db2
+transfer:
+  EndpointIP: 127.0.0.1:8080
+  writerThreads: 1
+  tempDatabase: transfer
+  batchSize: 2048

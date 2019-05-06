@@ -1,0 +1,31 @@
+table: events
+tempDatabase: transfer
+idColumns:
+  - id
+
+diff:
+  depth: 2
+  countOnly: true
+
+source:
+  datastore: db
+  driverName: odbc
+  descriptor: driver=Vertica;Database=[database];ServerName=[server];port=5433;user=[username];password=[password]
+  positionReference: true
+
+
+dest:
+  driverName: bigquery
+  positionReference: true
+  parameters:
+    datasetId: db
+
+transfer:
+  endpointIP: 127.0.0.1:8080
+  writerThreads: 3
+  writerCount: 3
+  batchSize: 524287
+
+chunk:
+  size: 1048576
+  queueSize: 10

@@ -1,0 +1,22 @@
+table: events
+criteria:
+  event_type: ' > 4'
+diff:
+  countOnly: true
+source:
+  credentials: mysql-e2e
+  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+  driverName: mysql
+  parameters:
+    dbname: db1
+dest:
+  credentials: mysql-e2e
+  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+  driverName: mysql
+  parameters:
+    dbname: db2
+transfer:
+  EndpointIP: 127.0.0.1:8080
+  WriterThreads: 1
+  TempDatabase: transfer
+  BatchSize: 2048
