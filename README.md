@@ -160,6 +160,9 @@ schedule:
 ```
 
 
+
+
+
 ### Data comparision strategy
 
 Detecting data discrepancy uses aggregate function on all or just specified columns.
@@ -235,6 +238,8 @@ thus deletion is reduced to discrepant chunks.
 - diff.dateLayout: default date layout used to compare date/time data type (can be also specified on diff.columns level)
 
 
+
+
 ##### Custom data comparision
 
 In scenario where each source data mutation also updates specified column(s) i.e UPDATED, it is more effective to just use
@@ -270,6 +275,8 @@ which is controlled with batchSize on strategy diff level (512 by default).
 While each discrepant partition is synchronized individually, multiple partition can be processed concurrently which 
 is controlled with threads strategy  partition level setting (2 by default) 
 
+
+###### Partition Contract settings
 
 
 ###  Chunk
