@@ -1,8 +1,8 @@
 package sync
 
 import (
-	"fmt"
 	"dbsync/sync/pseudo"
+	"fmt"
 	"github.com/viant/dsc"
 	"strings"
 )

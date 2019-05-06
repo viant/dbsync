@@ -1,8 +1,8 @@
 package sync
 
 import (
-	"fmt"
 	"dbsync/sync/diff"
+	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"

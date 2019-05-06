@@ -97,6 +97,9 @@ func (s *service) sync(request *Request, response *Response) {
 		stats := s.StatRegistry.GetOrCreate(request.ID())
 		syncStats := NewSyncStat(session.Job)
 		for _, partition := range session.Partitions.index {
+			if partition.Info == nil {
+				continue
+			}
 			syncStats.Methods[partition.Method]++
 			syncStats.PartitionTransferred++
 		}

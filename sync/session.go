@@ -334,7 +334,7 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 
 //GetSyncInfo returns a sync info
 func (s *Session) GetSyncInfo(criteria map[string]interface{}, optimizeAppend bool) (*Info, error) {
-	if s.Partitions.hasKey && len(s.Partitions.index) > 0 {
+	if s.Partitions.hasKey && s.batchedPartition {
 		keyValue := keyValue(s.Partitions.key, criteria)
 		partition, ok := s.Partitions.index[keyValue]
 		if ok && partition.Info != nil {
@@ -395,21 +395,28 @@ func (s *Session) BatchSyncInfo() error {
 	}
 
 	limiter.Wait()
-
+	matched := 0
+	var keys = make([]string, 0)
 	for key, partition := range s.Partitions.index {
-
+		keys = append(keys, key)
 		sourceRecords, has := index.source[key]
 		if !has {
 			s.Log(partition, fmt.Sprintf("no source data, %v, %v", index.source, index.dest))
 			continue
 		}
+		matched++
 		destRecords := index.dest[key]
 		partition.Info, err = s.buildSyncInfo(sourceRecords, destRecords, s.Partitions.key, partition.criteria, true)
 		if err != nil {
 			return err
 		}
 	}
-	s.batchedPartition = true
+	if matched > 0 {
+		s.batchedPartition = true
+	}
+	if matched == 0 && len(batchedCriteria) > 0 {
+		s.Error(nil, fmt.Sprintf("invalid partition expression - unable to batch sync status by keys %v", keys))
+	}
 	return nil
 }
 
@@ -425,6 +432,10 @@ func (s *Session) Log(partition *Partition, message string) {
 }
 
 func (s *Session) Error(partition *Partition, message string) {
+	if partition == nil {
+		log.Printf("[%v:%v] %v\n", s.Builder.taskId, "", message)
+		return
+	}
 	log.Printf("[%v:%v] %v\n", s.Builder.taskId, partition.Suffix, message)
 }
 

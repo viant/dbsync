@@ -1,8 +1,8 @@
 package sync
 
 import (
-	"fmt"
 	"dbsync/sync/strategy"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
