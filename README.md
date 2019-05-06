@@ -90,7 +90,9 @@ which is one of the following:
 
 ### Usage
 
-##### On demand with JSON request
+#### Sending sync requests
+
+_JSON format_
 
 ```bash
 curl -d @request.json -X POST  -H "Content-Type: application/json"  http://127.0.0.1:8081/v1/api/sync
@@ -128,7 +130,7 @@ curl -d @request.json -X POST  -H "Content-Type: application/json"  http://127.0
 
 ```
 
-##### On demand with YAML request
+_YAML format_
 
 ```bash
     curl --data-binary @request.yaml -X POST  -H "Content-Type: application/yaml"  http://127.0.0.1:8081/v1/api/sync
@@ -159,10 +161,9 @@ transfer:
 
 ```
 
+#### Scheduled sync 
 
-##### Scheduled sync 
-
-Place scheduled request in folder
+Place scheduled request in url specified with sync service
 
 [scheduled.yaml](usage/scheduled.yaml)
 ```yaml
@@ -183,6 +184,20 @@ schedule:
     unit: hour
 ```
 
+#### Monitoring sync service URI 
+
+- /v1/api/jobs: list all recently active sync jobs
+- /v1/api/scheduled list all scheduled jobs
+- /v1/api/job/{ids}: progress info for specified jobs id(s)
+- /v1/api/job/history/{ids}: history info for specified jobs id(s)
+
+```bash
+    curl http://127.0.0.1:8081//v1/api/jobs
+```
+
+#### Monitoring trasfer service URI
+
+- /v1/api/tasks: list all recently active transfer tasks
 
 
 ### Data comparision strategy
