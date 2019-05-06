@@ -595,13 +595,43 @@ in addition some NoSQL database supported by viant/dsc can be used as source wit
 ### Deployment
 1. Standalone services
 
+```bash
+export sourcePath=/tmp/build/dbsync 
+export GO111MODULE=on
+unset GOPATH
+export LD_LIBRARY_PATH=${env.HOME}/Downloads/instantclient_12_2
+export PKG_CONFIG_PATH=${env.HOME}/Downloads/instantclient_12_2
 
+cd /tmp/build/
+git clone https://github.com/viant/dbsync.git
+
+rm $sourcePath/transfer/app/vtransfer
+rm $sourcePath/transfer/app/nohup.out
+cd $sourcePath/transfer/app
+go build -o dbtransfer
+
+
+rm $sourcePath/sync/app/nohup.out
+rm $sourcePath/sync/app/vsync
+cd $sourcePath/sync/app
+rm -rf $sourcePath/sync/app/cron
+go build -o dbsync
+```
 
 2. Bulding docker images
 
+This project use [endly workflow](docker/build.yaml)  to build docker size optimized service images
+
+```bash
+cd /tmp/build/
+git clone https://github.com/viant/dbsync.git
+cd dbsync/docker
+endly -r=build
+``` 
 
 3. Docker compose
 
+[docker-compose.yaml](docker/compose/docker-compose.yaml)
 
 4. Cloud run - TODO provide examples
 
@@ -686,7 +716,6 @@ pipeline:
             ORDER  BY 1
 ```
 
- 
 
 ## GoCover
 
