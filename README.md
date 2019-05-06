@@ -571,12 +571,37 @@ resource.positionReference informs query builder if databae vendor support this 
 
 ### Running end to end test
 
-
 End to end testing provide practical [examples](e2e/regression/use_cases) with how to configure data sync between various database vendor and scenarios
 
- - TODO add HOWTO
+This project uses [endly e2e test runner](http://github.com/viant/endly/)
+
+```bash
+docker run --name endly -v /var/run/docker.sock:/var/run/docker.sock -v ~/e2e:/e2e -v ~/e2e/.secret/:/root/.secret/ -p 7722:22  -d endly/endly:latest-ubuntu16.04  
+ssh root@127.0.0.1 -p 7722 ## password is dev
+
+### create secrets for endly with root/dev credentials
+endly -c=localhost
+
+### create secrets for mysql database with root/dev credentials
+endly -c=mysql-e2e
+
+### create secrets for postgress database with root/dev credentials
+endly -c=pg-e2e
+
+### check all created secrets files
+ls -al ~/.secret/ 
 
 
+## clone dbsync project and run tests
+cd /e2e
+git clone https://github.com/viant/dbsync.git
+cd dbsync/e2e
+
+endly
+
+## or to run individual use case run
+endly -i=partitioned_merge
+```
 
 ### Supported database
 

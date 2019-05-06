@@ -7,6 +7,8 @@ init:
   appVersion: 0.1
   bqCredentials: gcp-e2e
   mysqlCredentials: mysql-e2e
+  pgCredentials: pg-e2e
+
 defaults:
   app: $app
   target: $target
