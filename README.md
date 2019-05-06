@@ -745,7 +745,6 @@ pipeline:
 
 [![GoCover](https://gocover.io/github.com/viant/dbsync)](https://gocover.io/github.com/viant/dbsync)
 
-
 ## License
 
 The source code is made available under the terms of the Apache License, Version 2, as stated in the file `LICENSE`.
