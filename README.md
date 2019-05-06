@@ -215,7 +215,7 @@ When **countOnly** option is selected, total rows COUNT is used, this is especia
 table uses data appends only.
 
 
-In either case for single column ID based table the following aggregates are added:
+In either case for single column ID based table the following aggregates are also added:
  - max ID: MAX(id) 
  - min ID: MIN(id) 
  - total rows count: COUNT(1)
