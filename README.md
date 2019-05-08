@@ -655,7 +655,7 @@ endly
 endly -i=partitioned_merge
 ```
 
-### Supported database
+### Supported databases
 
 All drivers implementing database/sql should be supported,
 in addition some NoSQL database supported by viant/dsc can be used as source with brute-force sync method (force:true)
