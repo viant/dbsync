@@ -1,0 +1,1 @@
+mysql to oracle partitioned delete merge strategy data sync

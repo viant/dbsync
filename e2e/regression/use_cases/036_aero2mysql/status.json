@@ -1,0 +1,19 @@
+{
+  "Method": "get",
+  "URL": "http://localhost:8081/v1/api/job/$index",
+  "Expect": {
+    "Jobs": [
+      {
+        "Status": "done",
+        "Progress": {
+          "DestCount": 0,
+          "SourceCount": 0,
+          "Transferred": 9999
+        }
+      }
+    ]
+  },
+  "Repeat": 10,
+  "SleepTimeMs": 2000,
+  "Exit": "${Jobs[0].Status}:!/running/"
+}

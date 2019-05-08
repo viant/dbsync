@@ -1,0 +1,29 @@
+{
+    "Id":"$index",
+    "Table": "events",
+    "Debug": true,
+    "Force": true,
+
+    "Source": {
+        "DriverName": "aerospike",
+        "Descriptor": "tcp(127.0.0.1:3000)/test",
+        "Parameters": {
+            "dateFormat": "yyyy-MM-dd hh:mm:ss",
+            "keyColumn": "id",
+            "namespace":"test"
+        }
+    },
+    "Dest": {
+        "Credentials": "mysql-e2e",
+        "Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+        "DriverName": "mysql",
+        "Parameters": {
+            "dbname": "db1"
+        }
+    },
+    "Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 2,
+        "BatchSize": 2048
+    }
+}

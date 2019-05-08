@@ -1,0 +1,19 @@
+Id based synchronization with append only
+db1 is a source and db2 is destination database
+In this scenario only new entries will be added, the existing are not modified
+
+Input:
+    - db1.events has 9999 records
+    - db2.events has only last 6 events starting with ID 9994
+
+    - sync request with
+        - id based synchronization
+        - appendOnly: true
+        - job id: $index
+
+Output:
+   -  db2.events has all data synchronized from db1.events with merge strategy
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 9999
+      - dest count: 6
+      - transferred: 9999

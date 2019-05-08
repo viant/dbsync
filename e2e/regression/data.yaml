@@ -16,11 +16,50 @@ pipeline:
         driverName: mysql
         descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
+  pgdb:
+    register:
+      action: dsunit:register
+      datastore: pgdb
+      config:
+        driverName: postgres
+        descriptor: host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
+        credentials: $pgCredentials
+#  bqdb:
+#    register:
+#      action: dsunit:register
+#      datastore: bqdb
+#      config:
+#        driverName: bigquery
+#        credentials: $bqCredentials
+#        parameters:
+#          datasetId: bqdb
+  oradb:
+    action: dsunit:register
+    datastore: oradb
+    Config:
+      driverName: oci8
+      descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+      credentials: $oraCredentials
+      parameters:
+        session:
+          NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
+          NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
+          NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
+          TIME_ZONE: '00:00'
 
-  mysql-ip:
-    action: docker:inspect
-    logging: false
-    name: dbsync
-    post:
-      - dbIP = $Info[0].NetworkSettings.IPAddress
-      - mysqlIP = $Info[0].NetworkSettings.IPAddress
+
+  aerodb:
+    action: dsunit:register
+    datastore: aerodb
+    ping: true
+    config:
+      driverName: aerospike
+      descriptor: tcp(127.0.0.1:3000)/[namespace]
+      parameters:
+        dbname: aerodb
+        namespace: test
+        host: 127.0.0.1
+        port: 3000
+        dateFormat: yyyy-MM-dd hh:mm:ss
+        keyColumn: id
+

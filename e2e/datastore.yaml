@@ -54,19 +54,88 @@ pipeline:
       scripts:
         - URL: datastore/db3/schema.sql
 
+    pgdb:
+      action: dsunit:init
+      datastore: pgdb
+      config:
+        driverName: postgres
+        descriptor: host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
+        credentials: $pgCredentials
+      admin:
+        datastore: postgres
+        config:
+          driverName: postgres
+          descriptor: host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
+          credentials: $pgCredentials
+          ping: true
+      recreate: true
+      scripts:
+        - URL: datastore/pgdb/schema.sql
 
-  transfer:
-    action: dsunit:init
-    datastore: transfer
-    recreate: true
-    config:
-      driverName: mysql
-      descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
-      credentials: $mysqlCredentials
-    admin:
-      datastore: mysql
+#    bqdb:
+#      action: dsunit:init
+#      datastore: bqdb
+#      config:
+#        driverName: bigquery
+#        credentials: $bqCredentials
+#        parameters:
+#          datasetId: bqdb
+#      scripts:
+#        - URL: datastore/bqdb/schema.sql
+
+    oradb:
+      action: dsunit:init
+      datastore: ORADB
+      recreate: true
+      config:
+        driverName: oci8
+        descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+        credentials: $oraCredentials
+        parameters:
+          session:
+            NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
+            NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
+            NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
+            TIME_ZONE: '00:00'
+      admin:
+        datastore: system
+        ping: true
+        config:
+          driverName: oci8
+          credentials: $oraAdminCredentials
+          descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+      scripts:
+        - URL: datastore/oradb/schema.sql
+
+    aerodb:
+      action: dsunit:init
+      datastore: aerodb
       ping: true
+      config:
+        driverName: aerospike
+        descriptor: tcp(127.0.0.1:3000)/[namespace]
+        parameters:
+          dbname: aerodb
+          namespace: test
+          host: 127.0.0.1
+          port: 3000
+          dateFormat: yyyy-MM-dd hh:mm:ss
+          keyColumn: id
+      recreate: true
+
+
+    transfer:
+      action: dsunit:init
+      datastore: transfer
+      recreate: true
       config:
         driverName: mysql
         descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
+      admin:
+        datastore: mysql
+        ping: true
+        config:
+          driverName: mysql
+          descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+          credentials: $mysqlCredentials

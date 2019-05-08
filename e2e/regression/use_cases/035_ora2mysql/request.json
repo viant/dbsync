@@ -1,0 +1,37 @@
+{
+   "Id":"$index",
+	"Table": "events",
+	"Debug": true,
+	"IDColumns": [
+        "id"
+    ],
+	"Source": {
+		"DriverName": "oci8",
+		"Credentials": "ora-e2e",
+        "Descriptor": "[username]/[password]@127.0.0.1:1521/xe"
+	},
+    "Dest": {
+        "Credentials": "mysql-e2e",
+        "Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+        "DriverName": "mysql",
+        "Parameters": {
+            "dbname": "db1"
+        }
+    },
+	"Diff": {
+	    "CountOnly": true,
+	    "BatchSize": 1024
+	},
+	"Partition": {
+        "Columns": [
+            "event_type"
+        ],
+        "Threads": 5,
+        "ProviderSQL":"SELECT event_type FROM oradb.events GROUP BY event_type ORDER BY event_type"
+    },
+    "Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 2,
+        "BatchSize": 2048
+    }
+}

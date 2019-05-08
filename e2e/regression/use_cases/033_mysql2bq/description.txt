@@ -1,0 +1,21 @@
+Mysql to BigQuery data sync
+Id and partition based synchronization with delete merge strategy
+
+db1 is a source and pgdb is destination database
+
+Input:
+    - db1.events has  9999 records (10 separate partitions)
+    - pgdb.events has 9998  records, missing first 2 records and have one extra with ID 19999 within the last partition
+
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - partition on event_type column, 5 partition threads
+          and sqlProvider defined as: SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1
+
+Output:
+   -  pgdb.events has all data synchronized from db1.events with delete merge strategy
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 3000
+      - dest count: 2999
+      - transferred: 3000

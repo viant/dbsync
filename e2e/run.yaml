@@ -4,24 +4,18 @@ init:
   target:
     URL: ssh://127.0.0.1/
     credentials: localhost
-  appVersion: 0.1
   bqCredentials: gcp-e2e
   mysqlCredentials: mysql-e2e
   pgCredentials: pg-e2e
+  oraCredentials: ora-e2e
+  oraAdminCredentials: ora-admin-e2e
 
-defaults:
-  app: $app
-  target: $target
-  buildTarget: $buildTarget
-  appTarget: $appTarget
-  bqCredentials: $bqCredentials
-  mysqlCredentials: $mysqlCredentials
 pipeline:
 #  init:
-#    system:
-#      action: run
-#      request: '@system'
-#      tasks: '*'
+#  system:
+#    action: run
+#    request: '@system'
+#    tasks: '*'
 
   datastore:
     action: run

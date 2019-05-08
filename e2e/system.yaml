@@ -1,12 +1,16 @@
 tasks: $tasks
 init:
   db1Secrets: ${secrets.$mysqlCredentials}
+  pgdbSecrets:  ${secrets.$pgCredentials}
 pipeline:
   destroy:
     stop-images:
       action: docker:stop
       images:
       - mysql
+      - postgres
+      - oracle-xe-11g
+      - aerospike-server
   init:
     services:
       mysql:
@@ -17,4 +21,29 @@ pipeline:
           3306: 3306
         env:
           MYSQL_ROOT_PASSWORD: ${db1Secrets.Password}
-
+      postgres:
+        action: docker:run
+        image: postgres:9.6-alpine
+        name: pgdb
+        ports:
+          5432: 5432
+        env:
+          POSTGRES_USER: ${pgdbSecrets.Username}
+          POSTGRES_PASSWORD: ${pgdbSecrets.Password}
+      oracle:
+        action: docker:run
+        image: thebookpeople/oracle-xe-11g
+        name: oradb
+        ports:
+          1521: 1521
+        env:
+          ORACLE_ALLOW_REMOTE: true
+      aero:
+        action: docker:run
+        image: aerospike/aerospike-server:latest
+        name: aero
+        ports:
+          3000: 3000
+          3001: 3001
+          3002: 3002
+          3004: 3004

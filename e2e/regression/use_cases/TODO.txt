@@ -1,10 +1,12 @@
 unique nulls
 inconisistent partition
 muli null values
-order position vs non position
+
+error cases
+- ID contraint voilation
+
 
 example:
-target examples
 postgress
 oracle
 aerospike

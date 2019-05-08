@@ -1,0 +1,41 @@
+{
+   "Id":"$index",
+	"Table": "events",
+	"IDColumns": [
+        "id"
+    ],
+    "Debug": true,
+    "Source": {
+        "Credentials": "mysql-e2e",
+        "Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+        "DriverName": "mysql",
+        "Parameters": {
+            "dbname": "db1"
+        }
+    },
+	"Dest": {
+		"Credentials": "pg-e2e",
+		"Descriptor": "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable",
+		"DriverName": "postgres",
+		"Parameters": {
+			"dbname": "pgdb"
+		}
+	},
+	"Diff": {
+	    "CountOnly": true,
+	    "BatchSize": 1024
+	},
+	"Partition": {
+        "Columns": [
+            "event_type"
+        ],
+        "Threads": 5,
+        "ProviderSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
+    },
+    "Transfer": {
+            "EndpointIP": "127.0.0.1:8080",
+            "WriterThreads": 2,
+            "BatchSize": 2048
+    },
+    "MergeStyle": "insertOnConflictUpdate"
+}

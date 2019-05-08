@@ -11,7 +11,7 @@ pipeline:
   test:
     tag: $pathMatch
     description: '@use_case'
-    range: 1..030
+    range: 1..036
     subPath: use_cases/${index}_*
     template:
       skip-tag:
@@ -27,19 +27,37 @@ pipeline:
         action: dsunit:prepare
         request: '@req/prepare'
         db: db1
-        comments: populate data for use case if data is defined in folder prepare/${db}
       db2-prepare:
         when: '$HasResource(${path}/prepare/${db})'
         action: dsunit:prepare
         request: '@req/prepare'
         db: db2
-        comments: populate data for use case if data is defined in folder prepare/${db}
       db3-prepare:
         when: '$HasResource(${path}/prepare/${db})'
         action: dsunit:prepare
         request: '@req/prepare'
         db: db3
-        comments: populate data for use case if data is defined in folder prepare/${db}
+      pgdb-prepare:
+        when: '$HasResource(${path}/prepare/${db})'
+        action: dsunit:prepare
+        request: '@req/prepare'
+        db: pgdb
+      pbqb-prepare:
+        when: '$HasResource(${path}/prepare/${db})'
+        action: dsunit:prepare
+        request: '@req/prepare'
+        db: bqdb
+      oraqb-prepare:
+        when: '$HasResource(${path}/prepare/${db})'
+        action: dsunit:prepare
+        request: '@req/prepare'
+        db: oradb
+      aerodb-prepare:
+        when: '$HasResource(${path}/prepare/${db})'
+        action: dsunit:prepare
+        request: '@req/prepare'
+        db: aerodb
+
 
       postJob:
         when: $HasResource($path/request.json)
@@ -69,16 +87,34 @@ pipeline:
         action: dsunit:expect
         request: '@req/expect'
         db: db1
-        comments: verify test db1 state after use case
       db2-expect:
         when: '$HasResource(${path}/expect/${db})'
         action: dsunit:expect
         request: '@req/expect'
         db: db2
-        comments: verify test db2 state after use case
       db3-expect:
         when: '$HasResource(${path}/expect/${db})'
         action: dsunit:expect
         request: '@req/expect'
         db: db3
-        comments: verify test db2 state after use case
+      pgdb-expect:
+        when: '$HasResource(${path}/expect/${db})'
+        action: dsunit:expect
+        request: '@req/expect'
+        db: pgdb
+      bqdb-expect:
+        when: '$HasResource(${path}/expect/${db})'
+        action: dsunit:expect
+        request: '@req/expect'
+        db: bqdb
+      oradb-expect:
+        when: '$HasResource(${path}/expect/${db})'
+        action: dsunit:expect
+        request: '@req/expect'
+        db: oradb
+      aerodb-expect:
+        when: '$HasResource(${path}/expect/${db})'
+        action: dsunit:expect
+        request: '@req/expect'
+        db: aerodb
+

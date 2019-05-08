@@ -1,0 +1,1 @@
+set GCP credentials, uncomment bqdb section  datastore.yaml and data.yaml
