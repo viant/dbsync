@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-
 //Criteria represents criteria values
 type Criteria map[string]interface{}
 

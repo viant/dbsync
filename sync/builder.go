@@ -1,11 +1,11 @@
 package sync
 
 import (
-	"dbsync/sync/diff"
 	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
+	"dbsync/sync/diff"
 	"sort"
 	"strings"
 )

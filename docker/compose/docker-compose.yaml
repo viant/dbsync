@@ -1,21 +1,21 @@
-version: "3.2"
-services:
-  dbsync:
-    container_name: dbsync
-    image: docker.io/viant/dbsync:latest
-    command: ["./dbsync"]
-    ports:
-      - 8081:8080
-    volumes:
-      - ${HOME}/.secret/:/root/.secret/
-      - /opt/dbsync/cron/:/cron/
-    network_mode: bridge
-  dbtransfer:
-    container_name: dbtransfer
-    image: docker.io/viant/dbtransfer:latest
-    command: ["./dbtransfer"]
-    ports:
-      - 8080:8080
-    volumes:
-      - ${HOME}/.secret/:/root/.secret/
-    network_mode: bridge
+  version: "3.2"
+  services:
+    dbtransfer:
+      container_name: dbtransfer
+      image: docker.io/viant/dbtransfer:latest
+      command: ["./dbtransfer"]
+      ports:
+        - 8080:8080
+      volumes:
+        - ${HOME}/.secret/:/root/.secret/
+      network_mode: bridge
+    dbsync:
+      container_name: dbsync
+      image: docker.io/viant/dbsync:latest
+      command: ["./dbsync"]
+      ports:
+        - 8081:8080
+      volumes:
+        - ${HOME}/.discrep/:/root/.secret/
+        - /opt/dbsync/cron/:/cron/
+      network_mode: bridge

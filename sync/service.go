@@ -96,7 +96,7 @@ func (s *service) sync(request *Request, response *Response) {
 
 	defer func() {
 		session.Job.Update()
-		log.Printf("[%v] source: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.DestCount, int(session.Job.Elapsed/time.Millisecond))
+		log.Printf("[%v] source: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.Transferred, int(session.Job.Elapsed/time.Millisecond))
 		stats := s.StatRegistry.GetOrCreate(request.ID())
 		syncStats := NewSyncStat(session.Job)
 		if session.Partitions == nil {
@@ -343,6 +343,7 @@ func (s *service) syncDataPartitions(session *Session) error {
 	}
 	session.Job.Stage = "processing partition"
 	return session.Partitions.Range(func(partition *Partition) error {
+
 		if partition.Info == nil {
 			partition.Info = &Info{Method: SyncMethodMerge}
 			if !optimizeSync {
@@ -351,7 +352,7 @@ func (s *service) syncDataPartitions(session *Session) error {
 		}
 
 		var err error
-		session.Log(partition, fmt.Sprintf("optimizeSync :%v", optimizeSync))
+
 		if optimizeSync {
 			info, err := session.GetSyncInfo(partition.criteria, true)
 			if err != nil {
