@@ -33,9 +33,6 @@ func (c *chunker) readInfo(manager dsc.Manager, DQL string) (*ChunkInfo, error) 
 		c.session.Error(c.partition, fmt.Sprintf("failed run source chunk SQL: %v, %v\n", DQL, err))
 		return nil, err
 	}
-	if err := result.Validate(DQL, c.limit); err != nil {
-		return nil, err
-	}
 	return result, nil
 }
 
@@ -51,6 +48,9 @@ func (c *chunker) readChunkByIDAndLimit(resource *Resource) (*ChunkInfo, string,
 		return nil, "", err
 	}
 	result, err := c.readInfo(manager, DQL)
+	if err = result.Validate(DQL, c.limit); err != nil {
+		return result, DQL, err
+	}
 	return result, DQL, err
 }
 
