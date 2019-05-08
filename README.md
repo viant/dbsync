@@ -40,6 +40,8 @@ This is achieved by both determining the smallest changed dataset and by dividin
 
 ### Introduction
 
+**Synchronization process**
+
 ![synchronization diagram](dbsync.png)
 
 ##### 1. Synchronization status
