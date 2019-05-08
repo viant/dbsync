@@ -44,7 +44,7 @@ This is achieved by both determining the smallest changed dataset and by dividin
 
 ![synchronization diagram](dbsync.png)
 
-##### 1. Synchronization status
+##### 1. Check synchronization status
 
 In this step, synchronizer uses aggregation function to compare source and destination table.
 In case of data discrepancy, the process narrows down source dataset to the one that has been changed.
