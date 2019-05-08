@@ -7,158 +7,156 @@ init:
 
 pipeline:
 
-  transient:
-    clean:
-      action: storage:remove
-      assets:
-        - URL: ${buildPath}/transient
-        - URL: ${buildPath}/final
-
-    mkdir:
-      action: exec:run
-      target: $target
-      commands:
-        - mkdir -p ${buildPath}/transient/usr/lib/
-        - mkdir -p ${buildPath}/transient/usr/local/bin/
-        - mkdir -p ${buildPath}/final/sync
-        - mkdir -p ${buildPath}/final/transfer
-        - cd $Pwd(..)
-        - tar cvzf dbsync.tar.gz *
-        - cp dbsync.tar.gz ${buildPath}/transient/
-        - cd ${buildPath}/transient/
-        - tar xvzf dbsync.tar.gz
-        - cp dep/dep.tar.gz .
-        - cp docker/transient/Dockerfile .
-        - cp docker/final/transfer/Dockerfile ../final/transfer/Dockerfile
-        - cp docker/final/sync/Dockerfile  ../final/sync/
-
-        - cd $Pwd(..)
-        - rm dbsync.tar.gz
-
-    build:
-      action: docker:build
-      path: ${buildPath}/transient/
-      #nocache: true
-      tag:
-        image: dbsync_transient
-        version: ${version}
-
-  extract:
-    start:
-      action: docker:run
-      image: dbsync_transient:${version}
-      name: dbsync_transient
-
-    copy:
-      action: docker:copy
-      assets:
-        'dbsync_transient:/dbsync.tar.gz': ${buildPath}/final/sync/dbsync.tar.gz
-        'dbsync_transient:/dbtransfer.tar.gz': ${buildPath}/final/transfer/dbtransfer.tar.gz
-
-
-    cleaup:
-      action: docker:remove
-      name: dbsync_transient
-
-
-  compact:
-    sync:
-      build:
-        action: docker:build
-        path: ${buildPath}/final/sync
-        nocache: true
-        tag:
-          image: vdbsync
-          version: ${version}
-
-    transfer:
-      build:
-        action: docker:build
-        path: ${buildPath}/final/transfer
-        nocache: true
-        tag:
-          image: vdbtransfer
-          version: ${version}
+#  transient:
+#    clean:
+#      action: storage:remove
+#      assets:
+#        - URL: ${buildPath}/transient
+#        - URL: ${buildPath}/final
+#
+#    mkdir:
+#      action: exec:run
+#      target: $target
+#      commands:
+#        - mkdir -p ${buildPath}/transient/usr/lib/
+#        - mkdir -p ${buildPath}/transient/usr/local/bin/
+#        - mkdir -p ${buildPath}/final/sync
+#        - mkdir -p ${buildPath}/final/transfer
+#        - cd $Pwd(..)
+#        - tar cvzf dbsync.tar.gz *
+#        - cp dbsync.tar.gz ${buildPath}/transient/
+#        - cd ${buildPath}/transient/
+#        - tar xvzf dbsync.tar.gz
+#        - cp dep/dep.tar.gz .
+#        - cp docker/transient/Dockerfile .
+#        - cp docker/final/transfer/Dockerfile ../final/transfer/Dockerfile
+#        - cp docker/final/sync/Dockerfile  ../final/sync/
+#
+#        - cd $Pwd(..)
+#        - rm dbsync.tar.gz
+#
+#    build:
+#      action: docker:build
+#      path: ${buildPath}/transient/
+#      #nocache: true
+#      tag:
+#        image: dbsync_transient
+#        version: ${version}
+#
+#  extract:
+#    start:
+#      action: docker:run
+#      image: dbsync_transient:${version}
+#      name: dbsync_transient
+#
+#    copy:
+#      action: docker:copy
+#      assets:
+#        'dbsync_transient:/dbsync.tar.gz': ${buildPath}/final/sync/dbsync.tar.gz
+#        'dbsync_transient:/dbtransfer.tar.gz': ${buildPath}/final/transfer/dbtransfer.tar.gz
+#
+#
+#    cleaup:
+#      action: docker:remove
+#      name: dbsync_transient
+#
+#
+#  compact:
+#    sync:
+#      build:
+#        action: docker:build
+#        path: ${buildPath}/final/sync
+#        nocache: true
+#        tag:
+#          image: dbsync
+#          version: ${version}
+#
+#    transfer:
+#      build:
+#        action: docker:build
+#        path: ${buildPath}/final/transfer
+#        nocache: true
+#        tag:
+#          image: dbtransfer
+#          version: ${version}
 
 
   deploy:
     auth:
       action: docker:login
-      repository: us.gcr.io/tech-ops-poc
-      credentials: gcr
+      repository: index.docker.io/viant
+      credentials: dockerHubEndly
+#
+#      action: docker:login
+#      repository: us.gcr.io/tech-ops-poc
+#      credentials: gcr
+ 
     sync:
       tagBuildVersion:
         action: docker:tag
         sourceTag:
-          image: vdbsync
+          image: dbsync
           version: ${version}
         targetTag:
-          image: vdbsync
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbsync
+          username: viant
           version: ${version}
 
       tagLatestVersion:
         action: docker:tag
         sourceTag:
-          image: vdbsync
+          image: dbsync
           version: ${version}
         targetTag:
-          image: vdbsync
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbsync
+          username: viant
           version: latest
 
       pushVersion:
         action: docker:push
         tag:
-          image: vdbsync
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbsync
+          username: viant
           version: ${version}
 
       pushLatestVersion:
         action: docker:push
         tag:
-          image: vdbsync
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbsync
+          username: viant
           version: latest
+
     transfer:
       tagBuildVersion:
         action: docker:tag
         sourceTag:
-          image: vdbtransfer
+          image: dbtransfer
           version: ${version}
         targetTag:
-          image: vdbtransfer
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbtransfer
+          username: viant
           version: ${version}
 
       tagLatestVersion:
         action: docker:tag
         sourceTag:
-          image: vdbtransfer
+          image: dbtransfer
           version: ${version}
         targetTag:
-          image: vdbtransfer
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbtransfer
+          username: viant
           version: latest
 
       pushVersion:
         action: docker:push
         tag:
-          image: vdbtransfer
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbtransfer
+          username: viant
           version: ${version}
 
       pushLatestVersion:
         action: docker:push
         tag:
-          image: vdbtransfer
-          registry: us.gcr.io
-          username: tech-ops-poc
+          image: dbtransfer
+          username: viant
           version: latest
