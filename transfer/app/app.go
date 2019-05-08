@@ -25,8 +25,6 @@ func main() {
 	if *debug {
 		dsc.Logf = dsc.StdoutLogger
 	}
-	fmt.Printf("debug: %v\n", *debug)
-
 	go func() {
 		if err := agent.Listen(agent.Options{}); err != nil {
 			log.Fatal(err)
