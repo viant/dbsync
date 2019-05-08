@@ -1,0 +1,19 @@
+table: events
+force: true
+source:
+  driverName: aerospike
+  descriptor: tcp(127.0.0.1:3000)/test
+  parameters:
+    dateFormat: yyyy-MM-dd hh:mm:ss
+    keyColumn: id
+    namespace: test
+dest:
+  credentials: mysql-e2e
+  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+  driverName: mysql
+  parameters:
+    dbname: db1
+transfer:
+  endpointIP: 127.0.0.1:8080
+  writerThreads: 2
+  batchSize: 2048

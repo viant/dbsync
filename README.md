@@ -525,6 +525,35 @@ transfer:
 
 ```
 
+### Forcing sync
+
+Force option, instruct synchronizer to copy entire source dataset with insert sync strategy.
+Make sure that destination table is empty.  
+Since force does not optimize data sync, you can also use with some NoSQL stores (dynamodb, mongodb, firebase, firestore, aerospike) on the source side.
+
+
+```yaml
+table: events
+force: true
+source:
+  driverName: aerospike
+  descriptor: tcp(127.0.0.1:3000)/test
+  parameters:
+    dateFormat: yyyy-MM-dd hh:mm:ss
+    keyColumn: id
+    namespace: test
+dest:
+  credentials: mysql-e2e
+  descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+  driverName: mysql
+  parameters:
+    dbname: db1
+transfer:
+  endpointIP: 127.0.0.1:8080
+  writerThreads: 2
+  batchSize: 2048
+```
+
 ### Non PK tables synchronization
 
 Sometimes there is need to move data that does not have unique/pk contraint (i.e aggregated data), in that case synchronizer moves all source data to transient table
@@ -553,6 +582,12 @@ Transfer process is delegated to the transfer service, the following parameter c
 - id: sync job id, dest table name by default
 - table: name of source and dest table, otherwise override on source,dest level
 - force: flag to brute force data sync: (can be used with NoSQL database type)
+- mergeStyle: merge SQL dialect style valid option are: 
+    - merge 
+    - insertOrReplace
+    - insertOnDuplicateUpdate
+    - insertOnConflictUpdate
+
 - appendOnly: flag to use append new entries
 - transfer.batchSize: batch size for insert/load operation
 - transfer.writerThreads: number of writing threads
@@ -588,8 +623,23 @@ endly -c=mysql-e2e
 ### create secrets for postgress database with root/dev credentials
 endly -c=pg-e2e
 
+### create secrets for postgress database with oradb/system credentials
+endly -c=ora-e2e
+
+### create secrets for postgress database with oradb/oracle credentials
+endly -c=ora-e2e
+
+### create secrets for postgress database with system/oracle credentials
+endly -c=ora-admin-e2e
+
+### create secrets  ~/.secret/gcp-e2e.json for BigQuery dedicated e2e project (https://github.com/viant/endly/tree/master/doc/secrets#google-cloud-credentials)
+
+
 ### check all created secrets files
 ls -al ~/.secret/ 
+
+
+### TODO update HOWTO (with oracle, cgo dep, etc...)
 
 
 ## clone dbsync project and run tests
@@ -614,6 +664,7 @@ in addition some NoSQL database supported by viant/dsc can be used as source wit
   - MySQL
   - Postgress
   - ODBC
+  - Aerospike
 
 
 ### Deployment
