@@ -22,7 +22,7 @@ func Test_IsMapItemEqual(t *testing.T) {
 		"k2": 12,
 	}
 
-	assert.True(t, IsMapItemEqual(r1, r2, "k1"))
-	assert.False(t, IsMapItemEqual(r1, r2, "k2"))
+	assert.True(t, isMapItemEqual(r1, r2, "k1"))
+	assert.False(t, isMapItemEqual(r1, r2, "k2"))
 
 }

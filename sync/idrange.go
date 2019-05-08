@@ -1,13 +1,15 @@
 package sync
 
-type IdRange struct {
+//IDRange represents id range
+type IDRange struct {
 	Min   int
 	Max   int
 	value int
 	delta int
 }
 
-func (r *IdRange) Next(inSync bool) int {
+//Next returns next upper bound value
+func (r *IDRange) Next(inSync bool) int {
 	if inSync {
 		r.value += r.delta
 	} else {
@@ -18,6 +20,7 @@ func (r *IdRange) Next(inSync bool) int {
 	return r.value
 }
 
-func NewIdRange(min, max int) *IdRange {
-	return &IdRange{Min: min, Max: max, value: max, delta: int(float64(max-min) * 0.5)}
+//NewIDRange create a new id range
+func NewIDRange(min, max int) *IDRange {
+	return &IDRange{Min: min, Max: max, value: max, delta: int(float64(max-min) * 0.5)}
 }

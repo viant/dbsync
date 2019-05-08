@@ -98,6 +98,7 @@ type Transfers struct {
 	mutex     *sync.RWMutex
 }
 
+//Init initializes transfer
 func (t *Transfer) Init() error {
 	if t.MaxRetries == 0 {
 		t.MaxRetries = 2

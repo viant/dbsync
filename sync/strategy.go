@@ -7,10 +7,15 @@ import (
 const (
 	//DMLMerge regular MERGE DML
 	DMLMerge = "merge"
-	//DMLInsertReplace INSERT OR REPLACE DML
-	DMLInsertReplace = "insertReplace"
-	//DMLInsertUpddate INSERT ON DUPLICATE UPDATE DML style
-	DMLInsertUpddate = "insertUpdate"
+	//DMLMergeInto regular MERGE DML
+	DMLMergeInto = "mergeInto"
+	//DMLInsertOrReplace INSERT OR REPLACE DML
+	DMLInsertOrReplace = "insertOrReplace"
+	//DMLInsertOnDuplicateUpddate INSERT ON DUPLICATE UPDATE DML style
+	DMLInsertOnDuplicateUpddate = "insertOnDuplicateUpdate"
+
+	//DMLInsertOnConflictUpddate INSERT ON CONFLICT DO UPDATE DML style
+	DMLInsertOnConflictUpddate = "insertOnConflictUpdate"
 	//DMLInsert INSERT
 	DMLInsert = "insert"
 	//DMLDelete DELETE
@@ -28,6 +33,7 @@ type Strategy struct {
 	Force      bool `description:"if set skip checks if data in sync"`
 }
 
+//Init initializes strategy
 func (s *Strategy) Init() error {
 	err := s.Diff.Init()
 	if err == nil {

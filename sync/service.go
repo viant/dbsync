@@ -83,11 +83,14 @@ func (s *service) sync(request *Request, response *Response) {
 	if err := request.Init(); response.SetError(err) {
 		return
 	}
+
 	if err := request.Validate(); response.SetError(err) {
 		return
 	}
+
 	session, err := NewSession(request, response, s.Config)
 	if response.SetError(err) {
+		session.SetStatus(StatusError)
 		return
 	}
 
@@ -96,6 +99,10 @@ func (s *service) sync(request *Request, response *Response) {
 		log.Printf("[%v] source: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.DestCount, int(session.Job.Elapsed/time.Millisecond))
 		stats := s.StatRegistry.GetOrCreate(request.ID())
 		syncStats := NewSyncStat(session.Job)
+		if session.Partitions == nil {
+			session.Error(nil, "partitions were nil")
+			return
+		}
 		for _, partition := range session.Partitions.index {
 			if partition.Info == nil {
 				continue
@@ -107,6 +114,7 @@ func (s *service) sync(request *Request, response *Response) {
 	}()
 	s.Add(session.Job)
 	defer session.Close()
+
 	if err = s.buildPartitions(session); session.SetError(err) {
 		return
 	}
@@ -134,9 +142,16 @@ func (s *service) buildPartitions(session *Session) error {
 	}
 	var partitions = make([]*Partition, 0)
 	for _, values := range partitionsRecords {
+		if session.Builder.isUpperCase {
+			var upperCaseValues = make(map[string]interface{})
+			for k, v := range values {
+				upperCaseValues[strings.ToUpper(k)] = v
+			}
+			values = upperCaseValues
+		}
 		partitions = append(partitions, NewPartition(session.Request.Partition, values, session.Request.Chunk.Threads, uniqueColumn))
 	}
-	session.Partitions = NewPartitions(partitions, session.Request.Partition.Threads)
+	session.Partitions = NewPartitions(partitions, session)
 	return nil
 }
 
@@ -177,7 +192,7 @@ func (s *service) transferDataWithRetries(session *Session, transferJob *Transfe
 		time.Sleep(time.Second * time.Duration(transferJob.Attempts%10))
 	}
 	transferJob.SetError(err)
-	return nil
+	return err
 }
 
 func (s *service) transferData(session *Session, transferJob *TransferJob) error {
@@ -255,7 +270,20 @@ func (s *service) removeInconsistency(session *Session, chunk *Chunk, partition 
 	return s.deleteData(session, chunk.Suffix, chunk.Criteria)
 }
 
+//appendNewRecords removed all record from transient table that exist in dest, then appends only new
+func (s *service) appendNewRecords(session *Session, suffix string, criteria map[string]interface{}) error {
+	DML := session.Builder.transientDeleteDML(suffix, criteria)
+	session.Log(nil, fmt.Sprintf("DML:\n\t%v", DML))
+	if _, err := session.DestDB.Execute(DML); err != nil {
+		return err
+	}
+	return s.appendData(session, suffix, "")
+}
+
 func (s *service) mergeData(session *Session, suffix string, criteria map[string]interface{}) error {
+	if session.Request.AppendOnly {
+		return s.appendNewRecords(session, suffix, criteria)
+	}
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	DML, err := session.Builder.DML(session.Request.MergeStyle, suffix, criteria)
@@ -293,6 +321,8 @@ func (s *service) deletePartitionData(session *Session, partition *Partition) er
 }
 
 func (s *service) deleteData(session *Session, suffix string, criteria map[string]interface{}) error {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	DML, err := session.Builder.DML(DMLDelete, suffix, criteria)
 	session.Log(nil, fmt.Sprintf("DML:\n\t%v", DML))
 	if err != nil {
@@ -313,9 +343,16 @@ func (s *service) syncDataPartitions(session *Session) error {
 	}
 	session.Job.Stage = "processing partition"
 	return session.Partitions.Range(func(partition *Partition) error {
-		var err error
+		if partition.Info == nil {
+			partition.Info = &Info{Method: SyncMethodMerge}
+			if !optimizeSync {
+				partition.Info.Method = SyncMethodInsert
+			}
+		}
 
-		if !session.Request.Force {
+		var err error
+		session.Log(partition, fmt.Sprintf("optimizeSync :%v", optimizeSync))
+		if optimizeSync {
 			info, err := session.GetSyncInfo(partition.criteria, true)
 			if err != nil {
 				return err
@@ -355,6 +392,7 @@ func (s *service) syncDataPartitions(session *Session) error {
 				}
 				fallthrough
 			default:
+
 				err = s.mergePartitionData(session, partition)
 			}
 		}
@@ -368,6 +406,7 @@ func (s *service) syncDataPartition(session *Session, partition *Partition) erro
 	}
 
 	transferJob := session.buildTransferJob(partition, partition.criteria, partition.Suffix, partition.SourceCount, partition.DestCount)
+	fmt.Sprintf("transferJob:%v\n", transferJob)
 	session.Job.Add(transferJob)
 	return s.transferDataWithRetries(session, transferJob)
 }

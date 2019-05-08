@@ -13,15 +13,14 @@ import (
 //Builder represents SQL builder
 type Builder struct {
 	Strategy         //request sync meta
-	taskId           string
+	ddl              string
+	taskID           string
 	transferSuffix   string
 	tempDatabase     string
 	uniques          map[string]bool
 	partitions       map[string]bool
-	manager          dsc.Manager
 	source           *Resource
 	dest             *Resource
-	dialect          dsc.DatastoreDialect
 	table            string
 	from             string
 	columns          []dsc.Column
@@ -34,15 +33,6 @@ type Builder struct {
 	countColumnAlias       string
 	uniqueCountAlias       string
 	uniqueNotNullSumtAlias string
-}
-
-//Dialect returns dest database dialect
-func (b *Builder) Dialect() dsc.DatastoreDialect {
-	if b.dialect != nil {
-		return b.dialect
-	}
-	b.dialect = dsc.GetDatastoreDialect(b.manager.Config().DriverName)
-	return b.dialect
 }
 
 //HasDatePartition returns true if sync has a partition
@@ -83,20 +73,17 @@ func (b *Builder) QueryTable(suffix string) string {
 
 //DDL returns transient table DDL for supplied suffix
 func (b *Builder) DDL(tempTable string) (string, error) {
-	dialect := b.Dialect()
-	DDL, err := dialect.ShowCreateTable(b.manager, b.table)
-	if err != nil {
-		return "", err
-	}
+	DDL := b.ddl
 	if tempTable != "" {
 		DDL = strings.Replace(DDL, b.Table(""), b.Table(tempTable), 1)
 	}
+	DDL = strings.Replace(DDL, ";", "", 1)
 	return DDL, nil
 }
 
 func (b *Builder) columnExpression(column string, resource *Resource) string {
 	if pseudoColumn, ok := resource.columnExpression[column]; ok {
-		return pseudoColumn.Expression + " AS " + column
+		return pseudoColumn.Expression + " AS " + b.alias(column)
 	}
 	return column
 }
@@ -202,17 +189,28 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 	if dedupe {
 		dedupeFunction = "MAX"
 	}
+
 	for _, column := range b.columns {
 		if _, has := b.uniques[column.Name()]; has {
 			continue
 		}
-		alias, ok := resource.columnExpression[column.Name()]
-		if !ok {
-			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, column.Name(), column.Name()))
+		if dedupe {
+			expression, ok := resource.columnExpression[column.Name()]
+			if !ok {
+				projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, column.Name(), b.alias(column.Name())))
+				continue
+			}
+			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, expression, b.alias(column.Name())))
 			continue
 		}
-		projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, alias, column.Name()))
+		expression, ok := resource.columnExpression[column.Name()]
+		if !ok {
+			projection = append(projection, fmt.Sprintf("%v", b.alias(column.Name())))
+			continue
+		}
+		projection = append(projection, fmt.Sprintf("%v AS %v", expression, b.alias(column.Name())))
 	}
+
 	if len(b.IDColumns) > 0 {
 		projection = append(b.IDColumns, projection...)
 	}
@@ -229,38 +227,15 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 	return DQL
 }
 
-func (b *Builder) init(manager dsc.Manager) error {
-	if manager == nil {
-		return fmt.Errorf("manager was nil")
-	}
-	b.manager = manager
-	b.dialect = dsc.GetDatastoreDialect(manager.Config().DriverName)
-	datastore, err := b.dialect.GetCurrentDatastore(manager)
-	if err != nil {
-		return err
-	}
+func (b *Builder) init() error {
 	b.uniques = make(map[string]bool)
 	if len(b.IDColumns) == 0 {
 		b.IDColumns = make([]string, 0)
 	}
-	for _, column := range b.IDColumns {
-		b.uniques[column] = true
-	}
-
 	b.source.indexPseudoColumns()
 	b.dest.indexPseudoColumns()
 	b.partitions = make(map[string]bool)
-
-	for _, partition := range b.Partition.Columns {
-		b.partitions[partition] = true
-	}
-	if b.columns, err = b.dialect.GetColumns(manager, datastore, b.table); err != nil {
-		return err
-	}
 	for _, column := range b.columns {
-		if b.isUpperCase && strings.ToLower(column.Name()) == column.Name() {
-			b.isUpperCase = false
-		}
 		b.columnsByName[column.Name()] = column
 	}
 
@@ -282,6 +257,21 @@ func (b *Builder) init(manager dsc.Manager) error {
 		}
 	}
 	b.addStandardDiffColumns()
+	for _, column := range b.IDColumns {
+		b.uniques[column] = true
+		if b.isUpperCase {
+			column = strings.ToUpper(column)
+			b.uniques[column] = true
+		}
+	}
+
+	for _, partition := range b.Partition.Columns {
+		b.partitions[partition] = true
+		if b.isUpperCase {
+			partition = strings.ToUpper(partition)
+			b.partitions[partition] = true
+		}
+	}
 	return nil
 }
 
@@ -340,12 +330,18 @@ func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *Resour
 //DML returns DML
 func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface{}) (string, error) {
 	switch dmlType {
-	case DMLInsertReplace:
+	case DMLInsertOrReplace:
 		return b.insertReplaceDML(suffix, filter), nil
-	case DMLInsertUpddate:
-		return b.insertUpdateDML(suffix, filter), nil
+	case DMLInsertOnDuplicateUpddate:
+		return b.insertOnDuplicateUpdateDML(suffix, filter), nil
+	case DMLInsertOnConflictUpddate:
+		return b.insertOnConflictUpdateDML(suffix, filter), nil
+
 	case DMLMerge:
 		return b.mergeDML(suffix, filter), nil
+	case DMLMergeInto:
+		return b.mergeIntoDML(suffix, filter), nil
+
 	case DMLInsert:
 		return b.insertDML(suffix, filter), nil
 	case DMLDelete:
@@ -355,18 +351,36 @@ func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface
 }
 
 func (b *Builder) insertNameAndValues() (string, string) {
+	return b.aliasedInsertNameAndValues("", "")
+}
+
+func (b *Builder) aliasValue(alias string, value string, resource *Resource) string {
+	if alias == "" {
+		return b.columnExpression(value, resource)
+	}
+	expression := b.columnExpression(value, resource)
+	if expression == value {
+		value = alias + value
+	} else {
+		value = strings.Replace(expression, "t.", alias, strings.Count(expression, "t."))
+	}
+	return value
+}
+
+func (b *Builder) aliasedInsertNameAndValues(srcAlias, destAlias string) (string, string) {
 	var names = make([]string, 0)
 	var values = make([]string, 0)
+
 	for _, column := range b.IDColumns {
-		names = append(names, column)
-		values = append(values, b.columnExpression(column, b.dest))
+		names = append(names, destAlias+column)
+		values = append(values, b.aliasValue(srcAlias, column, b.dest))
 	}
 	for _, column := range b.columns {
 		if _, ok := b.uniques[column.Name()]; ok {
 			continue
 		}
-		names = append(names, column.Name())
-		values = append(values, b.columnExpression(column.Name(), b.dest))
+		names = append(names, destAlias+column.Name())
+		values = append(values, b.aliasValue(srcAlias, column.Name(), b.dest))
 	}
 	return strings.Join(names, ","), strings.Join(values, ",")
 }
@@ -405,15 +419,33 @@ func (b *Builder) AppendDML(sourceSuffix, destSuffix string) string {
 	return fmt.Sprintf("INSERT INTO %v(%v) SELECT %v FROM (%v) t", b.Table(destSuffix), names, values, DQL)
 }
 
-func (b *Builder) insertUpdateDML(suffix string, wfilter map[string]interface{}) string {
+func (b *Builder) insertOnDuplicateUpdateDML(suffix string, wfilter map[string]interface{}) string {
 	DML := b.baseInsert(suffix, false)
 	return fmt.Sprintf("%v \nON DUPLICATE KEY \n UPDATE %v", DML, b.updateSetValues())
+}
+
+func (b *Builder) insertOnConflictUpdateDML(suffix string, filter map[string]interface{}) string {
+	DML := b.baseInsert(suffix, false)
+	updateDML := b.updateSetValues()
+	updateDML = strings.Replace(updateDML, "t.", "excluded.", strings.Count(updateDML, "t."))
+	return fmt.Sprintf("%v \nON CONFLICT(%v) DO\n UPDATE SET %v", DML, strings.Join(b.IDColumns, ","), updateDML)
 }
 
 const mergeSQL = `
 MERGE %v d
 USING %v t
 ON %v
+WHEN MATCHED THEN
+  UPDATE SET %v
+WHEN NOT MATCHED THEN
+  INSERT (%v)
+  VALUES(%v)
+`
+
+const mergeINTOSQL = `
+MERGE INTO %v d
+USING %v t
+ON (%v)
 WHEN MATCHED THEN
   UPDATE SET %v
 WHEN NOT MATCHED THEN
@@ -431,7 +463,15 @@ func (b *Builder) filterCriteriaColumn(key, alias string, resource *Resource) st
 	return column
 }
 
+func (b *Builder) mergeIntoDML(suffix string, filter map[string]interface{}) string {
+	return b.mergeWithTemplateDML(suffix, filter, mergeINTOSQL, true, true)
+}
+
 func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) string {
+	return b.mergeWithTemplateDML(suffix, filter, mergeSQL, false, false)
+}
+
+func (b *Builder) mergeWithTemplateDML(suffix string, filter map[string]interface{}, template string, idCriteriaOnly bool, insertAlias bool) string {
 	dedupe := len(b.uniques) > 0
 	DQL := b.DQL(suffix, b.dest, nil, dedupe)
 	var onCriteria = make([]string, 0)
@@ -441,15 +481,21 @@ func (b *Builder) mergeDML(suffix string, filter map[string]interface{}) string 
 	}
 	filterKeys := toolbox.MapKeysToStringSlice(filter)
 	sort.Strings(filterKeys)
-
-	for _, k := range filterKeys {
-		v := filter[k]
-		column := b.filterCriteriaColumn(k, "d", b.dest)
-		onCriteria = append(onCriteria, toCriterion(column, v))
+	if !idCriteriaOnly {
+		for _, k := range filterKeys {
+			v := filter[k]
+			column := b.filterCriteriaColumn(k, "d", b.dest)
+			onCriteria = append(onCriteria, toCriterion(column, v))
+		}
 	}
 	setValues := b.updateSetValues()
-	names, values := b.insertNameAndValues()
-	return fmt.Sprintf(mergeSQL,
+	var srcAlias, destAlias string
+	if insertAlias {
+		srcAlias = "t."
+		destAlias = "d."
+	}
+	names, values := b.aliasedInsertNameAndValues(srcAlias, destAlias)
+	return fmt.Sprintf(template,
 		b.Table(""),
 		fmt.Sprintf("(%v)", DQL),
 		strings.Join(onCriteria, " AND "),
@@ -485,6 +531,21 @@ func (b *Builder) insertReplaceDML(suffix string, filter map[string]interface{})
 	return b.baseInsert(suffix, true) + b.getInsertWhereClause(filter)
 }
 
+func (b *Builder) transientDeleteDML(suffix string, filter map[string]interface{}) string {
+	whereClause := b.toWhereCriteria(filter, b.dest)
+	if len(b.IDColumns) > 0 {
+		uniqueExpr := strings.Join(b.IDColumns, ",")
+		inCriteria := fmt.Sprintf("(%v) IN (SELECT %v FROM %v t %v)", uniqueExpr, uniqueExpr, b.Table(""), whereClause)
+		if whereClause != "" {
+			whereClause += " AND " + inCriteria
+		} else {
+			whereClause = " WHERE " + inCriteria
+		}
+	}
+	whereClause = removeTableAliases(whereClause, "t")
+	return fmt.Sprintf("DELETE FROM %v %v", b.Table(suffix), whereClause)
+}
+
 func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string {
 	whereClause := b.toWhereCriteria(filter, b.dest)
 	if len(b.IDColumns) > 0 {
@@ -508,6 +569,7 @@ func (b *Builder) alias(alias string) string {
 }
 
 func (b *Builder) addStandardDiffColumns() {
+
 	b.countColumnAlias = b.alias("cnt")
 	for _, candidate := range b.Diff.Columns {
 		if candidate.Name == b.countColumnAlias {
@@ -591,7 +653,7 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*diff.Column {
 }
 
 //NewBuilder creates a new builder
-func NewBuilder(request *Request, destDB dsc.Manager) (*Builder, error) {
+func NewBuilder(request *Request, ddl string, isUpperCaseTable bool, destColumns []dsc.Column) (*Builder, error) {
 	transferSuffix := request.Transfer.Suffix
 	if transferSuffix != "" && !strings.HasPrefix(transferSuffix, "_") {
 		transferSuffix = "_" + transferSuffix
@@ -599,18 +661,22 @@ func NewBuilder(request *Request, destDB dsc.Manager) (*Builder, error) {
 	builder := &Builder{
 		tempDatabase:   request.Transfer.TempDatabase,
 		Strategy:       request.Strategy,
-		columns:        make([]dsc.Column, 0),
+		columns:        destColumns,
 		columnsByName:  make(map[string]dsc.Column),
 		table:          request.Dest.Table,
 		source:         request.Source,
+		ddl:            ddl,
 		dest:           request.Dest,
 		from:           request.Source.From,
-		isUpperCase:    true,
+		isUpperCase:    isUpperCaseTable,
 		transferSuffix: transferSuffix,
-		taskId:         request.ID(),
+		taskID:         request.ID(),
 	}
-	if err := builder.init(destDB); err != nil {
+	if err := builder.init(); err != nil {
 		return nil, err
+	}
+	if isUpperCaseTable {
+		request.UseUpperCase()
 	}
 	return builder, nil
 }

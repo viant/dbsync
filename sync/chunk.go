@@ -55,6 +55,7 @@ func (c *ChunkInfo) Count() int {
 	return toolbox.AsInt(c.CountValue)
 }
 
+//SetSyncMethod sets sync method
 func (c *Chunk) SetSyncMethod(method string) {
 	if c.Method == SyncMethodDeleteMerge {
 		return
@@ -88,6 +89,7 @@ func (s *Chunks) ChunkSize() int {
 	return len(s.chunks)
 }
 
+//Validate check is chunk is valid
 func (c *ChunkInfo) Validate(DQL string, limit int) error {
 	if isLimitSQLBroken := c.Count() > limit; isLimitSQLBroken {
 		return fmt.Errorf("invalid chunk SQL: %v, count: %v is greater than chunk limit: %v", DQL, c.Count(), limit)

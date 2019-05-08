@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"math"
 	"strings"
@@ -42,7 +43,8 @@ func indexBy(records []Record, index []string) map[string]Record {
 	for _, record := range records {
 		key := ""
 		for i := range index {
-			key += toolbox.AsString(record[index[i]])
+			indexValue := getValue(index[i], record)
+			key += toolbox.AsString(indexValue)
 		}
 		result[key] = record
 	}
@@ -65,8 +67,8 @@ func round(value interface{}, numericPrecision int) float64 {
 	return math.Round(f/unit) * unit
 }
 
-//IsMapItemEqual compares map item
-func IsMapItemsEqual(sourceMap, destMap map[string]interface{}, key []string) bool {
+//isMapItemEqual compares map item
+func isMapItemsEqual(sourceMap, destMap map[string]interface{}, key []string) bool {
 	for _, k := range key {
 		if !checkMapItem(sourceMap, destMap, k, func(source, dest interface{}) bool {
 			return source == dest
@@ -77,32 +79,68 @@ func IsMapItemsEqual(sourceMap, destMap map[string]interface{}, key []string) bo
 	return len(key) > 0
 }
 
-//IsMapItemEqual compares map item
-func IsMapItemEqual(sourceMap, destMap map[string]interface{}, key string) bool {
+//isMapItemEqual compares map item
+func isMapItemEqual(sourceMap, destMap map[string]interface{}, key string) bool {
 	return checkMapItem(sourceMap, destMap, key, func(source, dest interface{}) bool {
 		return source == dest
 	})
 }
 
-//IsMapItemEqual compares map item
+//isMapItemEqual compares map item
 func checkMapItem(sourceMap, destMap map[string]interface{}, key string, check func(source, dest interface{}) bool) bool {
-	if toolbox.IsInt(destMap[key]) || toolbox.IsInt(sourceMap[key]) {
-		destMap[key] = toolbox.AsInt(destMap[key])
-		sourceMap[key] = toolbox.AsInt(sourceMap[key])
-	} else if toolbox.IsFloat(destMap[key]) || toolbox.IsFloat(sourceMap[key]) {
-		destMap[key] = toolbox.AsFloat(destMap[key])
-		sourceMap[key] = toolbox.AsFloat(sourceMap[key])
-	} else if toolbox.IsBool(destMap[key]) || toolbox.IsBool(sourceMap[key]) {
-		destMap[key] = toolbox.AsBoolean(destMap[key])
-		sourceMap[key] = toolbox.AsBoolean(sourceMap[key])
+	destValue := getValue(key, destMap)
+	sourceValue := getValue(key, sourceMap)
+	if toolbox.IsInt(destValue) || toolbox.IsInt(sourceValue) {
+		destMap[key] = toolbox.AsInt(destValue)
+		sourceMap[key] = toolbox.AsInt(sourceValue)
+	} else if toolbox.IsFloat(destValue) || toolbox.IsFloat(sourceValue) {
+		destMap[key] = toolbox.AsFloat(destValue)
+		sourceMap[key] = toolbox.AsFloat(sourceValue)
+	} else if toolbox.IsBool(destMap[key]) || toolbox.IsBool(sourceValue) {
+		destMap[key] = toolbox.AsBoolean(destValue)
+		sourceMap[key] = toolbox.AsBoolean(sourceValue)
+	} else {
+		destMap[key] = destValue
+		sourceMap[key] = sourceValue
 	}
 	return check(sourceMap[key], destMap[key])
 }
 
-func keyValue(key []string, criteria map[string]interface{}) string {
+func getValue(key string, data map[string]interface{}) interface{} {
+	value, ok := data[key]
+	if ok {
+		return value
+	}
+	if !ok {
+		for candidate, v := range data {
+			if strings.ToLower(candidate) == strings.ToLower(key) {
+				return v
+			}
+		}
+	}
+	return value
+}
+
+func getRecordValue(key string, data map[string]Record) Record {
+	value, ok := data[key]
+	if ok {
+		return value
+	}
+	if !ok {
+		for candidate, v := range data {
+			if strings.ToLower(candidate) == strings.ToLower(key) {
+				return v
+			}
+		}
+	}
+	return value
+}
+
+func keyValue(keyValues []string, criteria map[string]interface{}) string {
 	var result = make([]string, 0)
-	for _, k := range key {
-		result = append(result, toolbox.AsString(criteria[k]))
+	for i := range keyValues {
+		value := getValue(keyValues[i], criteria)
+		result = append(result, toolbox.AsString(value))
 	}
 	return strings.Join(result, "_")
 }
@@ -113,4 +151,30 @@ func removeTableAliases(expression, alias string) string {
 		return expression
 	}
 	return strings.Replace(expression, alias+".", "", count)
+}
+
+func isUpperCaseTable(columns []dsc.Column) bool {
+	if len(columns) == 0 {
+		return false
+	}
+	for _, column := range columns {
+		if strings.ToLower(column.Name()) == column.Name() {
+			return false
+		}
+	}
+	return true
+}
+
+func getColumns(manager dsc.Manager, table string) ([]dsc.Column, error) {
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	datastore, err := dialect.GetCurrentDatastore(manager)
+	if err != nil {
+		return nil, err
+	}
+	return dialect.GetColumns(manager, datastore, table)
+}
+
+func getDDL(manager dsc.Manager, table string) (string, error) {
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	return dialect.ShowCreateTable(manager, table)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
+	"strings"
 	"time"
 )
 
@@ -107,6 +108,7 @@ func (r *Response) SetError(err error) bool {
 	if err == nil {
 		return false
 	}
+	r.Status = StatusError
 	r.Error = err.Error()
 	return true
 }
@@ -122,9 +124,11 @@ func (r *Request) Init() error {
 		if r.Dest != nil {
 			switch r.Dest.DriverName {
 			case "mysql":
-				r.MergeStyle = DMLInsertUpddate
+				r.MergeStyle = DMLInsertOnDuplicateUpddate
 			case "sqlite3":
-				r.MergeStyle = DMLInsertReplace
+				r.MergeStyle = DMLInsertOrReplace
+			case "oci8", "ora":
+				r.MergeStyle = DMLMergeInto
 			default:
 				r.MergeStyle = DMLMerge
 			}
@@ -200,6 +204,21 @@ func (r *Request) ScheduledRun() (*Schedule, func(service Service) error) {
 		}
 		return nil
 	}
+}
+
+//UseUpperCase update id, partition column to upper case
+func (r *Request) UseUpperCase() {
+	if len(r.IDColumns) > 0 {
+		for i, v := range r.IDColumns {
+			r.IDColumns[i] = strings.ToUpper(v)
+		}
+	}
+	if len(r.Partition.Columns) > 0 {
+		for i, v := range r.Partition.Columns {
+			r.Partition.Columns[i] = strings.ToUpper(v)
+		}
+	}
+
 }
 
 //NewSyncRequestFromURL creates a new resource from URL

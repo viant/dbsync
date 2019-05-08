@@ -16,6 +16,7 @@ func (r *indexedRecords) build(records []Record, index map[string][]Record) {
 	defer r.mux.Unlock()
 	for _, record := range records {
 		value := keyValue(r.key, record)
+
 		if _, has := index[value]; !has {
 			index[value] = make([]Record, 0)
 		}

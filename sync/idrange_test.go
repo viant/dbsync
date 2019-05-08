@@ -39,7 +39,7 @@ func TestNewIdRange(t *testing.T) {
 		},
 	}
 	for _, useCase := range useCases {
-		idRange := NewIdRange(useCase.min, useCase.max)
+		idRange := NewIDRange(useCase.min, useCase.max)
 		for i := 0; i < len(useCase.inSync); i++ {
 			value := idRange.Next(useCase.inSync[i])
 			assert.Equal(t, useCase.expect[i], value, useCase.description+fmt.Sprintf("[%d]", i))

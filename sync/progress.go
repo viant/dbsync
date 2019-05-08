@@ -12,7 +12,7 @@ type Progress struct {
 	Pct         int32
 }
 
-//SetDestCount sets destination count and compute pct
+//SetTransferredCount sets destination count and compute pct
 func (p *Progress) SetTransferredCount(count int) {
 	atomic.StoreInt64(&p.Transferred, int64(count))
 	if p.SourceCount > 0 {

@@ -15,7 +15,6 @@ type Partition struct {
 	uniqueColumn string
 	criteria     map[string]interface{}
 	Status       string
-	SyncMethod   string
 	SourceCount  int
 	DestCount    int
 	*Info
@@ -65,22 +64,19 @@ func (p *Partitions) Validate(source, dest []Record) error {
 	if len(source) != 1 || len(dest) != 1 || !p.hasKey {
 		return nil
 	}
-	if !IsMapItemsEqual(source[0], dest[0], p.key) {
+	if !isMapItemsEqual(source[0], dest[0], p.key) {
 		sourceIndex := keyValue(p.key, source[0])
 		destIndex := keyValue(p.key, dest[0])
-		return fmt.Errorf("inconistent parition value: %v, src: %v, dest:%v", p.key, sourceIndex, destIndex)
+		return fmt.Errorf("inconsistent partition value: %v, src: %v, dest:%v", p.key, sourceIndex, destIndex)
 	}
 	return nil
 }
 
 //NewPartitions creates a new partitions
-func NewPartitions(partitions []*Partition, threads int) *Partitions {
-	if threads == 0 {
-		threads = 1
-	}
+func NewPartitions(partitions []*Partition, session *Session) *Partitions {
 	var result = &Partitions{
 		data:      partitions,
-		channel:   make(chan bool, threads),
+		channel:   make(chan bool, session.Request.Partition.Threads),
 		Mutex:     &sync.Mutex{},
 		index:     make(map[string]*Partition),
 		WaitGroup: &sync.WaitGroup{},
@@ -88,12 +84,14 @@ func NewPartitions(partitions []*Partition, threads int) *Partitions {
 	}
 	if len(partitions) > 0 && len(partitions[0].criteria) > 0 {
 		for key := range partitions[0].criteria {
+			if session.Builder.isUpperCase {
+				key = strings.ToUpper(key)
+			}
 			result.key = append(result.key, key)
 		}
 		sort.Strings(result.key)
 		result.hasKey = len(result.key) > 0
 		for _, partition := range partitions {
-
 			result.index[keyValue(result.key, partition.criteria)] = partition
 		}
 	}
@@ -147,7 +145,8 @@ func NewPartition(source strategy.Partition, values map[string]interface{}, chun
 	suffix := transientTableSuffix
 	if len(source.Columns) > 0 {
 		for _, column := range source.Columns {
-			suffix += fmt.Sprintf("%v", values[column])
+			value := getValue(column, values)
+			suffix += fmt.Sprintf("%v", value)
 		}
 	}
 	suffix = strings.Replace(suffix, "-", "", strings.Count(suffix, "-"))

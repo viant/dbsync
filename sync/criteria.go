@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+
+//Criteria represents criteria values
 type Criteria map[string]interface{}
 
 type between struct {
@@ -75,9 +77,8 @@ func toCriterion(k string, v interface{}) string {
 			strings.Contains(literal, "<") ||
 			strings.Contains(lowerLiteral, " null") {
 			return fmt.Sprintf("%v %v", k, v)
-		} else {
-			return fmt.Sprintf("%v = '%v'", k, v)
 		}
+		return fmt.Sprintf("%v = '%v'", k, v)
 	}
 }
 

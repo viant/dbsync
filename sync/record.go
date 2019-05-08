@@ -12,8 +12,8 @@ type Records []Record
 func (r Records) Sum(column string) int {
 	result := 0
 	for _, sourceRecord := range r {
-		countValue, ok := sourceRecord[column]
-		if ok {
+		countValue := getValue(column, sourceRecord)
+		if countValue != nil {
 			result += toolbox.AsInt(countValue)
 		}
 	}

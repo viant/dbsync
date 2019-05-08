@@ -3,11 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	_ "github.com/lib/pq"
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"
 	_ "github.com/mattn/go-oci8"
 	_ "github.com/viant/bgc"
+	_ "github.com/viant/asc"
 	"dbsync/sync"
 	"log"
 	"os"
@@ -41,6 +43,6 @@ func main() {
 	}
 	server := sync.NewServer(service, *port)
 	go server.StopOnSiginals(os.Interrupt)
-	fmt.Printf("dstransfer listening on :%d\n", *port)
+	fmt.Printf("dssync listening on :%d\n", *port)
 	server.ListenAndServe()
 }

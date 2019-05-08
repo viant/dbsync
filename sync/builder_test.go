@@ -247,7 +247,7 @@ func TestBuilder_DML(t *testing.T) {
 		},
 		{
 			description: "partition based insertReplace",
-			dmlType:     DMLInsertReplace,
+			dmlType:     DMLInsertOrReplace,
 			values: map[string]interface{}{
 				"date": "2018-01-01",
 				"hour": []interface{}{
@@ -260,7 +260,7 @@ func TestBuilder_DML(t *testing.T) {
 		},
 		{
 			description: "non-partition based insertUpdateOnDuplicate",
-			dmlType:     DMLInsertUpddate,
+			dmlType:     DMLInsertOnDuplicateUpddate,
 			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
 			expectURL:   "test/expect/nonpartition/insertUpdate.dml",
 			values:      map[string]interface{}{},

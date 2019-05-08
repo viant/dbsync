@@ -19,6 +19,7 @@ type Resource struct {
 	Criteria          map[string]interface{}
 }
 
+//Validate checks if resource is valid
 func (r *Resource) Validate() error {
 	if len(r.PseudoColumns) == 0 {
 		return nil

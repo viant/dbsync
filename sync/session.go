@@ -18,7 +18,7 @@ const (
 	SyncMethodDeleteMerge = "deleteMerge"
 	//SyncMethodMerge merge sync method
 	SyncMethodMerge = "merge"
-	//SyncMethodInsertDelete merge delete sync method
+	//SyncMethodDeleteInsert merge delete sync method
 	SyncMethodDeleteInsert = "deleteInsert"
 )
 
@@ -34,6 +34,7 @@ type Session struct {
 	DestDB           dsc.Manager
 	Partitions       *Partitions
 	batchedPartition bool
+	differ           *differ
 	*Config
 	mux               *sync.Mutex
 	isChunkedTransfer bool
@@ -55,7 +56,7 @@ func (s *Session) SetError(err error) bool {
 		return err != nil
 	}
 	s.err = err
-	log.Printf("[%v] %v\n", s.Builder.taskId, err.Error())
+	log.Printf("[%v] %v\n", s.Builder.taskID, err.Error())
 	atomic.StoreUint32(&s.closed, 1)
 	s.Response.SetError(err)
 	s.Job.Error = err.Error()
@@ -112,7 +113,7 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 		}
 	}
 
-	idRange := NewIdRange(sourceMinID, destMaxID)
+	idRange := NewIDRange(sourceMinID, destMaxID)
 
 	if destMaxID, err := s.findInSyncMaxID(idRange, narrowedCriteria, narrowedStatus); err == nil && destMaxID > 0 {
 		status.SetDestMaxID(destMaxID, SyncMethodMerge, narrowedStatus)
@@ -121,7 +122,7 @@ func (s *Session) hasOnlyDataAppend(sourceData, destData Record, criteria map[st
 	return false
 }
 
-func (s *Session) findInSyncMaxID(idRange *IdRange, narrowedCriteria map[string]interface{}, status *Info) (int, error) {
+func (s *Session) findInSyncMaxID(idRange *IDRange, narrowedCriteria map[string]interface{}, status *Info) (int, error) {
 	if s.Request.Diff.Depth == 0 {
 		return 0, nil
 	}
@@ -192,32 +193,45 @@ func (s *Session) setInfoRange(source, dest map[string]interface{}, info *Info) 
 		return
 	}
 	maxKey := s.Builder.maxIDColumnAlias
+
+	destValue := getValue(maxKey, dest)
 	info.MaxValue = toolbox.AsInt(source[maxKey])
-	if info.MaxValue < toolbox.AsInt(dest[maxKey]) {
-		info.MaxValue = toolbox.AsInt(dest[maxKey])
+	if info.MaxValue < toolbox.AsInt(destValue) {
+		info.MaxValue = toolbox.AsInt(destValue)
 	}
 	minKey := s.Builder.minIDColumnAlias
-	info.MinValue = toolbox.AsInt(source[minKey])
-	if destMin := toolbox.AsInt(dest[minKey]); destMin != 0 && destMin < info.MinValue {
+	sourceMinValue := getValue(minKey, source)
+	destMinValue := getValue(minKey, dest)
+	info.MinValue = toolbox.AsInt(sourceMinValue)
+	if destMin := toolbox.AsInt(destMinValue); destMin != 0 && destMin < info.MinValue {
 		info.MinValue = destMin
 	}
 }
 
 func (s *Session) isMergeDeleteStrategy(source, dest map[string]interface{}) bool {
 	countKey := s.Builder.countColumnAlias
-	if toolbox.AsInt(source[countKey]) < toolbox.AsInt(dest[countKey]) {
+
+	sourceCount := getValue(countKey, source)
+	destCount := getValue(countKey, dest)
+	if toolbox.AsInt(sourceCount) < toolbox.AsInt(destCount) {
 		return true
 	}
+
 	if maxIDColumnAlias := s.Builder.maxIDColumnAlias; maxIDColumnAlias != "" {
-		if toolbox.AsInt(source[maxIDColumnAlias]) < toolbox.AsInt(dest[maxIDColumnAlias]) {
+
+		sourceMax := getValue(maxIDColumnAlias, source)
+		destMax := getValue(maxIDColumnAlias, dest)
+		if toolbox.AsInt(sourceMax) < toolbox.AsInt(destMax) {
 			return true
 		}
 		minIDColumnAlias := s.Builder.minIDColumnAlias
-		if toolbox.AsInt(source[minIDColumnAlias]) > toolbox.AsInt(dest[minIDColumnAlias]) {
+		sourceMin := getValue(minIDColumnAlias, source)
+		destMin := getValue(minIDColumnAlias, dest)
+		if toolbox.AsInt(sourceMin) > toolbox.AsInt(destMin) {
 			return true
 		}
 	}
-	if !IsMapItemEqual(source, dest, countKey) {
+	if !isMapItemEqual(source, dest, countKey) {
 		return false
 	}
 	return false
@@ -228,7 +242,7 @@ func (s *Session) validateSourceData(sourceRecords []Record, criteria map[string
 		return nil
 	}
 	if s.sumRowDistinctCount(sourceRecords) != s.sumRowNotNullDistinctSum(sourceRecords) {
-		return fmt.Errorf("[%v](%v) invalid source data: unique column has NULL values, rowCount: %v, distinct ids: %v, not null ids sum: %v\n",
+		return fmt.Errorf(" [%v](%v) invalid source data: unique column has NULL values, rowCount: %v, distinct ids: %v, not null ids sum: %v\n",
 			s.Request.Table,
 			criteria,
 			s.sumRowCount(sourceRecords),
@@ -288,7 +302,7 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 		s.setInfoRange(sourceRecords[0], destRecords[0], result)
 	}
 
-	isEqual := s.IsEqual(groupColumns, sourceRecords, destRecords, result)
+	isEqual := s.differ.IsEqual(groupColumns, sourceRecords, destRecords, result)
 	if isEqual {
 		s.Log(nil, fmt.Sprintf("is equal: %v", criteria))
 		result.InSync = true
@@ -401,11 +415,17 @@ func (s *Session) BatchSyncInfo() error {
 		keys = append(keys, key)
 		sourceRecords, has := index.source[key]
 		if !has {
-			s.Log(partition, fmt.Sprintf("no source data, %v, %v", index.source, index.dest))
-			continue
+			sourceRecords, has = index.source[strings.ToUpper(key)]
+			if !has {
+				s.Log(partition, fmt.Sprintf("no source data, %v, %v", index.source, index.dest))
+				continue
+			}
 		}
 		matched++
-		destRecords := index.dest[key]
+		destRecords, ok := index.dest[key]
+		if !ok {
+			destRecords = index.dest[strings.ToUpper(key)]
+		}
 		partition.Info, err = s.buildSyncInfo(sourceRecords, destRecords, s.Partitions.key, partition.criteria, true)
 		if err != nil {
 			return err
@@ -420,6 +440,7 @@ func (s *Session) BatchSyncInfo() error {
 	return nil
 }
 
+//Log logs session message
 func (s *Session) Log(partition *Partition, message string) {
 	if !s.IsDebug() {
 		return
@@ -428,64 +449,16 @@ func (s *Session) Log(partition *Partition, message string) {
 	if partition != nil {
 		suffix = partition.Suffix
 	}
-	log.Printf("[%v:%v] %v\n", s.Builder.taskId, suffix, message)
+	log.Printf("[%v:%v] %v\n", s.Builder.taskID, suffix, message)
 }
 
+//Error logs session error
 func (s *Session) Error(partition *Partition, message string) {
 	if partition == nil {
-		log.Printf("[%v:%v] %v\n", s.Builder.taskId, "", message)
+		log.Printf("[%v:%v] %v\n", s.Builder.taskID, "", message)
 		return
 	}
-	log.Printf("[%v:%v] %v\n", s.Builder.taskId, partition.Suffix, message)
-}
-
-//IsEqual checks if source and dest dataset is equal
-func (s *Session) IsEqual(index []string, source, dest []Record, status *Info) bool {
-	indexedSource := indexBy(source, index)
-	indexedDest := indexBy(dest, index)
-	for key := range indexedSource {
-		sourceRecord := indexedSource[key]
-		destRecord, ok := indexedDest[key]
-		if !ok {
-			return false
-		}
-		discrepant := false
-		for k, v := range sourceRecord {
-
-			if destRecord[k] != v {
-				discrepant = true
-				break
-			}
-		}
-		if discrepant { //Try apply date format or numeric rounding to compare again
-			for _, column := range s.Builder.Diff.Columns {
-				key := column.Alias
-
-				if !IsMapItemEqual(destRecord, sourceRecord, key) {
-					if column.DateLayout != "" {
-						destTime, err := toolbox.ToTime(destRecord[key], column.DateLayout)
-						if err != nil {
-							return false
-						}
-						sourceTime, err := toolbox.ToTime(sourceRecord[key], column.DateLayout)
-						if err != nil {
-							return false
-						}
-						if destTime.Format(column.DateLayout) != sourceTime.Format(column.DateLayout) {
-							return false
-						}
-					} else if column.NumericPrecision > 0 {
-						if round(destRecord[key], column.NumericPrecision) != round(sourceRecord[key], column.NumericPrecision) {
-							return false
-						}
-					} else {
-						return false
-					}
-				}
-			}
-		}
-	}
-	return true
+	log.Printf("[%v:%v] %v\n", s.Builder.taskID, partition.Suffix, message)
 }
 
 func (s *Session) getDbName(manager dsc.Manager) string {
@@ -564,7 +537,17 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 	if err != nil {
 		return nil, err
 	}
-	builder, err := NewBuilder(request, destDB)
+
+	destColumns, err := getColumns(destDB, request.Table)
+	if err != nil {
+		return nil, err
+	}
+	DDL, err := getDDL(destDB, request.Table)
+	if err != nil {
+		return nil, err
+	}
+	upperCaseTable := isUpperCaseTable(destColumns)
+	builder, err := NewBuilder(request, DDL, upperCaseTable, destColumns)
 	if err != nil {
 		return nil, err
 	}
@@ -582,6 +565,7 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 		DestDB:   destDB,
 		Builder:  builder,
 		mux:      &sync.Mutex{},
+		differ:   &differ{Builder: builder},
 	}
 	multiChunk := request.Chunk.Size
 	if multiChunk == 0 {
