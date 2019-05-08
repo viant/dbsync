@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -198,6 +199,14 @@ func (s *Service) readData(request *Request, response *Response, task *Task) err
 		}
 	}()
 
+	upperCaseData := false
+	lowerCaseData := false
+	table := task.dest.TableDescriptorRegistry().Get(request.Dest.Table)
+	if table != nil && len(table.Columns) > 0 {
+		upperCaseData = isUpperCaseTable(table.Columns)
+		lowerCaseData = isLowerCaseTable(table.Columns)
+	}
+
 	err = task.source.ReadAllWithHandler(request.Source.Query, nil, func(scanner dsc.Scanner) (bool, error) {
 		if task.HasError() {
 			return false, nil
@@ -208,6 +217,19 @@ func (s *Service) readData(request *Request, response *Response, task *Task) err
 		err := scanner.Scan(&record)
 		if err != nil {
 			return false, fmt.Errorf("failed to scan:%v", err)
+		}
+		var transformed = make(map[string]interface{})
+		for k, v := range record {
+			if strings.ToUpper(k) == k {
+				if lowerCaseData {
+					transformed[strings.ToLower(k)] = v
+				}
+			} else if upperCaseData {
+				transformed[strings.ToUpper(k)] = v
+			}
+		}
+		if len(transformed) > 0 {
+			record = transformed
 		}
 		err = task.transfers.push(record)
 		return err == nil, err
