@@ -11,34 +11,34 @@ init:
   oraAdminCredentials: ora-admin-e2e
 
 pipeline:
-#  init:
-#  system:
-#    action: run
-#    request: '@system'
-#    tasks: '*'
+  init:
+    system:
+      action: run
+      request: '@system'
+      tasks: '*'
 
-  datastore:
-    action: run
-    request: '@datastore'
-    tasks: '*'
-  app:
-    sdk: $sdk
-    action: run
-    request: '@app'
-    tasks: '*'
+    datastore:
+      action: run
+      request: '@datastore'
+      tasks: '*'
+    app:
+      sdk: $sdk
+      action: run
+      request: '@app'
+      tasks: '*'
   test:
     action: run
     request: '@regression/regression'
     tasks: '*'
-#  destroy:
-#    app:
-#      buildTarget: $target
-#      app: $app
-#      appVersion: $appVersion
-#      action: run
-#      request: '@app'
-#      tasks: stop
-#    system:
-#      action: run
-#      request: '@system'
-#      tasks: destroy
+  destroy:
+    app:
+      buildTarget: $target
+      app: $app
+      appVersion: $appVersion
+      action: run
+      request: '@app'
+      tasks: stop
+    system:
+      action: run
+      request: '@system'
+      tasks: destroy

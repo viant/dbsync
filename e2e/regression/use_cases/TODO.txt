@@ -1,13 +1,7 @@
 unique nulls
 inconisistent partition
 muli null values
-
-error cases
+various error cases
 - ID contraint voilation
 
 
-example:
-postgress
-oracle
-aerospike
-bigquery
