@@ -45,9 +45,10 @@ type Schedule struct {
 
 //Response return response
 type Response struct {
-	JobID  string
+	JobID  string `json:",ommitempty"`
 	Status string
-	Error  string
+	Transferred int
+	Error  string `json:",ommitempty"`
 }
 
 //JobListRequest represents a list request
