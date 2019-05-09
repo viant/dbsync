@@ -105,6 +105,7 @@ func (s *service) sync(request *Request, response *Response) {
 			session.Error(nil, "partitions were nil")
 			return
 		}
+
 		for _, partition := range session.Partitions.index {
 			if partition.Info == nil {
 				continue
@@ -112,7 +113,9 @@ func (s *service) sync(request *Request, response *Response) {
 			syncStats.Methods[partition.Method]++
 			syncStats.PartitionTransferred++
 		}
+		response.Transferred = int(session.Job.Progress.Transferred)
 		stats.Add(syncStats)
+
 	}()
 	s.Add(session.Job)
 	defer session.Close()
