@@ -89,11 +89,19 @@ func isMapItemEqual(sourceMap, destMap map[string]interface{}, key string) bool 
 
 //isMapItemEqual compares map item
 func checkMapItem(sourceMap, destMap map[string]interface{}, key string, check func(source, dest interface{}) bool) bool {
-	destValue := getValue(key, destMap)
 	sourceValue := getValue(key, sourceMap)
+	destValue := getValue(key, destMap)
 	if toolbox.IsInt(destValue) || toolbox.IsInt(sourceValue) {
 		destMap[key] = toolbox.AsInt(destValue)
 		sourceMap[key] = toolbox.AsInt(sourceValue)
+	} else if toolbox.IsTime(destValue) || toolbox.IsTime(sourceValue) {
+		destTime, err := toolbox.ToTime(destValue, time.RFC3339)
+		if err == nil {
+			if sourceTime, err := toolbox.ToTime(sourceValue, time.RFC3339);err == nil {
+				destMap[key] = destTime.UTC()
+				sourceMap[key] = sourceTime.UTC()
+			}
+		}
 	} else if toolbox.IsFloat(destValue) || toolbox.IsFloat(sourceValue) {
 		destMap[key] = toolbox.AsFloat(destValue)
 		sourceMap[key] = toolbox.AsFloat(sourceValue)
