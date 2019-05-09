@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/url"
 	"math"
 	"strings"
 	"time"
@@ -177,4 +178,15 @@ func getColumns(manager dsc.Manager, table string) ([]dsc.Column, error) {
 func getDDL(manager dsc.Manager, table string) (string, error) {
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	return dialect.ShowCreateTable(manager, table)
+}
+
+func urlToId(URL string) string {
+	segments := strings.Split(url.NewResource(URL).ParsedURL.Path, "/")
+	if len(segments) > 3 {
+		segments = segments[len(segments)-3:]
+	}
+	pathBasedID := strings.Join(segments, ":")
+	pathBasedID = strings.Replace(pathBasedID, "\\", "-", len(pathBasedID))
+	pathBasedID = strings.Replace(pathBasedID, " ", "_", len(pathBasedID))
+	return pathBasedID
 }
