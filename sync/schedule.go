@@ -80,6 +80,9 @@ func (s *Scheduler) DueToRun() []ScheduleRunnable {
 	var result = make([]ScheduleRunnable, 0)
 	for _, candidate := range s.runnables {
 		schedule, _ := candidate.ScheduledRun()
+		if schedule.Disabled {
+			continue
+		}
 		isDueToRun := time.Now().After(*schedule.NextRun)
 		if isDueToRun {
 			result = append(result, candidate)
