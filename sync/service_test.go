@@ -3,21 +3,21 @@ package sync
 import (
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/mattn/go-oci8"
+	//	_ "github.com/mattn/go-oci8"
 	"github.com/stretchr/testify/assert"
 	_ "github.com/viant/bgc"
 	"github.com/viant/dsc"
 	"log"
-	"os"
 	"testing"
 )
 
 func TestService_Sync(t *testing.T) {
 
-	os.Setenv("LD_LIBRARY_PATH", "/opt/oracle/instantclient_12_2")
+	//os.Setenv("LD_LIBRARY_PATH", "/opt/oracle/instantclient_12_2")
+	//os.Setenv("PKG_CONFIG_PATH", "/opt/oracle/instantclient_12_2")
 
 	dsc.Logf = dsc.StdoutLogger
-	requestURL := "/Projects/go/workspace/src/github.vianttech.com/adelphic/dbsync/vertica2bq/ci_dm/campaign_performance_hour.yaml"
+	requestURL := "/Projects/go/workspace/src/github.vianttech.com/adelphic/dbsync/vertica2bq/viant-gbq-alpha/ci_dm/publisher_requests_hour.yaml"
 	request, err := NewSyncRequestFromURL(requestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)

@@ -7,6 +7,7 @@ import (
 	"github.com/viant/toolbox/url"
 	"log"
 	"path"
+	"strings"
 	"sync"
 	"time"
 )
@@ -90,7 +91,7 @@ func (s *Scheduler) DueToRun() []ScheduleRunnable {
 //Run run scheduler logic
 func (s *Scheduler) Run() {
 	for {
-		_ = s.loadSchedules()
+		_ = s.load()
 		scheduled := s.DueToRun()
 		if len(scheduled) == 0 {
 			time.Sleep(time.Second)
@@ -119,7 +120,7 @@ func (s *Scheduler) Run() {
 	}
 }
 
-func (s *Scheduler) loadSchedules() error {
+func (s *Scheduler) load() error {
 	isDueToLoad := time.Now().After(s.nextCheck)
 	if !isDueToLoad {
 		return nil
@@ -130,16 +131,26 @@ func (s *Scheduler) loadSchedules() error {
 	if err != nil {
 		return err
 	}
-	objects, err := storageService.List(resource.URL)
+	return s.loadFromURL(storageService, resource.URL)
+}
+
+func (s *Scheduler) loadFromURL(storageService storage.Service, URL string) error {
+	objects, err := storageService.List(URL)
 	if err != nil {
 		return err
 	}
+
 	var ids = make(map[string]bool)
 	for _, object := range objects {
-		if !object.IsContent() {
+		if strings.Trim(URL, "/") == strings.Trim(object.URL(), "/") {
 			continue
 		}
-
+		if object.IsFolder() {
+			if err = s.loadFromURL(storageService, object.URL()); err != nil {
+				return err
+			}
+			continue
+		}
 		fileInfo := object.FileInfo()
 		ext := path.Ext(fileInfo.Name())
 		if ext != ".json" && ext != ".yaml" {
@@ -207,7 +218,7 @@ func NewScheduler(service Service, config *Config) (*Scheduler, error) {
 	}
 	result.refreshDuration = time.Millisecond * time.Duration(defaultSchedulerLoadFrequencyMs)
 	var err error
-	if err = result.loadSchedules(); err == nil {
+	if err = result.load(); err == nil {
 		go result.Run()
 	}
 	return result, err

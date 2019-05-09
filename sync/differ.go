@@ -16,7 +16,7 @@ func (d *differ) IsEqual(index []string, source, dest []Record, status *Info) bo
 			return false
 		}
 		discrepant := false
-		for k, _ := range sourceRecord {
+		for k := range sourceRecord {
 			if !checkMapItem(sourceRecord, destRecord, k, func(source, dest interface{}) bool {
 				return source == dest
 			}) {

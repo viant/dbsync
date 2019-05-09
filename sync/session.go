@@ -411,6 +411,7 @@ func (s *Session) BatchSyncInfo() error {
 	limiter.Wait()
 	matched := 0
 	var keys = make([]string, 0)
+
 	for key, partition := range s.Partitions.index {
 		keys = append(keys, key)
 		sourceRecords, has := index.source[key]
@@ -435,7 +436,8 @@ func (s *Session) BatchSyncInfo() error {
 		s.batchedPartition = true
 	}
 	if matched == 0 && len(batchedCriteria) > 0 {
-		s.Error(nil, fmt.Sprintf("invalid partition expression - unable to batch sync status by keys %v", keys))
+		actualKeys := toolbox.MapKeysToStringSlice(s.Partitions.index)
+		s.Error(nil, fmt.Sprintf("invalid partition expression - unable to match sync status with keys: %v, \n actual: %v", keys, actualKeys))
 	}
 	return nil
 }

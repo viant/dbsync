@@ -1,72 +1,57 @@
 package sync
 
+import (
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/viant/dsc"
+	"github.com/viant/toolbox"
+	"path"
+	"reflect"
+	"testing"
+)
+
+func getTestColumns() []dsc.Column {
+	return []dsc.Column{
+		dsc.NewColumn("id", "INTEGER", nil, nil, nil, reflect.TypeOf(0), nil),
+		dsc.NewColumn("ts", "DATETIME", nil, nil, nil, reflect.TypeOf(0), nil),
+		dsc.NewColumn("event_type", "INTEGER", nil, nil, nil, reflect.TypeOf(0), nil),
+		dsc.NewColumn("ua", "VARCHAR", nil, nil, nil, reflect.TypeOf(0), nil),
+		dsc.NewColumn("dnt", "TINYINT", nil, nil, nil, reflect.TypeOf(0), nil),
+		dsc.NewColumn("charge", "DECIMAL", nil, nil, nil, reflect.TypeOf(0), nil),
+		dsc.NewColumn("payment", "DECIMAL", nil, nil, nil, reflect.TypeOf(0), nil),
+		dsc.NewColumn("modified", "TIMESTAMP", nil, nil, nil, reflect.TypeOf(0), nil),
+	}
+}
+
 //
-//func TestNewBuilder(t *testing.T) {
-//	parent := toolbox.CallerDirectory(3)
-//	if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
-//		return
-//	}
-//
-//	var useCases = []struct {
-//		description   string
-//		requestURL    string
-//		columns       map[string]string
-//		datePartition string
-//	}{
-//
-//		{
-//			description: "partition based sync",
-//			requestURL:  path.Join(parent, "test/partition_req.yaml"),
-//			columns: map[string]string{
-//				"id":         "INTEGER",
-//				"ts":         "DATETIME",
-//				"event_type": "INTEGER",
-//				"ua":         "VARCHAR(255)",
-//				"dnt":        "TINYINT(1)",
-//				"charge":     "DECIMAL(7,2)",
-//				"payment":    "DECIMAL(7,2)",
-//				"modified":   "TIMESTAMP",
-//			},
-//			datePartition: "date(ts) AS date",
-//		},
-//		{
-//			description: "non-partition based sync",
-//			requestURL:  path.Join(parent, "test/nonpartition_req.yaml"),
-//			columns: map[string]string{
-//				"id":         "INTEGER",
-//				"ts":         "DATETIME",
-//				"event_type": "INTEGER",
-//				"ua":         "VARCHAR(255)",
-//				"dnt":        "TINYINT(1)",
-//				"charge":     "DECIMAL(7,2)",
-//				"payment":    "DECIMAL(7,2)",
-//				"modified":   "TIMESTAMP",
-//			},
-//			datePartition: "",
-//		},
-//	}
-//
-//	for _, useCase := range useCases {
-//		request, err := NewSyncRequestFromURL(useCase.requestURL)
-//		assert.Nil(t, err)
-//		assert.NotNil(t, request)
-//		builder, err := NewBuilder(request, nil)
-//		assert.Nil(t, err)
-//		if len(useCase.columns) > 0 {
-//			assert.Equal(t, len(useCase.columns), len(builder.columns))
-//			for _, column := range builder.columns {
-//				expected, ok := useCase.columns[column.Name()]
-//				if !assert.True(t, ok, useCase.description) {
-//					continue
-//				}
-//				assert.EqualValues(t, expected, column.DatabaseTypeName(), useCase.description)
-//			}
-//		}
-//		assert.EqualValues(t, useCase.datePartition, builder.datePartition, useCase.description)
-//	}
-//
-//}
-//
+func TestBuilder_DML(t *testing.T) {
+	parent := toolbox.CallerDirectory(3)
+
+	var useCases = []struct {
+		description   string
+		requestURL    string
+		columns       map[string]string
+		datePartition string
+	}{
+		{
+			description:   "partition based sync",
+			requestURL:    path.Join(parent, "test/partition_req.yaml"),
+			datePartition: "date(ts) AS date",
+		},
+		}
+
+	for _, useCase := range useCases {
+		request, err := NewSyncRequestFromURL(useCase.requestURL)
+		assert.Nil(t, err)
+		assert.NotNil(t, request)
+		builder, err := NewBuilder(request, "", false, getTestColumns())
+		assert.Nil(t, err)
+		assert.NotNil(t, builder)
+		//TODO add dml use cases
+	}
+
+}
+
 //func getPartitionBuilder(t *testing.T) (*Builder, error) {
 //	parent := toolbox.CallerDirectory(3)
 //	if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
