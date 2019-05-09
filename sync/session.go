@@ -470,10 +470,10 @@ func (s *Session) getDbName(manager dsc.Manager) string {
 }
 
 func (s *Session) destConfig() *dsc.Config {
+	result := s.Dest.Config.Clone()
 	if s.Request.Transfer.TempDatabase == "" {
-		return s.Dest.Config
+		return result
 	}
-	result := *s.Dest.Config
 	result.Parameters = make(map[string]interface{})
 	dbName := s.getDbName(s.DestDB)
 	for k, v := range s.Dest.Config.Parameters {
@@ -483,7 +483,7 @@ func (s *Session) destConfig() *dsc.Config {
 		}
 	}
 	result.Descriptor = strings.Replace(result.Descriptor, dbName, s.Request.Transfer.TempDatabase, 1)
-	return &result
+	return result
 }
 
 func (s *Session) buildTransferJob(partition *Partition, criteria map[string]interface{}, suffix string, sourceCount, destCount int) *TransferJob {
@@ -495,7 +495,7 @@ func (s *Session) buildTransferJob(partition *Partition, criteria map[string]int
 	}
 	transferRequest := &TransferRequest{
 		Source: &Source{
-			Config: s.Source.Config,
+			Config: s.Source.Config.Clone(),
 			Query:  DQL,
 		},
 		Dest: &Dest{
