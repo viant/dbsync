@@ -97,7 +97,7 @@ func checkMapItem(sourceMap, destMap map[string]interface{}, key string, check f
 	} else if toolbox.IsTime(destValue) || toolbox.IsTime(sourceValue) {
 		destTime, err := toolbox.ToTime(destValue, time.RFC3339)
 		if err == nil {
-			if sourceTime, err := toolbox.ToTime(sourceValue, time.RFC3339);err == nil {
+			if sourceTime, err := toolbox.ToTime(sourceValue, time.RFC3339); err == nil {
 				destMap[key] = destTime.UTC()
 				sourceMap[key] = sourceTime.UTC()
 			}
