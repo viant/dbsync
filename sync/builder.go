@@ -12,7 +12,7 @@ import (
 
 //Builder represents SQL builder
 type Builder struct {
-	Strategy //request sync meta
+	Strategy         //request sync meta
 	ddl              string
 	taskID           string
 	transferSuffix   string
