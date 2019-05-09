@@ -81,16 +81,18 @@ func (s *service) Sync(request *Request) *Response {
 
 func (s *service) sync(request *Request, response *Response) {
 	if err := request.Init(); response.SetError(err) {
+		log.Print(err)
 		return
 	}
 
 	if err := request.Validate(); response.SetError(err) {
+		log.Print(err)
 		return
 	}
 
 	session, err := NewSession(request, response, s.Config)
 	if response.SetError(err) {
-		session.SetStatus(StatusError)
+		log.Print(err)
 		return
 	}
 
