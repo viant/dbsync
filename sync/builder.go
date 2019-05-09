@@ -12,17 +12,15 @@ import (
 
 //Builder represents SQL builder
 type Builder struct {
-	Strategy         //request sync meta
+	Strategy //request sync meta
 	ddl              string
 	taskID           string
 	transferSuffix   string
 	tempDatabase     string
 	uniques          map[string]bool
-	partitions       map[string]bool
 	source           *Resource
 	dest             *Resource
 	table            string
-	from             string
 	columns          []dsc.Column
 	columnsByName    map[string]dsc.Column
 	datePartition    string
@@ -57,10 +55,10 @@ func (b *Builder) Table(suffix string) string {
 }
 
 //QueryTable returns query table
-func (b *Builder) QueryTable(suffix string) string {
+func (b *Builder) QueryTable(suffix string, resource *Resource) string {
 	if suffix == "" {
-		if b.from != "" {
-			return fmt.Sprintf("(%s)", b.from)
+		if resource.From != "" {
+			return fmt.Sprintf("(%s)", resource.From)
 		}
 		return b.table
 	}
@@ -94,7 +92,7 @@ func (b *Builder) unAliasedColumnExpression(column string, resource *Resource) s
 	return column
 }
 
-func (b *Builder) defaultChunkDQL() string {
+func (b *Builder) defaultChunkDQL(resource *Resource) string {
 	if len(b.IDColumns) == 0 {
 		return ""
 	}
@@ -112,7 +110,7 @@ SELECT %v
 FROM %v t $whereClause
 ORDER BY %v
 LIMIT $limit 
-) t`, strings.Join(projection, ",\n\t"), b.IDColumns[0], b.QueryTable(""), b.IDColumns[0])
+) t`, strings.Join(projection, ",\n\t"), b.IDColumns[0], b.QueryTable("", resource), b.IDColumns[0])
 }
 
 //ChunkDQL returns chunk DQL
@@ -132,7 +130,7 @@ func (b *Builder) ChunkDQL(resource *Resource, max, limit int, values map[string
 	}
 	chunkSQL := b.Chunk.SQL
 	if chunkSQL == "" {
-		chunkSQL = b.defaultChunkDQL()
+		chunkSQL = b.defaultChunkDQL(resource)
 	}
 	DQL := state.ExpandAsText(chunkSQL)
 	return DQL, nil
@@ -177,9 +175,14 @@ func (b *Builder) CountDQL(suffix string, resource *Resource, criteria map[strin
 
 	DQL := fmt.Sprintf("SELECT %v\nFROM %v t %v",
 		strings.Join(projection, ",\n\t"),
-		b.QueryTable(suffix),
+		b.QueryTable(suffix, resource),
 		b.toWhereCriteria(criteria, resource))
 	return DQL
+}
+
+func (b *Builder) isUnique(candidate string) bool {
+	_, has := b.uniques[strings.ToLower(candidate)]
+	return has
 }
 
 //DQL returns sync DQL
@@ -191,7 +194,7 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 	}
 
 	for _, column := range b.columns {
-		if _, has := b.uniques[column.Name()]; has {
+		if b.isUnique(column.Name()) {
 			continue
 		}
 		if dedupe {
@@ -214,7 +217,7 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 	if len(b.IDColumns) > 0 {
 		projection = append(b.IDColumns, projection...)
 	}
-	DQL := fmt.Sprintf("SELECT %v %v\nFROM %v t ", resource.Hint, strings.Join(projection, ",\n"), b.QueryTable(suffix))
+	DQL := fmt.Sprintf("SELECT %v %v\nFROM %v t ", resource.Hint, strings.Join(projection, ",\n"), b.QueryTable(suffix, resource))
 
 	if len(values) > 0 || len(resource.Criteria) > 0 {
 		whereCriteria := b.toCriteriaList(values, resource)
@@ -234,7 +237,7 @@ func (b *Builder) init() error {
 	}
 	b.source.indexPseudoColumns()
 	b.dest.indexPseudoColumns()
-	b.partitions = make(map[string]bool)
+
 	for _, column := range b.columns {
 		b.columnsByName[column.Name()] = column
 	}
@@ -258,19 +261,7 @@ func (b *Builder) init() error {
 	}
 	b.addStandardDiffColumns()
 	for _, column := range b.IDColumns {
-		b.uniques[column] = true
-		if b.isUpperCase {
-			column = strings.ToUpper(column)
-			b.uniques[column] = true
-		}
-	}
-
-	for _, partition := range b.Partition.Columns {
-		b.partitions[partition] = true
-		if b.isUpperCase {
-			partition = strings.ToUpper(partition)
-			b.partitions[partition] = true
-		}
+		b.uniques[strings.ToLower(column)] = true
 	}
 	return nil
 }
@@ -282,7 +273,7 @@ func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *Resource) (
 			if _, has := dimension[column.Name]; has {
 				continue
 			}
-			*projection = append(*projection, column.Expr())
+			*projection = append(*projection, b.alias(column.Expr()))
 		}
 	})
 }
@@ -316,7 +307,7 @@ func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *Resour
 	}
 
 	projectionGenerator(&projection, dimension)
-	SQL := fmt.Sprintf("SELECT %v\nFROM %s t", strings.Join(projection, ",\n\t"), b.QueryTable(""))
+	SQL := fmt.Sprintf("SELECT %v\nFROM %s t", strings.Join(projection, ",\n\t"), b.QueryTable("", resource))
 	SQL += b.toWhereCriteria(criteria, resource)
 	if len(groupBy) > 0 {
 		SQL += fmt.Sprintf("\nGROUP BY %s", strings.Join(groupBy, ","))
@@ -376,7 +367,7 @@ func (b *Builder) aliasedInsertNameAndValues(srcAlias, destAlias string) (string
 		values = append(values, b.aliasValue(srcAlias, column, b.dest))
 	}
 	for _, column := range b.columns {
-		if _, ok := b.uniques[column.Name()]; ok {
+		if b.isUnique(column.Name()) {
 			continue
 		}
 		names = append(names, destAlias+column.Name())
@@ -388,7 +379,7 @@ func (b *Builder) aliasedInsertNameAndValues(srcAlias, destAlias string) (string
 func (b *Builder) updateSetValues() string {
 	update := make([]string, 0)
 	for _, column := range b.columns {
-		if b.uniques[column.Name()] {
+		if b.isUnique(column.Name()) {
 			continue
 		}
 		value := b.columnExpression(column.Name(), b.dest)
@@ -623,7 +614,7 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*diff.Column {
 	}
 	for _, column := range columns {
 
-		if b.uniques[column.Name()] {
+		if b.isUnique(column.Name()) {
 			continue
 		}
 		diffColumn := &diff.Column{
@@ -631,15 +622,27 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*diff.Column {
 		}
 		prefix := ""
 		switch strings.ToUpper(column.DatabaseTypeName()) {
-		case "FLOAT", "NUMERIC", "DECIMAL", "FLOAT64", "INTEGER", "INT", "SMALLINT", "TINYINT", "BIGINT":
+		case "BOOL", "BOOLEAN":
+			diffColumn.Func = "COUNT"
+			diffColumn.Default = false
+			prefix = "cnt_"
+		case "TINYINT", "BIT":
+			diffColumn.Func = "COUNT"
+			diffColumn.Default = 0
+			prefix = "cnt_"
+		case "FLOAT", "NUMERIC", "DECIMAL", "FLOAT64", "INTEGER", "INT", "SMALLINT", "BIGINT":
 			diffColumn.Func = "SUM"
 			prefix = "sum_"
 			diffColumn.Default = 0
-			diffColumn.NumericPrecision = b.Diff.NumericPrecision
+			if diffColumn.NumericPrecision == 0 {
+				diffColumn.NumericPrecision = b.Diff.NumericPrecision
+			}
 		case "TIMESTAMP", "TIME", "DATE", "DATETIME":
 			diffColumn.Func = "MAX"
 			prefix = "max_"
-			diffColumn.DateLayout = b.Diff.DateLayout
+			if diffColumn.DateLayout == "" {
+				diffColumn.DateLayout = b.Diff.DateLayout
+			}
 
 		default:
 			diffColumn.Func = "COUNT"
@@ -667,7 +670,6 @@ func NewBuilder(request *Request, ddl string, isUpperCaseTable bool, destColumns
 		source:         request.Source,
 		ddl:            ddl,
 		dest:           request.Dest,
-		from:           request.Source.From,
 		isUpperCase:    isUpperCaseTable,
 		transferSuffix: transferSuffix,
 		taskID:         request.ID(),
