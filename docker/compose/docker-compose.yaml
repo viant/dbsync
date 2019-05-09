@@ -16,6 +16,6 @@
       ports:
         - 8081:8080
       volumes:
-        - ${HOME}/.discrep/:/root/.secret/
+        - ${HOME}/.secret/:/root/.secret/
         - /opt/dbsync/cron/:/cron/
       network_mode: bridge
