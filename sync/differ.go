@@ -1,6 +1,8 @@
 package sync
 
-import "github.com/viant/toolbox"
+import (
+	"github.com/viant/toolbox"
+)
 
 type differ struct {
 	*Builder
@@ -27,7 +29,7 @@ func (d *differ) IsEqual(index []string, source, dest []Record, status *Info) bo
 
 		if discrepant { //Try apply date format or numeric rounding to compare again
 			for _, column := range d.Builder.Diff.Columns {
-				key := column.Alias
+				key := d.alias(column.Alias)
 				if !isMapItemEqual(destRecord, sourceRecord, key) {
 					destValue := getValue(key, destRecord)
 					sourceValue := getValue(key, sourceRecord)
