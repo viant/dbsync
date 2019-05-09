@@ -1,3 +1,4 @@
+id: 'db3:events'
 table: events
 idColumns:
   - id

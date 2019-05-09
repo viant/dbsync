@@ -164,7 +164,9 @@ func (s *Scheduler) loadFromURL(storageService storage.Service, URL string) erro
 		if err != nil {
 			return err
 		}
-
+		if request.Id == "" {
+			request.Id = urlToId(object.URL())
+		}
 		if err = request.Init(); err == nil {
 			err = request.Validate()
 		}
