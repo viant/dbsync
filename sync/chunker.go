@@ -48,6 +48,9 @@ func (c *chunker) readChunkByIDAndLimit(resource *Resource) (*ChunkInfo, string,
 		return nil, "", err
 	}
 	result, err := c.readInfo(manager, DQL)
+	if err != nil {
+		return result, DQL, err
+	}
 	if err = result.Validate(DQL, c.limit); err != nil {
 		return result, DQL, err
 	}
