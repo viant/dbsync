@@ -179,13 +179,20 @@ func (s *Scheduler) loadFromURL(storageService storage.Service, URL string) erro
 			log.Print(fmt.Sprintf("schedule %v was empty", request.ID()))
 			continue
 		}
-		schedule.SourceURL = fileInfo.Name()
+		schedule.SourceURL = object.URL()
 		ids[request.ID()] = true
-		if s.Get(request.ID()) == nil {
-			now := time.Now()
-			schedule.NextRun = &now
-			s.Add(request)
+
+		previous := s.Get(request.ID())
+		if previous != nil {
+			prevSchedule, _ := previous.ScheduledRun()
+			if prevSchedule.Disabled == schedule.Disabled {
+				continue
+			}
 		}
+		now := time.Now()
+		schedule.NextRun = &now
+		s.Add(request)
+
 	}
 	s.removeUnknown(ids)
 	return nil
