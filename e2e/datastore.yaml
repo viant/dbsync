@@ -83,29 +83,29 @@ pipeline:
 #      scripts:
 #        - URL: datastore/bqdb/schema.sql
 
-    oradb:
-      action: dsunit:init
-      datastore: ORADB
-      recreate: true
-      config:
-        driverName: oci8
-        descriptor: "[username]/[password]@127.0.0.1:1521/xe"
-        credentials: $oraCredentials
-        parameters:
-          session:
-            NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
-            NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
-            NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
-            TIME_ZONE: '00:00'
-      admin:
-        datastore: system
-        ping: true
-        config:
-          driverName: oci8
-          credentials: $oraAdminCredentials
-          descriptor: "[username]/[password]@127.0.0.1:1521/xe"
-      scripts:
-        - URL: datastore/oradb/schema.sql
+#    oradb:
+#      action: dsunit:init
+#      datastore: ORADB
+#      recreate: true
+#      config:
+#        driverName: oci8
+#        descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+#        credentials: $oraCredentials
+#        parameters:
+#          session:
+#            NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
+#            NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
+#            NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
+#            TIME_ZONE: '00:00'
+#      admin:
+#        datastore: system
+#        ping: true
+#        config:
+#          driverName: oci8
+#          credentials: $oraAdminCredentials
+#          descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+#      scripts:
+#        - URL: datastore/oradb/schema.sql
 
     aerodb:
       action: dsunit:init

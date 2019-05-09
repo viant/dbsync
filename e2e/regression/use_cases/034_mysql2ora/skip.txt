@@ -1,0 +1,3 @@
+make sure you've install oracle client, or use dockerized endly
+docker run --name endly -v /var/run/docker.sock:/var/run/docker.sock -v ~/e2e:/e2e -v ~/e2e/.secret/:/root/.secret/ -p 7722:22  -d endly/endly:latest-ubuntu16.04
+uncomment oradb from system.yaml, data.yaml, datastore.yaml, then remove/ranme this file

@@ -33,19 +33,19 @@ pipeline:
 #        credentials: $bqCredentials
 #        parameters:
 #          datasetId: bqdb
-  oradb:
-    action: dsunit:register
-    datastore: oradb
-    Config:
-      driverName: oci8
-      descriptor: "[username]/[password]@127.0.0.1:1521/xe"
-      credentials: $oraCredentials
-      parameters:
-        session:
-          NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
-          NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
-          NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
-          TIME_ZONE: '00:00'
+#  oradb:
+#    action: dsunit:register
+#    datastore: oradb
+#    Config:
+#      driverName: oci8
+#      descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+#      credentials: $oraCredentials
+#      parameters:
+#        session:
+#          NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
+#          NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
+#          NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
+#          TIME_ZONE: '00:00'
 
 
   aerodb:

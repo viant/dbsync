@@ -30,14 +30,15 @@ pipeline:
         env:
           POSTGRES_USER: ${pgdbSecrets.Username}
           POSTGRES_PASSWORD: ${pgdbSecrets.Password}
-      oracle:
-        action: docker:run
-        image: thebookpeople/oracle-xe-11g
-        name: oradb
-        ports:
-          1521: 1521
-        env:
-          ORACLE_ALLOW_REMOTE: true
+
+#      oradb:
+#        action: docker:run
+#        image: thebookpeople/oracle-xe-11g
+#        name: oradb
+#        ports:
+#          1521: 1521
+#        env:
+#          ORACLE_ALLOW_REMOTE: true
       aero:
         action: docker:run
         image: aerospike/aerospike-server:latest
