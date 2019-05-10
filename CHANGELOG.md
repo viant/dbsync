@@ -1,4 +1,6 @@
-## May 9 2019 - v0.3.0
+## May 9 2019 - v0.3.1
+- Added mod time based schedule reloading
+- Added DDLFromSelect 
 - Renamed URI scheduled to schedules
 - Patched multi directory schedules loading  
 
