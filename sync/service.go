@@ -172,7 +172,15 @@ func (s *service) createTransientDest(session *Session, suffix string) error {
 	} else {
 		_ = dialect.DropTable(session.DestDB, dbName, table)
 	}
-	DDL, err := session.Builder.DDL(suffix)
+	DDL := session.Builder.DDLFromSelect(suffix)
+	_, err := session.DestDB.Execute(DDL)
+	fmt.Printf("%v %v\n", DDL, err)
+	if err == nil {
+		return nil
+	}
+
+	//Fallback to dialect DDL
+	DDL, err = session.Builder.DDL(suffix)
 	if session.Request.Transfer.TempDatabase != "" {
 		DDL = strings.Replace(DDL, dbName+".", "", 1)
 	}
@@ -410,9 +418,7 @@ func (s *service) syncDataPartition(session *Session, partition *Partition) erro
 	if err := s.createTransientDest(session, partition.Suffix); err != nil {
 		return err
 	}
-
 	transferJob := session.buildTransferJob(partition, partition.criteria, partition.Suffix, partition.SourceCount, partition.DestCount)
-	fmt.Sprintf("transferJob:%v\n", transferJob)
 	session.Job.Add(transferJob)
 	return s.transferDataWithRetries(session, transferJob)
 }

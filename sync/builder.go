@@ -69,13 +69,21 @@ func (b *Builder) QueryTable(suffix string, resource *Resource) string {
 	return b.table + b.transferSuffix + suffix
 }
 
+//DDLAsSelect returns transient table DDL for supplied suffix
+func (b *Builder) DDLFromSelect(suffix string) string {
+	return fmt.Sprintf("CREATE TABLE %v AS SELECT * FROM %v WHERE 1 = 0", b.Table(suffix), b.Table(""))
+}
+
 //DDL returns transient table DDL for supplied suffix
 func (b *Builder) DDL(tempTable string) (string, error) {
+
 	DDL := b.ddl
+
 	if tempTable != "" {
 		DDL = strings.Replace(DDL, b.Table(""), b.Table(tempTable), 1)
 	}
 	DDL = strings.Replace(DDL, ";", "", 1)
+
 	return DDL, nil
 }
 
