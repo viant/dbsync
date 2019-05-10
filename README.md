@@ -585,7 +585,8 @@ Transfer process is delegated to the transfer service, the following parameter c
 - table: name of source and dest table, otherwise override on source,dest level
 - force: flag to brute force data sync: (can be used with NoSQL database type)
 - mergeStyle: merge SQL dialect style valid option are: 
-    - merge 
+    - merge
+    - mergeInto 
     - insertOrReplace
     - insertOnDuplicateUpdate
     - insertOnConflictUpdate
