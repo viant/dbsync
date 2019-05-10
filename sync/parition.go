@@ -98,7 +98,7 @@ func NewPartitions(partitions []*Partition, session *Session) *Partitions {
 	return result
 }
 
-//CloneCriteria returns cloned criteria values
+//CloneCriteria returns cloned filter values
 func (p *Partition) CloneCriteria() map[string]interface{} {
 	var result = make(map[string]interface{})
 	for k, v := range p.criteria {

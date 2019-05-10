@@ -62,13 +62,12 @@ func (s *Scheduler) Get(ID string) ScheduleRunnable {
 func (s *Scheduler) HasChanged(ID string, modTime time.Time) bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	timeValue, ok :=  s.modified[ID]
-	if ! ok {
+	timeValue, ok := s.modified[ID]
+	if !ok {
 		return true
 	}
-	return ! timeValue.Equal(modTime)
+	return !timeValue.Equal(modTime)
 }
-
 
 //Remove remove runnable by ID
 func (s *Scheduler) Remove(ID string) {
@@ -201,7 +200,7 @@ func (s *Scheduler) loadFromURL(storageService storage.Service, URL string, ids 
 		schedule.SourceURL = object.URL()
 		ids[request.ID()] = true
 
-		if ! s.HasChanged(request.ID(), fileInfo.ModTime()) {
+		if !s.HasChanged(request.ID(), fileInfo.ModTime()) {
 			continue
 		}
 		now := time.Now()

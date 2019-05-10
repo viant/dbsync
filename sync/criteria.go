@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-//Criteria represents criteria values
+//Criteria represents filter values
 type Criteria map[string]interface{}
 
 type between struct {

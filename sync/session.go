@@ -393,12 +393,12 @@ func (s *Session) BatchSyncInfo() error {
 	index := newIndexedRecords(s.Partitions.key)
 
 	for i, batchCriteria := range batchedCriteria {
-		s.Log(nil, fmt.Sprintf("processing batch criteria %d/%d", i+1, len(batchedCriteria)))
+		s.Log(nil, fmt.Sprintf("processing batch filter %d/%d", i+1, len(batchedCriteria)))
 
 		go func(i int) {
 			limiter.Acquire()
 			defer func() {
-				s.Log(nil, fmt.Sprintf("completed batch criteria processing %d/%d", i+1, len(batchedCriteria)))
+				s.Log(nil, fmt.Sprintf("completed batch filter processing %d/%d", i+1, len(batchedCriteria)))
 				limiter.Done()
 			}()
 			if e := s.readSyncInfoBatch(batchCriteria, index); e != nil {
