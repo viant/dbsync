@@ -23,7 +23,6 @@ type Builder struct {
 	table            string
 	columns          []dsc.Column
 	columnsByName    map[string]dsc.Column
-	datePartition    string
 	isUpperCase      bool
 	maxIDColumnAlias string
 	minIDColumnAlias string
@@ -31,11 +30,6 @@ type Builder struct {
 	countColumnAlias       string
 	uniqueCountAlias       string
 	uniqueNotNullSumtAlias string
-}
-
-//HasDatePartition returns true if sync has a partition
-func (b *Builder) HasDatePartition() bool {
-	return b.datePartition != ""
 }
 
 //Table returns table name
@@ -169,7 +163,7 @@ func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *Res
 	return "\nWHERE " + strings.Join(criteriaList, " AND ")
 }
 
-//CountDQL returns count DQL for supplied resource and criteria
+//CountDQL returns count DQL for supplied resource and filter
 func (b *Builder) CountDQL(suffix string, resource *Resource, criteria map[string]interface{}) string {
 	var projection = []string{
 		fmt.Sprintf("COUNT(1) AS %v", b.alias("count_value")),
@@ -238,7 +232,7 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 	return DQL
 }
 
-func (b *Builder) init() error {
+func (b *Builder) init() {
 	b.uniques = make(map[string]bool)
 	if len(b.IDColumns) == 0 {
 		b.IDColumns = make([]string, 0)
@@ -271,7 +265,6 @@ func (b *Builder) init() error {
 	for _, column := range b.IDColumns {
 		b.uniques[strings.ToLower(column)] = true
 	}
-	return nil
 }
 
 //DiffDQL returns sync difference DQL
@@ -328,6 +321,9 @@ func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *Resour
 
 //DML returns DML
 func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface{}) (string, error) {
+	if suffix == "" {
+		return "", fmt.Errorf("sufifx was empty")
+	}
 	switch dmlType {
 	case DMLInsertOrReplace:
 		return b.insertReplaceDML(suffix, filter), nil
@@ -335,12 +331,10 @@ func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface
 		return b.insertOnDuplicateUpdateDML(suffix, filter), nil
 	case DMLInsertOnConflictUpddate:
 		return b.insertOnConflictUpdateDML(suffix, filter), nil
-
 	case DMLMerge:
 		return b.mergeDML(suffix, filter), nil
 	case DMLMergeInto:
 		return b.mergeIntoDML(suffix, filter), nil
-
 	case DMLInsert:
 		return b.insertDML(suffix, filter), nil
 	case DMLDelete:
@@ -682,9 +676,7 @@ func NewBuilder(request *Request, ddl string, isUpperCaseTable bool, destColumns
 		transferSuffix: transferSuffix,
 		taskID:         request.ID(),
 	}
-	if err := builder.init(); err != nil {
-		return nil, err
-	}
+	builder.init()
 	if isUpperCaseTable {
 		request.UseUpperCase()
 	}
