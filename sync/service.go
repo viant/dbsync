@@ -98,7 +98,7 @@ func (s *service) sync(request *Request, response *Response) {
 
 	defer func() {
 		session.Job.Update()
-		log.Printf("[%v] source: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.Transferred, int(session.Job.Elapsed/time.Millisecond))
+		log.Printf("[%v] changed: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.Transferred, int(session.Job.Elapsed/time.Millisecond))
 		stats := s.StatRegistry.GetOrCreate(request.ID())
 		syncStats := NewSyncStat(session.Job)
 		if session.Partitions == nil {
