@@ -215,7 +215,7 @@ func (s *Scheduler) removeUnknown(known map[string]bool) {
 	ids := s.List()
 	for _, id := range ids {
 		if _, has := known[id]; !has {
-			log.Printf("Removed job: %v, known: %v\n", id, known)
+			log.Printf("Removed job: %v\n", id)
 			s.Remove(id)
 		}
 	}
