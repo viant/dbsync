@@ -42,7 +42,7 @@ func (r Router) api() http.Handler {
 		},
 		toolbox.ServiceRouting{
 			HTTPMethod: "GET",
-			URI:        fmt.Sprintf("%v/scheduled", baseURI),
+			URI:        fmt.Sprintf("%v/schedules", baseURI),
 			Handler: func() *ScheduleListResponse {
 				return r.service.ListScheduled(&ScheduleListRequest{})
 			},
