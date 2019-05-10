@@ -26,16 +26,18 @@ type Scheduler struct {
 	service         Service
 	refreshDuration time.Duration
 	runnables       map[string]ScheduleRunnable
+	modified        map[string]time.Time
 	mutex           *sync.Mutex
 	nextCheck       time.Time
 }
 
 //Add adds runnable
-func (s *Scheduler) Add(runnable ScheduleRunnable) {
+func (s *Scheduler) Add(runnable ScheduleRunnable, modTime time.Time) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	log.Printf("Added schedule: %v\n", runnable.ID())
 	s.runnables[runnable.ID()] = runnable
+	s.modified[runnable.ID()] = modTime
 }
 
 //List lists runnable IDs
@@ -55,6 +57,18 @@ func (s *Scheduler) Get(ID string) ScheduleRunnable {
 	defer s.mutex.Unlock()
 	return s.runnables[ID]
 }
+
+//HasChanged returns runnable by ID
+func (s *Scheduler) HasChanged(ID string, modTime time.Time) bool {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	timeValue, ok :=  s.modified[ID]
+	if ! ok {
+		return true
+	}
+	return ! timeValue.Equal(modTime)
+}
+
 
 //Remove remove runnable by ID
 func (s *Scheduler) Remove(ID string) {
@@ -136,7 +150,7 @@ func (s *Scheduler) load() error {
 		return err
 	}
 	var ids = make(map[string]bool)
-	if err :=  s.loadFromURL(storageService, resource.URL, ids);err != nil {
+	if err := s.loadFromURL(storageService, resource.URL, ids); err != nil {
 		return err
 	}
 	s.removeUnknown(ids)
@@ -148,7 +162,8 @@ func (s *Scheduler) loadFromURL(storageService storage.Service, URL string, ids 
 	if err != nil {
 		return err
 	}
-	for _, object := range objects {
+	for i := range objects {
+		object := objects[i]
 		if strings.Trim(URL, "/") == strings.Trim(object.URL(), "/") {
 			continue
 		}
@@ -186,21 +201,15 @@ func (s *Scheduler) loadFromURL(storageService storage.Service, URL string, ids 
 		schedule.SourceURL = object.URL()
 		ids[request.ID()] = true
 
-		previous := s.Get(request.ID())
-		if previous != nil {
-			prevSchedule, _ := previous.ScheduledRun()
-			if prevSchedule.Disabled == schedule.Disabled {
-				continue
-			}
+		if ! s.HasChanged(request.ID(), fileInfo.ModTime()) {
+			continue
 		}
 		now := time.Now()
 		schedule.NextRun = &now
-		s.Add(request)
+		s.Add(request, fileInfo.ModTime())
 	}
 	return nil
 }
-
-
 
 func (s *Scheduler) removeUnknown(known map[string]bool) {
 	ids := s.List()
@@ -218,6 +227,7 @@ func NewScheduler(service Service, config *Config) (*Scheduler, error) {
 		service:   service,
 		Config:    config,
 		runnables: make(map[string]ScheduleRunnable),
+		modified:  make(map[string]time.Time),
 		mutex:     &sync.Mutex{},
 
 		nextCheck: time.Now().Add(-time.Second),

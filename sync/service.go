@@ -174,7 +174,6 @@ func (s *service) createTransientDest(session *Session, suffix string) error {
 	}
 	DDL := session.Builder.DDLFromSelect(suffix)
 	_, err := session.DestDB.Execute(DDL)
-	fmt.Printf("%v %v\n", DDL, err)
 	if err == nil {
 		return nil
 	}
