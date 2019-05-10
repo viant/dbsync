@@ -34,6 +34,7 @@ type Scheduler struct {
 func (s *Scheduler) Add(runnable ScheduleRunnable) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	log.Printf("Added schedule: %v\n", runnable.ID())
 	s.runnables[runnable.ID()] = runnable
 }
 
@@ -134,22 +135,25 @@ func (s *Scheduler) load() error {
 	if err != nil {
 		return err
 	}
-	return s.loadFromURL(storageService, resource.URL)
+	var ids = make(map[string]bool)
+	if err :=  s.loadFromURL(storageService, resource.URL, ids);err != nil {
+		return err
+	}
+	s.removeUnknown(ids)
+	return nil
 }
 
-func (s *Scheduler) loadFromURL(storageService storage.Service, URL string) error {
+func (s *Scheduler) loadFromURL(storageService storage.Service, URL string, ids map[string]bool) error {
 	objects, err := storageService.List(URL)
 	if err != nil {
 		return err
 	}
-
-	var ids = make(map[string]bool)
 	for _, object := range objects {
 		if strings.Trim(URL, "/") == strings.Trim(object.URL(), "/") {
 			continue
 		}
 		if object.IsFolder() {
-			if err = s.loadFromURL(storageService, object.URL()); err != nil {
+			if err = s.loadFromURL(storageService, object.URL(), ids); err != nil {
 				return err
 			}
 			continue
@@ -192,11 +196,11 @@ func (s *Scheduler) loadFromURL(storageService storage.Service, URL string) erro
 		now := time.Now()
 		schedule.NextRun = &now
 		s.Add(request)
-
 	}
-	s.removeUnknown(ids)
 	return nil
 }
+
+
 
 func (s *Scheduler) removeUnknown(known map[string]bool) {
 	ids := s.List()
