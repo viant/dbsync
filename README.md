@@ -458,7 +458,7 @@ FROM (
 ###### Chunk Contract settings
 - chunk.size - chunk max size
 - chunk.threads - number of threads processing chunk sync 
-- chunk.SQL - custom chunking SQL
+- resource(dest|source).chunkSQL - custom chunking SQL
 
 _Chunk sync example_ 
 ```yaml
