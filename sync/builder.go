@@ -130,7 +130,7 @@ func (b *Builder) ChunkDQL(resource *Resource, max, limit int, values map[string
 		state.Put("where", " AND "+strings.Join(whereCriteria, " AND "))
 		state.Put("whereClause", " WHERE "+strings.Join(whereCriteria, " AND "))
 	}
-	chunkSQL := b.Chunk.SQL
+	chunkSQL := resource.ChunkSQL
 	if chunkSQL == "" {
 		chunkSQL = b.defaultChunkDQL(resource)
 	}

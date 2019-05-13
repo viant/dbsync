@@ -17,6 +17,7 @@ type Resource struct {
 	columnExpression  map[string]*pseudo.Column
 	PositionReference bool
 	Criteria          map[string]interface{}
+	ChunkSQL          string
 }
 
 //Validate checks if resource is valid

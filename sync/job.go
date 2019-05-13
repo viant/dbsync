@@ -3,6 +3,7 @@ package sync
 import (
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -34,7 +35,7 @@ func (j *Job) Update() {
 	for _, transfer := range transfers {
 		destCount += int(transfer.DestCount)
 		sourceCount += transfer.SourceCount
-		transffered += int(transfer.Transferred)
+		transffered += int(atomic.LoadInt64(&transfer.Transferred))
 	}
 	j.Progress.SourceCount = sourceCount
 	j.Progress.DestCount = destCount
