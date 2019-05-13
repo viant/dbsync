@@ -1,7 +1,10 @@
-unique nulls
-inconisistent partition
-muli null values
-various error cases
-- ID contraint voilation
-
-
+Add use cases:
+- chunked custom SQL
+- error cases:
+    - ID contraint voilation
+    - driver config error
+    - custom chunk SQL error
+    - partition SQL error
+    - unique nulls
+    - inconisistent partition
+    - muli null values
