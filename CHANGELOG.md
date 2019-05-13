@@ -1,3 +1,6 @@
+## May 13 2019 - v0.4.0
+- Moved chunk.SQL to resource.ChunkSQL
+
 ## May 9 2019 - v0.3.1
 - Added mod time based schedule reloading
 - Added DDLFromSelect 
