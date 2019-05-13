@@ -5,7 +5,7 @@ CREATE TABLE events
   event_type   INT,
   quantity     DECIMAL(10,7),
   timestamp    TIMESTAMP,
-  query_string TEXT
+  query_string VARCHAR(255)
 );
 
 
