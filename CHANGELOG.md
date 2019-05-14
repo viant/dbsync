@@ -1,3 +1,7 @@
+## May 14 2019 - v0.4.1
+- Disabled scheduler is scheduleURL is empty
+- Patched multi partition value batching optimization
+
 ## May 13 2019 - v0.4.0
 - Moved chunk.SQL to resource.ChunkSQL
 
