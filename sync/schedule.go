@@ -231,6 +231,9 @@ func NewScheduler(service Service, config *Config) (*Scheduler, error) {
 
 		nextCheck: time.Now().Add(-time.Second),
 	}
+	if config.ScheduleURL == "" {
+		return result, nil
+	}
 	resource := url.NewResource(config.ScheduleURL)
 	if !toolbox.FileExists(resource.ParsedURL.Path) {
 		if err := toolbox.CreateDirIfNotExist(resource.ParsedURL.Path); err != nil {
