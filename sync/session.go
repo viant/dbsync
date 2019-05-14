@@ -376,7 +376,6 @@ func (s *Session) readSyncInfoBatch(batchCriteria map[string]interface{}, index 
 	if err != nil {
 		return err
 	}
-
 	index.build(sourceData, index.source)
 	index.build(destData, index.dest)
 	return nil
@@ -392,22 +391,20 @@ func (s *Session) BatchSyncInfo() error {
 	batchSize := s.Request.Partition.MaxThreads(len(batchedCriteria))
 	limiter := toolbox.NewBatchLimiter(batchSize, len(batchedCriteria))
 	index := newIndexedRecords(s.Partitions.key)
-	for i, batchCriteria := range batchedCriteria {
+	for i := range batchedCriteria {
 		s.Log(nil, fmt.Sprintf("processing batch filter %d/%d", i+1, len(batchedCriteria)))
-
 		go func(i int) {
 			limiter.Acquire()
 			defer func() {
 				s.Log(nil, fmt.Sprintf("completed batch filter processing %d/%d", i+1, len(batchedCriteria)))
 				limiter.Done()
 			}()
-			if e := s.readSyncInfoBatch(batchCriteria, index); e != nil {
+			if e := s.readSyncInfoBatch(batchedCriteria[i], index); e != nil {
 				err = e
 			}
 
 		}(i)
 	}
-
 	limiter.Wait()
 	matched := 0
 	var keys = make([]string, 0)
