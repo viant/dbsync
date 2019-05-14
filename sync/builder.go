@@ -37,11 +37,7 @@ func (b *Builder) Table(suffix string) string {
 	if suffix == "" {
 		return b.table
 	}
-	for _, achar := range []string{" ", "-", ":"} {
-		if count := strings.Count(suffix, achar); count > 0 {
-			suffix = strings.Replace(suffix, achar, "_", count)
-		}
-	}
+	suffix = normalizeTableName(suffix)
 	if b.tempDatabase != "" {
 		return b.tempDatabase + "." + b.table + b.transferSuffix + suffix
 	}
@@ -50,6 +46,7 @@ func (b *Builder) Table(suffix string) string {
 
 //QueryTable returns query table
 func (b *Builder) QueryTable(suffix string, resource *Resource) string {
+	suffix = normalizeTableName(suffix)
 	if suffix == "" {
 		if resource.From != "" {
 			return fmt.Sprintf("(%s)", resource.From)
@@ -65,20 +62,18 @@ func (b *Builder) QueryTable(suffix string, resource *Resource) string {
 
 //DDLAsSelect returns transient table DDL for supplied suffix
 func (b *Builder) DDLFromSelect(suffix string) string {
+	suffix = normalizeTableName(suffix)
 	return fmt.Sprintf("CREATE TABLE %v AS SELECT * FROM %v WHERE 1 = 0", b.Table(suffix), b.Table(""))
 }
 
 //DDL returns transient table DDL for supplied suffix
-func (b *Builder) DDL(tempTable string) (string, error) {
-
+func (b *Builder) DDL(tempTable string) string {
 	DDL := b.ddl
-
 	if tempTable != "" {
 		DDL = strings.Replace(DDL, b.Table(""), b.Table(tempTable), 1)
 	}
 	DDL = strings.Replace(DDL, ";", "", 1)
-
-	return DDL, nil
+	return DDL
 }
 
 func (b *Builder) columnExpression(column string, resource *Resource) string {
@@ -95,9 +90,6 @@ func (b *Builder) unAliasedColumnExpression(column string, resource *Resource) s
 }
 
 func (b *Builder) defaultChunkDQL(resource *Resource) string {
-	if len(b.IDColumns) == 0 {
-		return ""
-	}
 	var projection = []string{
 		fmt.Sprintf("COUNT(1) AS %v", b.alias("count_value")),
 	}
@@ -279,13 +271,6 @@ func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *Resource) (
 	})
 }
 
-//CountDiffDQL returns basic count difference DQL
-func (b *Builder) CountDiffDQL(criteria map[string]interface{}, resource *Resource) (string, []string) {
-	return b.partitionDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
-		*projection = append(*projection, fmt.Sprintf("COUNT(1) AS %v", b.alias("cnt")))
-	})
-}
-
 func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) (string, []string) {
 	var projection = make([]string, 0)
 	var groupBy = make([]string, 0)
@@ -337,6 +322,8 @@ func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface
 		return b.mergeIntoDML(suffix, filter), nil
 	case DMLInsert:
 		return b.insertDML(suffix, filter), nil
+	case transientDMLDelete:
+		return b.transientDeleteDML(suffix, filter), nil
 	case DMLDelete:
 		return b.deleteDML(suffix, filter), nil
 	}

@@ -17,7 +17,7 @@ func TestService_Sync(t *testing.T) {
 	//os.Setenv("PKG_CONFIG_PATH", "/opt/oracle/instantclient_12_2")
 
 	dsc.Logf = dsc.StdoutLogger
-	requestURL := "/Projects/go/workspace/src/github.vianttech.com/adelphic/dbsync/vertica2bq/viant-gbq-alpha/ci_dm/publisher_requests_hour.yaml"
+	requestURL := ""
 	request, err := NewSyncRequestFromURL(requestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)

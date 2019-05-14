@@ -198,3 +198,12 @@ func urlToId(URL string) string {
 	pathBasedID = strings.Replace(pathBasedID, " ", "_", len(pathBasedID))
 	return pathBasedID
 }
+
+func normalizeTableName(table string) string {
+	for _, achar := range []string{" ", "-", ":"} {
+		if count := strings.Count(table, achar); count > 0 {
+			table = strings.Replace(table, achar, "_", count)
+		}
+	}
+	return table
+}

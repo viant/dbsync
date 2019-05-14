@@ -1,0 +1,1 @@
+DELETE FROM events_tmp  WHERE (id) IN (SELECT id FROM events t )

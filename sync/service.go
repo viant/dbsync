@@ -179,12 +179,9 @@ func (s *service) createTransientDest(session *Session, suffix string) error {
 	}
 
 	//Fallback to dialect DDL
-	DDL, err = session.Builder.DDL(suffix)
+	DDL = session.Builder.DDL(suffix)
 	if session.Request.Transfer.TempDatabase != "" {
 		DDL = strings.Replace(DDL, dbName+".", "", 1)
-	}
-	if err == nil {
-		_, err = session.DestDB.Execute(DDL)
 	}
 	return err
 }

@@ -20,6 +20,9 @@ const (
 	DMLInsert = "insert"
 	//DMLDelete DELETE
 	DMLDelete = "delete"
+
+	//DMLDelete DELETE
+	transientDMLDelete = "transientDelete"
 )
 
 //Strategy represnet a sync strategy
