@@ -85,9 +85,9 @@ func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]inte
 	if len(partitions) == 0 {
 		return nil
 	}
-
 	batch := newCriteriaBatch(diffBatchSize)
 	for _, partition := range partitions {
+
 		for key, value := range partition.criteria {
 			if batch.hasValue(value) {
 				continue
@@ -128,6 +128,7 @@ func (b *criteriaBatch) flush() {
 	}
 	b.criteria = append(b.criteria, criterion)
 	b.size = 0
+	b.uniqueValues = make(map[interface{}]bool)
 	b.values = make(map[string][]interface{})
 }
 

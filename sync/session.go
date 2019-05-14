@@ -376,6 +376,7 @@ func (s *Session) readSyncInfoBatch(batchCriteria map[string]interface{}, index 
 	if err != nil {
 		return err
 	}
+
 	index.build(sourceData, index.source)
 	index.build(destData, index.dest)
 	return nil
@@ -391,7 +392,6 @@ func (s *Session) BatchSyncInfo() error {
 	batchSize := s.Request.Partition.MaxThreads(len(batchedCriteria))
 	limiter := toolbox.NewBatchLimiter(batchSize, len(batchedCriteria))
 	index := newIndexedRecords(s.Partitions.key)
-
 	for i, batchCriteria := range batchedCriteria {
 		s.Log(nil, fmt.Sprintf("processing batch filter %d/%d", i+1, len(batchedCriteria)))
 
@@ -411,17 +411,17 @@ func (s *Session) BatchSyncInfo() error {
 	limiter.Wait()
 	matched := 0
 	var keys = make([]string, 0)
-
 	for key, partition := range s.Partitions.index {
 		keys = append(keys, key)
 		sourceRecords, has := index.source[key]
 		if !has {
 			sourceRecords, has = index.source[strings.ToUpper(key)]
 			if !has {
-				s.Log(partition, fmt.Sprintf("no source data, %v, %v", index.source, index.dest))
+				s.Log(partition, fmt.Sprintf("no source data for partition(%v) and key: %v, %v, %v", partition.criteria, key, index.source, index.dest))
 				continue
 			}
 		}
+
 		matched++
 		destRecords, ok := index.dest[key]
 		if !ok {
