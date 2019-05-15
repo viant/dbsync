@@ -1,16 +1,16 @@
 package main
 
 import (
+	"dbsync/sync"
 	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-oci8"
-	_ "github.com/viant/bgc"
 	_ "github.com/viant/asc"
-	"dbsync/sync"
+	_ "github.com/viant/bgc"
 	"log"
 	"os"
 )
@@ -23,7 +23,6 @@ var statsHistory = flag.Int("statsHistory", 10, "max stats history")
 
 func main() {
 	flag.Parse()
-
 
 	go func() {
 		if err := agent.Listen(agent.Options{}); err != nil {
