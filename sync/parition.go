@@ -132,6 +132,7 @@ func (p *Partition) AddChunk(chunk *Chunk) {
 	p.Chunks.AddChunk(chunk)
 }
 
+//SetInfo sets info
 func (p *Partition) SetInfo(info *Info) {
 	p.Info = info
 	p.SourceCount = info.SourceCount
