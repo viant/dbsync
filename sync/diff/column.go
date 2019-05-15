@@ -16,9 +16,6 @@ type Column struct {
 	Alias            string
 }
 
-
-
-
 //Expr returns expression
 func (c *Column) Expr() string {
 	column := c.Name
