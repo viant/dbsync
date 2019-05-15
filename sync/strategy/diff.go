@@ -7,10 +7,6 @@ import (
 
 const defaultDiffBatchSize = 512
 
-
-
-
-
 //DiffStrategy represents difference strategy
 type Diff struct {
 	Columns          []*diff.Column
@@ -21,7 +17,6 @@ type Diff struct {
 	DateFormat       string
 	DateLayout       string
 }
-
 
 //Init initializes diff
 func (d *Diff) Init() error {

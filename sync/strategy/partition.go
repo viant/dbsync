@@ -2,15 +2,13 @@ package strategy
 
 const defaultPartitionThreads = 2
 
-
 //PartitionStrategy represents partition info
 type Partition struct {
 	ProviderSQL string
 	Columns     []string
 	Threads     int
+	SyncMode    string `description:"persistency sync mode: batched or individual"`
 }
-
-
 
 //MaxThreads returns batch size for max elements
 func (p *Partition) MaxThreads(max int) int {
@@ -21,7 +19,7 @@ func (p *Partition) MaxThreads(max int) int {
 	return threads
 }
 
-
+//Init initializes partition
 func (p *Partition) Init() error {
 	if len(p.Columns) == 0 {
 		p.Columns = make([]string, 0)
@@ -30,6 +28,8 @@ func (p *Partition) Init() error {
 	if threads == 0 {
 		p.Threads = defaultPartitionThreads
 	}
+	if p.SyncMode == "" {
+		p.SyncMode = SyncModeIndividual
+	}
 	return nil
 }
-
