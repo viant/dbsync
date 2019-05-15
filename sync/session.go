@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"dbsync/sync/strategy"
 	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
@@ -36,13 +37,16 @@ type Session struct {
 	batchedPartition bool
 	differ           *differ
 	*Config
-	mux               *sync.Mutex
-	isChunkedTransfer bool
-	hasID             bool
-	hasIDs            bool
-	syncMethod        string
-	err               error
-	closed            uint32
+	mux                *sync.Mutex
+	isChunkedTransfer  bool
+	isBatchedChunk     bool
+	isBatchedPartition bool
+	isPartitioned      bool
+	hasID              bool
+	hasIDs             bool
+	syncMethod         string
+	err                error
+	closed             uint32
 }
 
 //IsDebug returns true if debug is on
@@ -550,26 +554,29 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 	if err != nil {
 		return nil, err
 	}
+
 	job := NewJob(request.ID())
 	var session = &Session{
-		Job:      job,
-		Config:   config,
-		Request:  request,
-		hasID:    len(request.IDColumns) == 1,
-		hasIDs:   len(request.IDColumns) > 0,
-		Response: response,
-		Source:   request.Source,
-		SourceDB: sourceDB,
-		Dest:     request.Dest,
-		DestDB:   destDB,
-		Builder:  builder,
-		mux:      &sync.Mutex{},
-		differ:   &differ{Builder: builder},
+		Job:                job,
+		Config:             config,
+		Request:            request,
+		hasID:              len(request.IDColumns) == 1,
+		hasIDs:             len(request.IDColumns) > 0,
+		Response:           response,
+		Source:             request.Source,
+		SourceDB:           sourceDB,
+		Dest:               request.Dest,
+		DestDB:             destDB,
+		Builder:            builder,
+		isBatchedPartition: request.Partition.SyncMode == strategy.SyncModeBatch && request.Partition.ProviderSQL != "",
+		isBatchedChunk:     request.Chunk.SyncMode == strategy.SyncModeBatch,
+		isChunkedTransfer:  request.Chunk.Size > 0,
+		isPartitioned:      request.Partition.ProviderSQL != "",
+		mux:                &sync.Mutex{},
+		differ:             &differ{Builder: builder},
 	}
-	multiChunk := request.Chunk.Size
-	if multiChunk == 0 {
-		multiChunk = 1
+	if session.isChunkedTransfer && !session.isBatchedChunk && session.isBatchedPartition {
+		return nil, fmt.Errorf("batchedPartition can not run with individual chunk sync")
 	}
-	session.isChunkedTransfer = request.Chunk.Size > 0
 	return session, nil
 }
