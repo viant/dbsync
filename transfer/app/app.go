@@ -1,17 +1,16 @@
 package main
 
 import (
-
+	"dbsync/transfer"
 	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-oci8"
-	_ "github.com/viant/bgc"
 	_ "github.com/viant/asc"
-	"dbsync/transfer"
+	_ "github.com/viant/bgc"
 	"github.com/viant/dsc"
 	"log"
 	"os"
