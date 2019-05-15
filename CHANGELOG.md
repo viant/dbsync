@@ -1,3 +1,6 @@
+## May 15 2019 - v0.5.0
+- Added sync mode to control partition/chunk batch or individual sync with dest table
+
 ## May 14 2019 - v0.4.1
 - Disabled scheduler is scheduleURL is empty
 - Patched multi partition value batching optimization
