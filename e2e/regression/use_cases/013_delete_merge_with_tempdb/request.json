@@ -4,10 +4,9 @@
 	"IDColumns": [
         "id"
     ],
-    "Debug":true,
 	"Source": {
 		"Credentials": "mysql-e2e",
-		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
 		"DriverName": "mysql",
 		"Parameters": {
 			"dbname": "db1"
@@ -15,7 +14,7 @@
 	},
 	"Dest": {
 		"Credentials": "mysql-e2e",
-		"Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+		"Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
 		"DriverName": "mysql",
 		"Parameters": {
 			"dbname": "db2"

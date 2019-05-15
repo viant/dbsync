@@ -6,14 +6,14 @@ pipeline:
       recreate: true
       config:
         driverName: mysql
-        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
       admin:
         datastore: mysql
         ping: true
         config:
           driverName: mysql
-          descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+          descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
           credentials: $mysqlCredentials
       scripts:
         - URL: datastore/db1/schema.sql
@@ -24,14 +24,14 @@ pipeline:
       recreate: true
       config:
         driverName: mysql
-        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
       admin:
         datastore: mysql
         ping: true
         config:
           driverName: mysql
-          descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+          descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
           credentials: $mysqlCredentials
       scripts:
         - URL: datastore/db2/schema.sql
@@ -42,14 +42,14 @@ pipeline:
       recreate: true
       config:
         driverName: mysql
-        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
       admin:
         datastore: mysql
         ping: true
         config:
           driverName: mysql
-          descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+          descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
           credentials: $mysqlCredentials
       scripts:
         - URL: datastore/db3/schema.sql
@@ -59,13 +59,13 @@ pipeline:
       datastore: pgdb
       config:
         driverName: postgres
-        descriptor: host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
+        descriptor: host=${dbIP.pg} port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
         credentials: $pgCredentials
       admin:
         datastore: postgres
         config:
           driverName: postgres
-          descriptor: host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
+          descriptor: host=${dbIP.pg} port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
           credentials: $pgCredentials
           ping: true
       recreate: true
@@ -83,29 +83,29 @@ pipeline:
 #      scripts:
 #        - URL: datastore/bqdb/schema.sql
 
-#    oradb:
-#      action: dsunit:init
-#      datastore: ORADB
-#      recreate: true
-#      config:
-#        driverName: oci8
-#        descriptor: "[username]/[password]@127.0.0.1:1521/xe"
-#        credentials: $oraCredentials
-#        parameters:
-#          session:
-#            NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
-#            NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
-#            NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
-#            TIME_ZONE: '00:00'
-#      admin:
-#        datastore: system
-#        ping: true
-#        config:
-#          driverName: oci8
-#          credentials: $oraAdminCredentials
-#          descriptor: "[username]/[password]@127.0.0.1:1521/xe"
-#      scripts:
-#        - URL: datastore/oradb/schema.sql
+    oradb:
+      action: dsunit:init
+      datastore: ORADB
+      recreate: true
+      config:
+        driverName: oci8
+        descriptor: "[username]/[password]@${dbIP.ora}:1521/xe"
+        credentials: $oraCredentials
+        parameters:
+          session:
+            NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
+            NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
+            NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
+            TIME_ZONE: '00:00'
+      admin:
+        datastore: system
+        ping: true
+        config:
+          driverName: oci8
+          credentials: $oraAdminCredentials
+          descriptor: "[username]/[password]@${dbIP.ora}:1521/xe"
+      scripts:
+        - URL: datastore/oradb/schema.sql
 
     aerodb:
       action: dsunit:init
@@ -113,16 +113,15 @@ pipeline:
       ping: true
       config:
         driverName: aerospike
-        descriptor: tcp(127.0.0.1:3000)/[namespace]
+        descriptor: tcp(${dbIP.aero}:3000)/[namespace]
         parameters:
           dbname: aerodb
           namespace: test
-          host: 127.0.0.1
+          host: ${dbIP.aero}
           port: 3000
           dateFormat: yyyy-MM-dd hh:mm:ss
           keyColumn: id
       recreate: true
-
 
     transfer:
       action: dsunit:init
@@ -130,12 +129,12 @@ pipeline:
       recreate: true
       config:
         driverName: mysql
-        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
       admin:
         datastore: mysql
         ping: true
         config:
           driverName: mysql
-          descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+          descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
           credentials: $mysqlCredentials

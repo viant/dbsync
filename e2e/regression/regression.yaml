@@ -11,7 +11,7 @@ pipeline:
   test:
     tag: $pathMatch
     description: '@use_case'
-    range: 1..036
+    range: 1..038
     subPath: use_cases/${index}_*
     template:
       skip-tag:
@@ -69,6 +69,7 @@ pipeline:
       scheduleJob:
         when: $HasResource($path/schedule.yaml)
         action: storage:copy
+        expand: true
         sleepTimeMs: 5000
         source:
           URL: $path/schedule.yaml

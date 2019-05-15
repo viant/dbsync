@@ -27,8 +27,8 @@ pipeline:
     commands:
       - export GO111MODULE=on
       - unset GOPATH
-      - export LD_LIBRARY_PATH=${env.HOME}/Downloads/instantclient_12_2
-      - export PKG_CONFIG_PATH=${env.HOME}/Downloads/instantclient_12_2
+      - export LD_LIBRARY_PATH=${env.LD_LIBRARY_PATH}
+      - export PKG_CONFIG_PATH=${env.LD_LIBRARY_PATH}
 
       - rm $sourcePath/transfer/app/vtransfer
       - rm $sourcePath/transfer/app/nohup.out

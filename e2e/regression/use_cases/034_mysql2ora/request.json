@@ -1,13 +1,12 @@
 {
    "Id":"$index",
 	"Table": "events",
-	"Debug": true,
 	"IDColumns": [
         "id"
     ],
     "Source": {
         "Credentials": "mysql-e2e",
-        "Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+        "Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
         "DriverName": "mysql",
         "Parameters": {
             "dbname": "db1"
@@ -16,7 +15,7 @@
 	"Dest": {
 		"DriverName": "oci8",
 		"Credentials": "ora-e2e",
-        "Descriptor": "[username]/[password]@127.0.0.1:1521/xe"
+        "Descriptor": "[username]/[password]@${dbIP.ora}:1521/xe"
 	},
 	"Diff": {
 	    "CountOnly": true,

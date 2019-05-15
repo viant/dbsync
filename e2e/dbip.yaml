@@ -1,0 +1,29 @@
+pipeline:
+  fetchDbIP:
+    mysqlIp:
+      action: docker:inspect
+      logging: false
+      name: dbsync
+      post:
+        'dbIP.mysql': $Info[0].NetworkSettings.IPAddress
+
+    postgresIP:
+      action: docker:inspect
+      logging: false
+      name: pgdb
+      post:
+        'dbIP.pg': $Info[0].NetworkSettings.IPAddress
+
+    oradbIP:
+      action: docker:inspect
+      logging: false
+      name: oradb
+      post:
+        'dbIP.ora': $Info[0].NetworkSettings.IPAddress
+
+    aeroIP:
+      action: docker:inspect
+      logging: false
+      name: aero
+      post:
+        'dbIP.aero': $Info[0].NetworkSettings.IPAddress

@@ -5,7 +5,7 @@ pipeline:
       datastore: db1
       config:
         driverName: mysql
-        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
 
   db2:
@@ -14,7 +14,7 @@ pipeline:
       datastore: db2
       config:
         driverName: mysql
-        descriptor: '[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true'
+        descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
   pgdb:
     register:
@@ -22,7 +22,7 @@ pipeline:
       datastore: pgdb
       config:
         driverName: postgres
-        descriptor: host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
+        descriptor: host=${dbIP.pg} port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable
         credentials: $pgCredentials
 #  bqdb:
 #    register:
@@ -33,19 +33,19 @@ pipeline:
 #        credentials: $bqCredentials
 #        parameters:
 #          datasetId: bqdb
-#  oradb:
-#    action: dsunit:register
-#    datastore: oradb
-#    Config:
-#      driverName: oci8
-#      descriptor: "[username]/[password]@127.0.0.1:1521/xe"
-#      credentials: $oraCredentials
-#      parameters:
-#        session:
-#          NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
-#          NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
-#          NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
-#          TIME_ZONE: '00:00'
+  oradb:
+    action: dsunit:register
+    datastore: oradb
+    Config:
+      driverName: oci8
+      descriptor: "[username]/[password]@${dbIP.ora}:1521/xe"
+      credentials: $oraCredentials
+      parameters:
+        session:
+          NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
+          NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
+          NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
+          TIME_ZONE: '00:00'
 
 
   aerodb:
@@ -54,11 +54,11 @@ pipeline:
     ping: true
     config:
       driverName: aerospike
-      descriptor: tcp(127.0.0.1:3000)/[namespace]
+      descriptor: tcp(${dbIP.aero}:3000)/[namespace]
       parameters:
         dbname: aerodb
         namespace: test
-        host: 127.0.0.1
+        host: ${dbIP.aero}
         port: 3000
         dateFormat: yyyy-MM-dd hh:mm:ss
         keyColumn: id

@@ -1,0 +1,19 @@
+Id and partition based synchronization with merge strategy
+
+db1 is a source and db2 is destination database
+
+
+Input:
+    - db1.events has 2 partition, 5 records each
+    - db2.events has 1st partition with discrepant 5 rows, 2nd partition has only 2 rows with some discrepancy
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - partition.syncMode: batch
+
+Output:
+   -  db2.events has all data synchronized from db1.events with merge strategy
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 10
+      - dest count: 7
+      - transferred: 10

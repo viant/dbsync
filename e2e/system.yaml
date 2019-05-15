@@ -7,10 +7,10 @@ pipeline:
     stop-images:
       action: docker:stop
       images:
-      - mysql
-      - postgres
-      - oracle-xe-11g
-      - aerospike-server
+        - mysql
+        - postgres
+        - oracle-xe-11g
+        - aerospike-server
   init:
     services:
       mysql:
@@ -21,6 +21,7 @@ pipeline:
           3306: 3306
         env:
           MYSQL_ROOT_PASSWORD: ${db1Secrets.Password}
+
       postgres:
         action: docker:run
         image: postgres:9.6-alpine
@@ -31,14 +32,15 @@ pipeline:
           POSTGRES_USER: ${pgdbSecrets.Username}
           POSTGRES_PASSWORD: ${pgdbSecrets.Password}
 
-#      oradb:
-#        action: docker:run
-#        image: thebookpeople/oracle-xe-11g
-#        name: oradb
-#        ports:
-#          1521: 1521
-#        env:
-#          ORACLE_ALLOW_REMOTE: true
+      oradb:
+        action: docker:run
+        image: thebookpeople/oracle-xe-11g
+        name: oradb
+        ports:
+          1521: 1521
+        env:
+          ORACLE_ALLOW_REMOTE: true
+
       aero:
         action: docker:run
         image: aerospike/aerospike-server:latest
@@ -48,3 +50,4 @@ pipeline:
           3001: 3001
           3002: 3002
           3004: 3004
+

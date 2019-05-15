@@ -9,6 +9,12 @@ init:
   pgCredentials: pg-e2e
   oraCredentials: ora-e2e
   oraAdminCredentials: ora-admin-e2e
+  useDockerDBIP: true
+  dbIP:
+    ora: 127.0.0.1
+    pg: 127.0.0.1
+    mysql: 127.0.0.1
+    aero: 127.0.0.1
 
 pipeline:
   init:
@@ -17,10 +23,20 @@ pipeline:
       request: '@system'
       tasks: '*'
 
+    fetchDbIp:
+      when: $useDockerDBIP = true
+      action: run
+      request: '@dbip.yaml'
+
+    info:
+      action: print
+      message: 'Db IP: $AsJSON($dbIP)'
+
     datastore:
       action: run
       request: '@datastore'
       tasks: '*'
+
     app:
       sdk: $sdk
       action: run

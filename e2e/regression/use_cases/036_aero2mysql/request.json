@@ -1,12 +1,10 @@
 {
     "Id":"$index",
     "Table": "events",
-    "Debug": true,
     "Force": true,
-
     "Source": {
         "DriverName": "aerospike",
-        "Descriptor": "tcp(127.0.0.1:3000)/test",
+        "Descriptor": "tcp(${dbIP.aero}:3000)/test",
         "Parameters": {
             "dateFormat": "yyyy-MM-dd hh:mm:ss",
             "keyColumn": "id",
@@ -15,7 +13,7 @@
     },
     "Dest": {
         "Credentials": "mysql-e2e",
-        "Descriptor": "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true",
+        "Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
         "DriverName": "mysql",
         "Parameters": {
             "dbname": "db1"
