@@ -153,7 +153,7 @@ func (c *chunker) build(session *Session, partition *Partition) error {
 
 		session.Log(partition, fmt.Sprintf("sourceDQL: %v", c.sourceSQL))
 		session.Log(partition, fmt.Sprintf("destSQL: %v", c.destSQL))
-		session.Log(partition, fmt.Sprintf("chunk[%d]: [%v..%v] is chunkSync: %v", i, minValue, maxValue, c.inSync()))
+		session.Log(partition, fmt.Sprintf("chunk[%d]: [%v..%v] is chunkInSync: %v", i, minValue, maxValue, c.inSync()))
 
 		if c.optimizeSync && c.inSync() {
 			if c.countOnly {
