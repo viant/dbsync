@@ -132,6 +132,12 @@ func (p *Partition) AddChunk(chunk *Chunk) {
 	p.Chunks.AddChunk(chunk)
 }
 
+func (p *Partition) SetInfo(info *Info) {
+	p.Info = info
+	p.SourceCount = info.SourceCount
+	p.DestCount = info.DestCount
+}
+
 //SetSynMethod sets sync method
 func (p *Partition) SetSynMethod(method string) {
 	if p.Method == SyncMethodMerge {
