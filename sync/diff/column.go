@@ -17,8 +17,8 @@ type Column struct {
 }
 
 //Expr returns expression
-func (c *Column) Expr() string {
-	column := c.Name
+func (c *Column) Expr(expander func(string) string) string {
+	column := expander(c.Name)
 	if c.Default != nil {
 		if toolbox.IsString(c.Default) {
 			column = fmt.Sprintf("COALESCE(%v, '%v')", c.Name, c.Default)

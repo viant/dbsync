@@ -27,7 +27,7 @@ func (r *Resource) Validate() error {
 	}
 	for _, column := range r.PseudoColumns {
 		if strings.Index(column.Expression, "t.") == -1 {
-			return fmt.Errorf("invalid pseudo column expectedion expected table alias t., but had: %v", column.Expression)
+			return fmt.Errorf("invalid pseudo column expectedion expected table formatColumn t., but had: %v", column.Expression)
 		}
 	}
 	return nil
@@ -41,4 +41,11 @@ func (r *Resource) indexPseudoColumns() {
 	for _, column := range r.PseudoColumns {
 		r.columnExpression[column.Name] = column
 	}
+}
+
+func (r *Resource) columnExpr(column string) string {
+	if pseudoColumn, ok := r.columnExpression[column]; ok {
+		return pseudoColumn.Expression
+	}
+	return column
 }

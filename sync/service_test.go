@@ -3,7 +3,7 @@ package sync
 import (
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
-	//	_ "github.com/mattn/go-oci8"
+	_ "github.com/mattn/go-oci8"
 	"github.com/stretchr/testify/assert"
 	_ "github.com/viant/bgc"
 	"log"
@@ -11,8 +11,8 @@ import (
 )
 
 func TestService_Sync(t *testing.T) {
-
 	requestURL := ""
+
 	request, err := NewSyncRequestFromURL(requestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)

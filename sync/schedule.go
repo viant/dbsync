@@ -36,7 +36,7 @@ func (s *Scheduler) Add(runnable ScheduleRunnable, modTime time.Time) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	_, has := s.runnables[runnable.ID()]
-	if ! has {
+	if !has {
 		log.Printf("Added schedule: %v\n", runnable.ID())
 	} else {
 		log.Printf("Updated	 schedule: %v\n", runnable.ID())

@@ -78,10 +78,11 @@ func (b *Builder) DDL(tempTable string) string {
 
 func (b *Builder) columnExpression(column string, resource *Resource) string {
 	if pseudoColumn, ok := resource.columnExpression[column]; ok {
-		return pseudoColumn.Expression + " AS " + b.alias(column)
+		return pseudoColumn.Expression + " AS " + b.formatColumn(column)
 	}
 	return column
 }
+
 func (b *Builder) unAliasedColumnExpression(column string, resource *Resource) string {
 	if pseudoColumn, ok := resource.columnExpression[column]; ok {
 		return pseudoColumn.Expression
@@ -91,12 +92,12 @@ func (b *Builder) unAliasedColumnExpression(column string, resource *Resource) s
 
 func (b *Builder) defaultChunkDQL(resource *Resource) string {
 	var projection = []string{
-		fmt.Sprintf("COUNT(1) AS %v", b.alias("count_value")),
+		fmt.Sprintf("COUNT(1) AS %v", b.formatColumn("count_value")),
 	}
 	if len(b.uniques) > 0 {
 		projection = append(projection,
-			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.alias("min_value")),
-			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.alias("max_value")))
+			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.formatColumn("min_value")),
+			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.formatColumn("max_value")))
 	}
 	return fmt.Sprintf(`SELECT %v
 FROM (
@@ -158,13 +159,13 @@ func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *Res
 //CountDQL returns count DQL for supplied resource and filter
 func (b *Builder) CountDQL(suffix string, resource *Resource, criteria map[string]interface{}) string {
 	var projection = []string{
-		fmt.Sprintf("COUNT(1) AS %v", b.alias("count_value")),
+		fmt.Sprintf("COUNT(1) AS %v", b.formatColumn("count_value")),
 	}
 
 	if len(b.uniques) == 1 {
 		projection = append(projection,
-			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.alias("min_value")),
-			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.alias("max_value")))
+			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.formatColumn("min_value")),
+			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.formatColumn("max_value")))
 	}
 
 	DQL := fmt.Sprintf("SELECT %v\nFROM %v t %v",
@@ -194,18 +195,18 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 		if dedupe {
 			expression, ok := resource.columnExpression[column.Name()]
 			if !ok {
-				projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, column.Name(), b.alias(column.Name())))
+				projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, column.Name(), b.formatColumn(column.Name())))
 				continue
 			}
-			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, expression, b.alias(column.Name())))
+			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, expression, b.formatColumn(column.Name())))
 			continue
 		}
 		expression, ok := resource.columnExpression[column.Name()]
 		if !ok {
-			projection = append(projection, fmt.Sprintf("%v", b.alias(column.Name())))
+			projection = append(projection, fmt.Sprintf("%v", b.formatColumn(column.Name())))
 			continue
 		}
-		projection = append(projection, fmt.Sprintf("%v AS %v", expression, b.alias(column.Name())))
+		projection = append(projection, fmt.Sprintf("%v AS %v", expression, b.formatColumn(column.Name())))
 	}
 
 	if len(b.IDColumns) > 0 {
@@ -249,7 +250,7 @@ func (b *Builder) init() {
 				diffColumn.DateLayout = toolbox.DateFormatToLayout(diffColumn.DateFormat)
 			}
 			if diffColumn.Alias == "" {
-				diffColumn.Alias = b.alias(diffColumn.Func + "_" + diffColumn.Name)
+				diffColumn.Alias = b.formatColumn(diffColumn.Func + "_" + diffColumn.Name)
 			}
 		}
 	}
@@ -266,7 +267,7 @@ func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *Resource) (
 			if _, has := dimension[column.Name]; has {
 				continue
 			}
-			*projection = append(*projection, b.alias(column.Expr()))
+			*projection = append(*projection, b.formatColumn(column.Expr(resource.columnExpr)))
 		}
 	})
 }
@@ -541,16 +542,15 @@ func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string
 	return fmt.Sprintf("DELETE FROM %v %v", b.Table(""), whereClause)
 }
 
-func (b *Builder) alias(alias string) string {
+func (b *Builder) formatColumn(column string) string {
 	if b.isUpperCase {
-		return strings.ToUpper(alias)
+		return strings.ToUpper(column)
 	}
-	return alias
+	return column
 }
 
 func (b *Builder) addStandardDiffColumns() {
-
-	b.countColumnAlias = b.alias("cnt")
+	b.countColumnAlias = b.formatColumn("cnt")
 	for _, candidate := range b.Diff.Columns {
 		if candidate.Name == b.countColumnAlias {
 			return
@@ -559,21 +559,21 @@ func (b *Builder) addStandardDiffColumns() {
 	b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 		Func:  "COUNT",
 		Name:  "1",
-		Alias: b.alias("cnt"),
+		Alias: b.formatColumn("cnt"),
 	})
 
 	for _, unique := range b.IDColumns {
 		if len(b.IDColumns) == 1 {
-			b.maxIDColumnAlias = b.alias("max_" + unique)
-			b.minIDColumnAlias = b.alias("min_" + unique)
+			b.maxIDColumnAlias = b.formatColumn("max_" + unique)
+			b.minIDColumnAlias = b.formatColumn("min_" + unique)
 
-			b.uniqueCountAlias = b.alias("unique_cnt")
+			b.uniqueCountAlias = b.formatColumn("unique_cnt")
 			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "COUNT",
 				Name:  unique,
 				Alias: b.uniqueCountAlias,
 			})
-			b.uniqueNotNullSumtAlias = b.alias("non_cnt")
+			b.uniqueNotNullSumtAlias = b.formatColumn("non_cnt")
 			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "SUM",
 				Name:  "(CASE WHEN " + unique + " IS NOT NULL THEN 1 ELSE 0 END)",
@@ -635,10 +635,10 @@ func (b *Builder) buildDiffColumns(columns []dsc.Column) []*diff.Column {
 
 		default:
 			diffColumn.Func = "COUNT"
-			diffColumn.Default = ""
+			diffColumn.Default = " "
 			prefix = "cnt_"
 		}
-		diffColumn.Alias = b.alias(prefix + diffColumn.Name)
+		diffColumn.Alias = b.formatColumn(prefix + diffColumn.Name)
 		result = append(result, diffColumn)
 	}
 	return result
