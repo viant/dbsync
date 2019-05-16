@@ -116,7 +116,7 @@ func (s *service) sync(request *Request, response *Response) {
 			} else {
 				syncStats.PartitionTransferred++
 			}
-			syncStats.Methods[partition.Method]++
+			syncStats.Methods[method]++
 		}
 		response.Transferred = int(session.Job.Progress.Transferred)
 		stats.Add(syncStats)
