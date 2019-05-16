@@ -1,3 +1,7 @@
+## May 16 2019 - v0.6.0
+- Added pseudo column aggregation
+- Updated coalesce default value to ' ' (space)  as oracle xe COUNT(DISTINCT COALESCE(x, '')) returns 0 with '' and 1 with ' ' where x has all rows with nulls
+
 ## May 15 2019 - v0.5.0
 - Added sync mode to control partition/chunk batch or individual sync with dest table
 

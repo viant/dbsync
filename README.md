@@ -608,6 +608,52 @@ resource.positionReference informs query builder if databae vendor support this 
 - source.positionReference flags if source database support GROUP/ORDER BY position
 - dest.positionReference flags if dest database support GROUP/ORDER BY position
 
+#### Incompatible timezone
+
+Cross database timestamp representation varies, thus event after db sync there could be timezone based discrepancy.
+In this scenario pseudo column with custom diff column can be used, where each pseudo column specify expression to convert a date/timestamp column to unix timestamp.
+
+
+[@tz.yaml](usage/tz.yaml)
+```yaml
+table: events
+idColumns:
+  - id
+
+diff:
+  depth: 3
+  columns:
+    - name: MODIFIED
+      func: MAX
+
+source:
+  credentials: ora-e2e
+  descriptor: '[username]/[password]@${dbIP.ora}:1521/xe'
+  driverName: oci8
+  parameters:
+    dbname: oradb
+  pseudoColumns:
+    - name: MODIFIED
+      expression: ROUND((CAST(COALESCE(t.updated, t.created) AS DATE) -  to_date('19700101 000000', 'YYYYMMDD HH24MISS')) *86400)
+
+dest:
+  credentials: gcp-e2e
+  driverName: bigquery
+  parameters:
+    datasetId: bqdb
+  pseudoColumns:
+    - name: MODIFIED
+      expression: UNIX_SECONDS(COALESCE(t.updated, t.created))
+
+transfer:
+  endpointIP: 127.0.0.1:8080
+  writerThreads: 2
+  batchSize: 2048
+
+```
+
+
+
 ### Running end to end test
 
 End to end testing provide practical [examples](e2e/regression/use_cases) with how to configure data sync between various database vendor and scenarios
