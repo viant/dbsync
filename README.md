@@ -334,9 +334,9 @@ is controlled with threads strategy  partition level setting (2 by default)
 ###### Partition Contract settings
 
 - partition.providerSQL: SQL providing partition values
-- columns: partition column or pseudo columns
-- threads: number of threads processing partition sync
-
+- partition.columns: partition column or pseudo columns
+- partition.threads: number of threads processing partition sync
+- partition.syncMode: batch | individual (individual by default)
 
 _Partition based sync example._
 
@@ -458,6 +458,7 @@ FROM (
 ###### Chunk Contract settings
 - chunk.size - chunk max size
 - chunk.threads - number of threads processing chunk sync 
+- chunk.syncMode: batch | individual (batch by default)
 - resource(dest|source).chunkSQL - custom chunking SQL
 
 _Chunk sync example_ 
@@ -492,7 +493,7 @@ transfer:
 
 chunk:
   size: 1048576
-  queueSize: 10
+  threads: 10
 
 ```
 
@@ -601,7 +602,7 @@ Transfer process is delegated to the transfer service, the following parameter c
 
 #### ORDER/GROUP BY position support
 
-Some dataase do not support GROUP/ORDER BY position, in that case actual unaliased expression has to be used
+Some database do not support GROUP/ORDER BY position, in that case actual unaliased expression has to be used
 resource.positionReference informs query builder if databae vendor support this option.
  
 - source.positionReference flags if source database support GROUP/ORDER BY position
@@ -611,12 +612,18 @@ resource.positionReference informs query builder if databae vendor support this 
 
 End to end testing provide practical [examples](e2e/regression/use_cases) with how to configure data sync between various database vendor and scenarios
 
-This project uses [endly e2e test runner](http://github.com/viant/endly/)
+This project uses [endly e2e test runner](http://github.com/viant/endly/) 
+
+
 
 ```bash
 docker run --name endly -v /var/run/docker.sock:/var/run/docker.sock -v ~/e2e:/e2e -v ~/e2e/.secret/:/root/.secret/ -p 7722:22  -d endly/endly:latest-ubuntu16.04  
 ssh root@127.0.0.1 -p 7722 ## password is dev
 
+### this instruction would work with endly 0.37.4+ 
+endly -v
+
+    
 ### create secrets for endly with root/dev credentials
 endly -c=localhost
 
@@ -626,23 +633,17 @@ endly -c=mysql-e2e
 ### create secrets for postgress database with root/dev credentials
 endly -c=pg-e2e
 
-### create secrets for postgress database with oradb/system credentials
+### create secrets for oracle database with oradb/oracle credentials
 endly -c=ora-e2e
 
-### create secrets for postgress database with oradb/oracle credentials
-endly -c=ora-e2e
-
-### create secrets for postgress database with system/oracle credentials
+### create secrets for oracle admin database with system/oracle credentials
 endly -c=ora-admin-e2e
+
 
 ### create secrets  ~/.secret/gcp-e2e.json for BigQuery dedicated e2e project (https://github.com/viant/endly/tree/master/doc/secrets#google-cloud-credentials)
 
-
 ### check all created secrets files
 ls -al ~/.secret/ 
-
-
-### TODO update HOWTO (with oracle, cgo dep, etc...)
 
 
 ## clone dbsync project and run tests
@@ -696,7 +697,7 @@ rm -rf $sourcePath/sync/app/cron
 go build -o dbsync
 ```
 
-2. Bulding docker images
+2. Building docker images
 
 This project use [endly workflow](docker/build.yaml)  to build docker size optimized service images
 
