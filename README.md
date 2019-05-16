@@ -686,7 +686,12 @@ endly -c=ora-e2e
 endly -c=ora-admin-e2e
 
 
+##### BigQuery secrets setup is optional
 ### create secrets  ~/.secret/gcp-e2e.json for BigQuery dedicated e2e project (https://github.com/viant/endly/tree/master/doc/secrets#google-cloud-credentials)
+### when configured remove skip.txt from BigQuery (bq) related use cases and uncomment #bqdb tasks from data.yaml and datastore.yaml) 
+
+
+
 
 ### check all created secrets files
 ls -al ~/.secret/ 
