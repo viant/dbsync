@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"fmt"
 	"github.com/viant/toolbox"
 )
 
@@ -21,9 +20,6 @@ func (d *differ) IsEqual(index []string, source, dest []Record, status *Info) bo
 		discrepant := false
 		for k := range sourceRecord {
 			if !checkMapItem(sourceRecord, destRecord, k, func(source, dest interface{}) bool {
-				if source != dest {
-					fmt.Printf("discrepant %v :%v %v\n", k, source, dest)
-				}
 				return source == dest
 			}) {
 				discrepant = true
