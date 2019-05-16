@@ -35,7 +35,12 @@ type Scheduler struct {
 func (s *Scheduler) Add(runnable ScheduleRunnable, modTime time.Time) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	log.Printf("Added schedule: %v\n", runnable.ID())
+	_, has := s.runnables[runnable.ID()]
+	if ! has {
+		log.Printf("Added schedule: %v\n", runnable.ID())
+	} else {
+		log.Printf("Updated	 schedule: %v\n", runnable.ID())
+	}
 	s.runnables[runnable.ID()] = runnable
 	s.modified[runnable.ID()] = modTime
 }
