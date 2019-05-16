@@ -1,4 +1,4 @@
-Oracle to MySQL data sync
+Oracle to BigQuery data sync
 Id and partition based synchronization with delete merge strategy
 
 db1 is a source and pgdb is destination database

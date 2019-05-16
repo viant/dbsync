@@ -1,0 +1,35 @@
+{
+   "Id":"$index",
+   "Debug":true,
+	"Table": "events",
+	"IDColumns": [
+        "id"
+    ],
+	"Source": {
+		"DriverName": "oci8",
+		"Credentials": "ora-e2e",
+        "Descriptor": "[username]/[password]@${dbIP.ora}:1521/xe"
+	},
+    "Dest": {
+ 		"Credentials": "gcp-e2e",
+ 		"DriverName": "bigquery",
+ 		"Parameters": {
+ 			"datasetId": "bqdb"
+ 		}
+ 	},
+	"Diff": {
+	    "BatchSize": 1024
+	},
+	"Partition": {
+        "Columns": [
+            "event_type"
+        ],
+        "Threads": 5,
+        "ProviderSQL":"SELECT event_type FROM oradb.events GROUP BY event_type ORDER BY event_type"
+    },
+    "Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 2,
+        "BatchSize": 2048
+    }
+}
