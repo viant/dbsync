@@ -668,7 +668,6 @@ ssh root@127.0.0.1 -p 7722 ## password is dev
 
 ### this instruction would work with endly 0.37.4+ 
 endly -v
-
     
 ### create secrets for endly with root/dev credentials
 endly -c=localhost
