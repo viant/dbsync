@@ -170,24 +170,21 @@ func (s *service) createTransientDest(session *Session, suffix string) error {
 		return fmt.Errorf("suffix was empty")
 	}
 	table := session.Builder.Table(suffix)
+	_ = s.dropTable(session, table)
+
 	dialect := dsc.GetDatastoreDialect(session.DestDB.Config().DriverName)
 	dbName, _ := dialect.GetCurrentDatastore(session.DestDB)
-	if session.Request.Transfer.TempDatabase != "" {
-		_ = dialect.DropTable(session.DestDB, session.Request.Transfer.TempDatabase, table)
-	} else {
-		_ = dialect.DropTable(session.DestDB, dbName, table)
-	}
 	DDL := session.Builder.DDLFromSelect(suffix)
 	_, err := session.DestDB.Execute(DDL)
 	if err == nil {
 		return nil
 	}
-
 	//Fallback to dialect DDL
 	DDL = session.Builder.DDL(suffix)
 	if session.Request.Transfer.TempDatabase != "" {
 		DDL = strings.Replace(DDL, dbName+".", "", 1)
 	}
+	_, err = session.DestDB.Execute(DDL)
 	return err
 }
 
@@ -290,7 +287,7 @@ func (s *service) removeInconsistency(session *Session, chunk *Chunk, partition 
 //appendNewRecords removed all record from transient table that exist in dest, then appends only new
 func (s *service) appendNewRecords(session *Session, suffix string, criteria map[string]interface{}) error {
 	DML := session.Builder.transientDeleteDML(suffix, criteria)
-	session.Log(nil, fmt.Sprintf("DML:\n\t%v", DML))
+	session.Log(nil, fmt.Sprintf("DML(transient):\n\t%v", DML))
 	if _, err := session.DestDB.Execute(DML); err != nil {
 		return err
 	}
@@ -304,13 +301,9 @@ func (s *service) mergeData(session *Session, suffix string, criteria map[string
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	DML, err := session.Builder.DML(session.Request.MergeStyle, suffix, criteria)
-	session.Log(nil, fmt.Sprintf("DML:\n\t%v", DML))
-	dialect := dsc.GetDatastoreDialect(session.DestDB.Config().DriverName)
-	dbName := session.getDbName(session.DestDB)
-	if err == nil {
-		if _, err = session.DestDB.Execute(DML); err == nil {
-			err = dialect.DropTable(session.DestDB, dbName, session.Builder.Table(suffix))
-		}
+	session.Log(nil, fmt.Sprintf("DML(merge):\n\t%v", DML))
+	if _, err = session.DestDB.Execute(DML); err == nil {
+		err = s.dropTable(session, session.Builder.Table(suffix))
 	}
 	return err
 }
@@ -323,14 +316,22 @@ func (s *service) mergePartitionData(session *Session, partition *Partition) err
 
 func (s *service) appendData(session *Session, sourceSuffix, destSuffix string) error {
 	DML := session.Builder.AppendDML(sourceSuffix, destSuffix)
-	session.Log(nil, fmt.Sprintf("DML:\n\t%v", DML))
-	dialect := dsc.GetDatastoreDialect(session.DestDB.Config().DriverName)
-	dbName, _ := dialect.GetCurrentDatastore(session.DestDB)
+	session.Log(nil, fmt.Sprintf("DML(append):\n\t%v", DML))
 	var err error
 	if _, err = session.DestDB.Execute(DML); err == nil {
-		err = dialect.DropTable(session.DestDB, dbName, session.Builder.Table(sourceSuffix))
+		err = s.dropTable(session, session.Builder.Table(sourceSuffix))
 	}
 	return err
+}
+
+func (s *service) dropTable(session *Session, table string) error {
+	dialect := dsc.GetDatastoreDialect(session.DestDB.Config().DriverName)
+	dbName, _ := dialect.GetCurrentDatastore(session.DestDB)
+
+	if session.Request.Transfer.TempDatabase != "" {
+		dbName = session.Request.Transfer.TempDatabase
+	}
+	return dialect.DropTable(session.DestDB, dbName, table)
 }
 
 func (s *service) deletePartitionData(session *Session, partition *Partition) error {
