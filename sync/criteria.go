@@ -3,6 +3,7 @@ package sync
 import (
 	"fmt"
 	"github.com/viant/toolbox"
+	"log"
 	"strings"
 )
 
@@ -107,6 +108,10 @@ func updateBatchedPartitions(session *Session) {
 	}
 	batch := newCriteriaBatch(batchSize)
 	for _, partition := range partitions {
+		if partition.Info == nil {
+			session.Error(partition, "partition with no sync info - giving up batching")
+			return
+		}
 		if partition.InSync {
 			continue
 		}
