@@ -440,7 +440,7 @@ func (s *Session) BatchSyncInfo() error {
 		actualKeys := toolbox.MapKeysToStringSlice(s.Partitions.index)
 		s.Error(nil, fmt.Sprintf("invalid partition expression - unable to match sync status with keys: %v, \n actual: %v", keys, actualKeys))
 	}
-	return nil
+	return err
 }
 
 //Log logs session message

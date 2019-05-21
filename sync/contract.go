@@ -2,10 +2,8 @@ package sync
 
 import (
 	"fmt"
-	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
 	"strings"
-	"time"
 )
 
 const (
@@ -31,16 +29,6 @@ type Request struct {
 	Debug    bool
 	Criteria map[string]interface{}
 	Schedule *Schedule
-}
-
-//Schedule represent schedule meta
-type Schedule struct {
-	Frequency  *toolbox.Duration
-	NextRun    *time.Time
-	RunCount   int
-	ErrorCount int
-	Disabled   bool
-	SourceURL  string
 }
 
 //Response return response
@@ -85,11 +73,6 @@ func NewRequestFromURL(URL string) (*Request, error) {
 	resource := url.NewResource(URL)
 	result := &Request{}
 	return result, resource.Decode(result)
-}
-
-//SetNextRun sets next run
-func (s *Schedule) SetNextRun(time time.Time) {
-	s.NextRun = &time
 }
 
 //ID returns sync request ID
@@ -191,8 +174,8 @@ func (r *Request) Validate() error {
 	}
 
 	if r.Schedule != nil {
-		if r.Schedule.Frequency == nil {
-			return fmt.Errorf("schedule.Frequency and schedule.At was empty")
+		if err := r.Schedule.Validate(); err != nil {
+			return err
 		}
 	}
 	if err := r.Source.Validate(); err != nil {

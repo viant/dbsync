@@ -385,12 +385,11 @@ func (s *service) syncDataPartitions(session *Session) error {
 		if err := session.Partitions.Range(func(partition *Partition) error {
 			_, err := s.getPartitionSyncInfo(session, partition, optimizeSync)
 			return err
-		});err != nil {
+		}); err != nil {
 			return err
 		}
 		updateBatchedPartitions(session)
 	}
-
 
 	err := session.Partitions.Range(func(partition *Partition) error {
 		info, err := s.getPartitionSyncInfo(session, partition, optimizeSync)

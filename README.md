@@ -186,6 +186,29 @@ schedule:
     unit: hour
 ```
 
+Schedule can use either frequency or at schedule, if both specified frequency take precedence
+
+```yaml
+table: events
+idColumns:
+  - id
+diff:
+  countOnly: true  
+source:
+  ...
+dest:
+   ...
+transfer:
+  ...
+schedule:
+  at:
+    minute: 0,30
+    hour: *
+    weekDay: *
+```
+
+
+
 #### Monitoring sync service URI 
 
 - /v1/api/jobs: list all recently active sync jobs
