@@ -1,4 +1,4 @@
-## May 12 2019 - v0.6.1
+## May 12 2019 - v0.6.3
 - Updated partition batching to reduce number of SQL statements
 
 ## May 16 2019 - v0.6.1
