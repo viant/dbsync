@@ -198,7 +198,7 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 				projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, column.Name(), b.formatColumn(column.Name())))
 				continue
 			}
-			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, expression, b.formatColumn(column.Name())))
+			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, expression.Expression, b.formatColumn(column.Name())))
 			continue
 		}
 		expression, ok := resource.columnExpression[column.Name()]
@@ -206,7 +206,7 @@ func (b *Builder) DQL(suffix string, resource *Resource, values map[string]inter
 			projection = append(projection, fmt.Sprintf("%v", b.formatColumn(column.Name())))
 			continue
 		}
-		projection = append(projection, fmt.Sprintf("%v AS %v", expression, b.formatColumn(column.Name())))
+		projection = append(projection, fmt.Sprintf("%v AS %v", expression.Expression, b.formatColumn(column.Name())))
 	}
 
 	if len(b.IDColumns) > 0 {
