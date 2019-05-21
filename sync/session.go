@@ -25,17 +25,17 @@ const (
 
 //Session represents a ssession
 type Session struct {
-	Job              *Job
-	Response         *Response
-	Request          *Request
-	Builder          *Builder
-	Source           *Resource
-	Dest             *Resource
-	SourceDB         dsc.Manager
-	DestDB           dsc.Manager
-	Partitions       *Partitions
-	batchedPartition bool
-	differ           *differ
+	Job                    *Job
+	Response               *Response
+	Request                *Request
+	Builder                *Builder
+	Source                 *Resource
+	Dest                   *Resource
+	SourceDB               dsc.Manager
+	DestDB                 dsc.Manager
+	Partitions             *Partitions
+	batchedPartitionStatus bool
+	differ                 *differ
 	*Config
 	mux                *sync.Mutex
 	isChunkedTransfer  bool
@@ -352,7 +352,7 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 
 //GetSyncInfo returns a sync info
 func (s *Session) GetSyncInfo(criteria map[string]interface{}, optimizeAppend bool) (*Info, error) {
-	if s.Partitions.hasKey && s.batchedPartition {
+	if s.Partitions.hasKey && s.batchedPartitionStatus {
 		keyValue := keyValue(s.Partitions.key, criteria)
 		partition, ok := s.Partitions.index[keyValue]
 		if ok && partition.Info != nil {
@@ -369,7 +369,6 @@ func (s *Session) GetSyncInfo(criteria map[string]interface{}, optimizeAppend bo
 	if err != nil {
 		return nil, err
 	}
-
 	return s.buildSyncInfo(sourceData, destData, groupColumns, criteria, optimizeAppend)
 }
 
@@ -428,13 +427,14 @@ func (s *Session) BatchSyncInfo() error {
 		if !ok {
 			destRecords = index.dest[strings.ToUpper(key)]
 		}
-		partition.Info, err = s.buildSyncInfo(sourceRecords, destRecords, s.Partitions.key, partition.criteria, true)
+		info, err := s.buildSyncInfo(sourceRecords, destRecords, s.Partitions.key, partition.criteria, true)
 		if err != nil {
 			return err
 		}
+		partition.SetInfo(info)
 	}
 	if matched > 0 {
-		s.batchedPartition = true
+		s.batchedPartitionStatus = true
 	}
 	if matched == 0 && len(batchedCriteria) > 0 {
 		actualKeys := toolbox.MapKeysToStringSlice(s.Partitions.index)
@@ -576,7 +576,7 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 		differ:             &differ{Builder: builder},
 	}
 	if session.isChunkedTransfer && !session.isBatchedChunk && session.isBatchedPartition {
-		return nil, fmt.Errorf("batchedPartition can not run with individual chunk sync")
+		return nil, fmt.Errorf("batchedPartitionStatus can not run with individual chunk sync")
 	}
 	return session, nil
 }

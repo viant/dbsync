@@ -20,3 +20,17 @@ func (i *Info) SetDestMaxID(destMaxID int, method string, info *Info) {
 	i.SourceCount -= info.SourceCount
 	i.DestCount -= info.DestCount
 }
+
+func (i *Info) SetMethod(method string) {
+	if i.Method == SyncMethodDeleteMerge || i.Method == SyncMethodDeleteInsert {
+		return
+	}
+	if method == SyncMethodDeleteMerge || method == SyncMethodDeleteInsert {
+		i.Method = method
+		return
+	}
+	if i.Method == SyncMethodMerge {
+		return
+	}
+	i.Method = method
+}

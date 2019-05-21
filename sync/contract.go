@@ -149,6 +149,13 @@ func (r *Request) Init() error {
 			r.Source.Criteria = r.Criteria
 		}
 	}
+	if r.Diff.BatchSize > 0 && r.Partition.BatchSize == 0 {
+		r.Partition.BatchSize = r.Diff.BatchSize
+	}
+	if r.Partition.BatchSize == 0 {
+		r.Partition.BatchSize = 16
+	}
+
 	if r.Table != "" {
 		if r.Dest.Table == "" {
 			r.Dest.Table = r.Table
@@ -182,9 +189,10 @@ func (r *Request) Validate() error {
 	if r.Chunk.Size > 0 && len(r.IDColumns) != 1 {
 		return fmt.Errorf("data chunking is only supported with single unique key, chunk size: %v, unique key count: %v", r.Chunk.Size, len(r.IDColumns))
 	}
+
 	if r.Schedule != nil {
 		if r.Schedule.Frequency == nil {
-			return fmt.Errorf("schedule.Frequency was empty")
+			return fmt.Errorf("schedule.Frequency and schedule.At was empty")
 		}
 	}
 	if err := r.Source.Validate(); err != nil {

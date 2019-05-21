@@ -99,12 +99,46 @@ func batchCriteria(partitions []*Partition, diffBatchSize int) []map[string]inte
 	return batch.criteria
 }
 
+func updateBatchedPartitions(session *Session) {
+	partitions := session.Partitions.data
+	batchSize := session.Request.Partition.BatchSize
+	if len(partitions) == 0 {
+		return
+	}
+	batch := newCriteriaBatch(batchSize)
+	for _, partition := range partitions {
+		if partition.InSync {
+			continue
+		}
+		batch.info.DestCount += partition.Info.DestCount
+		batch.info.SourceCount += partition.Info.SourceCount
+		batch.info.SetMethod(partition.Info.Method)
+		for key, value := range partition.criteria {
+			if batch.hasValue(value) {
+				continue
+			}
+			batch.append(key, value)
+		}
+	}
+	batch.flush()
+	var result = make([]*Partition, 0)
+	for i := range batch.criteria {
+		partition := NewPartition(session.Request.Partition, batch.criteria[i], session.Request.Chunk.Threads, session.Request.IDColumns[0])
+		partition.SetInfo(batch.statuses[i])
+		partition.Suffix = fmt.Sprintf("_tmp%v", i)
+		result = append(result, partition)
+	}
+	session.Partitions = NewPartitions(result, session)
+}
+
 type criteriaBatch struct {
 	batchSize    int
 	criteria     []map[string]interface{}
 	values       map[string][]interface{}
 	uniqueValues map[interface{}]bool
 	size         int
+	info         *Info
+	statuses     []*Info
 }
 
 func (b *criteriaBatch) append(key string, value interface{}) {
@@ -127,7 +161,9 @@ func (b *criteriaBatch) flush() {
 		criterion[k] = v
 	}
 	b.criteria = append(b.criteria, criterion)
+	b.statuses = append(b.statuses, b.info)
 	b.size = 0
+	b.info = &Info{}
 	b.uniqueValues = make(map[interface{}]bool)
 	b.values = make(map[string][]interface{})
 }
@@ -146,5 +182,7 @@ func newCriteriaBatch(batchSize int) *criteriaBatch {
 		criteria:     make([]map[string]interface{}, 0),
 		values:       make(map[string][]interface{}),
 		uniqueValues: make(map[interface{}]bool),
+		statuses:     make([]*Info, 0),
+		info:         &Info{},
 	}
 }

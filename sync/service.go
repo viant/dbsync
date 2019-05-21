@@ -128,7 +128,6 @@ func (s *service) sync(request *Request, response *Response) {
 	if err = s.buildPartitions(session); session.SetError(err) {
 		return
 	}
-
 	if err = s.syncDataPartitions(session); err != nil {
 		session.SetError(err)
 		return
@@ -350,6 +349,27 @@ func (s *service) deleteData(session *Session, suffix string, criteria map[strin
 	return err
 }
 
+func (s *service) getPartitionSyncInfo(session *Session, partition *Partition, optimizeSync bool) (*Info, error) {
+	if partition.Info != nil {
+		return partition.Info, nil
+	}
+
+	if optimizeSync {
+		info, err := session.GetSyncInfo(partition.criteria, true)
+		if err != nil {
+			return nil, err
+		}
+		partition.SetInfo(info)
+	}
+	if partition.Info == nil {
+		partition.Info = &Info{Method: SyncMethodMerge}
+		if !optimizeSync {
+			partition.Info.Method = SyncMethodInsert
+		}
+	}
+	return partition.Info, nil
+}
+
 func (s *service) syncDataPartitions(session *Session) error {
 	optimizeSync := !session.Request.Force
 
@@ -361,25 +381,16 @@ func (s *service) syncDataPartitions(session *Session) error {
 	}
 	session.Job.Stage = "processing partition"
 
-	if session.isPartitioned && session.isBatchedPartition {
-		if err := s.createTransientDest(session, "_tmp"); err != nil {
+	if optimizeSync && session.isPartitioned && session.isBatchedPartition {
+		updateBatchedPartitions(session)
+	}
+
+	err := session.Partitions.Range(func(partition *Partition) error {
+		info, err := s.getPartitionSyncInfo(session, partition, optimizeSync)
+		if err != nil {
 			return err
 		}
-	}
-	err := session.Partitions.Range(func(partition *Partition) error {
-		if partition.Info == nil {
-			partition.Info = &Info{Method: SyncMethodMerge}
-			if !optimizeSync {
-				partition.Info.Method = SyncMethodInsert
-			}
-		}
-		var err error
 		if optimizeSync {
-			info, err := session.GetSyncInfo(partition.criteria, true)
-			if err != nil {
-				return err
-			}
-			partition.SetInfo(info)
 			if info.InSync {
 				return nil
 			}
@@ -394,59 +405,44 @@ func (s *service) syncDataPartitions(session *Session) error {
 			err = s.syncDataPartition(session, partition)
 		}
 		if err == nil {
-			err = s.synPartitionData(session, partition)
+			err = s.syncTransferred(session, partition)
 		}
 		return err
 	})
 	if err != nil {
 		return err
 	}
-	if session.isPartitioned && session.isBatchedPartition {
-		return s.mergeData(session, "_tmp", map[string]interface{}{})
-	}
+
 	return nil
 }
 
-func (s *service) synPartitionData(session *Session, partition *Partition) error {
+func (s *service) syncTransferred(session *Session, partition *Partition) error {
 	var err error
 	session.Log(partition, fmt.Sprintf("sync method: %v", partition.Method))
 	if !session.isBatchedChunk {
 		return nil
 	}
-	if err == nil {
-		switch partition.Method {
-		case SyncMethodDeleteInsert:
-			if err = s.deletePartitionData(session, partition); err != nil {
-				return err
-			}
-			fallthrough
-		case SyncMethodInsert:
-
-			if session.isPartitioned && session.isBatchedPartition {
-				err = s.appendData(session, partition.Suffix, "_tmp")
-
-			} else {
-				err = s.appendData(session, partition.Suffix, "")
-			}
-			break
-		case SyncMethodDeleteMerge:
-			if err = s.deletePartitionData(session, partition); err != nil {
-				return err
-			}
-			fallthrough
-		default:
-			if session.isPartitioned && session.isBatchedPartition {
-				err = s.appendData(session, partition.Suffix, "_tmp")
-			} else {
-				err = s.mergePartitionData(session, partition)
-			}
+	switch partition.Method {
+	case SyncMethodDeleteInsert:
+		if err = s.deletePartitionData(session, partition); err != nil {
+			return err
 		}
+		fallthrough
+	case SyncMethodInsert:
+		err = s.appendData(session, partition.Suffix, "")
+		break
+	case SyncMethodDeleteMerge:
+		if err = s.deletePartitionData(session, partition); err != nil {
+			return err
+		}
+		fallthrough
+	default:
+		err = s.mergePartitionData(session, partition)
 	}
 	return err
 }
 
 func (s *service) syncDataPartition(session *Session, partition *Partition) error {
-
 	if err := s.createTransientDest(session, partition.Suffix); err != nil {
 		return err
 	}
@@ -457,10 +453,8 @@ func (s *service) syncDataPartition(session *Session, partition *Partition) erro
 
 func (s *service) syncDataPartitionWithChunks(session *Session, partition *Partition) error {
 	var err error
-	if session.isBatchedChunk {
-		if err = s.createTransientDest(session, partition.Suffix); err != nil {
-			return err
-		}
+	if err = s.createTransientDest(session, partition.Suffix); err != nil {
+		return err
 	}
 	go s.transferDataChunks(session, partition)
 	chunker := newChunker(session, partition)

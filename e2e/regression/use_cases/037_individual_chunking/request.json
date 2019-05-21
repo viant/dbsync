@@ -32,7 +32,7 @@
         "SyncMode": "individual",
         "Threads": 1
     },
-	"Transfer": {
+    "Transfer": {
         "EndpointIP": "127.0.0.1:8080",
         "WriterThreads": 2,
         "TempDatabase":"transfer",

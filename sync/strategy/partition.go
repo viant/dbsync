@@ -8,6 +8,7 @@ type Partition struct {
 	Columns     []string
 	Threads     int
 	SyncMode    string `description:"persistency sync mode: batched or individual"`
+	BatchSize   int
 }
 
 //MaxThreads returns batch size for max elements
