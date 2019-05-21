@@ -236,8 +236,6 @@ func NewScheduler(service Service, config *Config) (*Scheduler, error) {
 		nextCheck: time.Now().Add(-time.Second),
 	}
 
-
-
 	if config.ScheduleURL == "" {
 		return result, nil
 	}
