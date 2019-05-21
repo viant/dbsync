@@ -26,6 +26,9 @@ func (r *Resource) Validate() error {
 		return nil
 	}
 	for _, column := range r.PseudoColumns {
+		if strings.Contains(strings.ToLower(column.Expression), "null") {
+			continue
+		}
 		if strings.Index(column.Expression, "t.") == -1 {
 			return fmt.Errorf("invalid pseudo column expectedion expected table formatColumn t., but had: %v", column.Expression)
 		}
