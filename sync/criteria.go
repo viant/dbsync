@@ -130,6 +130,9 @@ func updateBatchedPartitions(session *Session) {
 		partition := NewPartition(session.Request.Partition, batch.criteria[i], session.Request.Chunk.Threads, session.Request.IDColumns[0])
 		partition.SetInfo(batch.statuses[i])
 		partition.Suffix = fmt.Sprintf("_tmp%v", i)
+		if partition.Method == SyncMethodInsert {
+			partition.Method = SyncMethodMerge
+		}
 		result = append(result, partition)
 	}
 	session.Partitions = NewPartitions(result, session)
@@ -151,7 +154,7 @@ func (b *criteriaBatch) append(key string, value interface{}) {
 	}
 	b.values[key] = append(b.values[key], value)
 	b.size++
-	if b.size > b.batchSize {
+	if b.size >= b.batchSize {
 		b.flush()
 	}
 }
