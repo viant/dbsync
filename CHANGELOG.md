@@ -1,3 +1,6 @@
+## May 12 2019 - v0.6.1
+- Updated partition batching to reduce number of SQL statements
+
 ## May 16 2019 - v0.6.1
 - Added pseudo column aggregation
 - Updated coalesce default value to ' ' (space)  as oracle xe COUNT(DISTINCT COALESCE(x, '')) returns 0 with '' and 1 with ' ' where x has all rows with nulls
