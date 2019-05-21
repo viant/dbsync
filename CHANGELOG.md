@@ -1,5 +1,5 @@
-## May 21 2019 - v0.7.0
-- Added scheule.AtTime scheduling option
+## May 21 2019 - v0.7.1
+- Added schedule.AtTime scheduling option
 
 ## May 20 2019 - v0.6.3
 - Updated partition batching to reduce number of SQL statements

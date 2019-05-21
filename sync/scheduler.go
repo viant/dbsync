@@ -205,7 +205,11 @@ func (s *Scheduler) loadFromURL(storageService storage.Service, URL string, ids 
 			continue
 		}
 		now := time.Now()
-		schedule.NextRun = &now
+		if schedule.Frequency != nil {
+			schedule.NextRun = &now
+		} else {
+			schedule.Next(now)
+		}
 		s.Add(request, fileInfo.ModTime())
 	}
 	return nil
@@ -229,9 +233,11 @@ func NewScheduler(service Service, config *Config) (*Scheduler, error) {
 		runnables: make(map[string]ScheduleRunnable),
 		modified:  make(map[string]time.Time),
 		mutex:     &sync.Mutex{},
-
 		nextCheck: time.Now().Add(-time.Second),
 	}
+
+
+
 	if config.ScheduleURL == "" {
 		return result, nil
 	}
