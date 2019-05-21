@@ -40,18 +40,17 @@ type Partitions struct {
 //Range range over partition
 func (p *Partitions) Range(handler func(partition *Partition) error) error {
 	partitions := p.data
-	for _, partition := range partitions {
+	for i := range partitions {
 		p.Add(1)
 		p.channel <- true
 		go func(partition *Partition) {
 			defer p.Done()
 			partition.err = handler(partition)
 			<-p.channel
-
-		}(partition)
+		}(partitions[i])
 	}
-	p.Wait()
 
+	p.Wait()
 	for _, partition := range p.data {
 		if partition.err != nil {
 			return partition.err
