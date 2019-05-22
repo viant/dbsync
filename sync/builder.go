@@ -337,9 +337,9 @@ func (b *Builder) insertNameAndValues() (string, string) {
 
 func (b *Builder) aliasValue(alias string, value string, resource *Resource) string {
 	if alias == "" {
-		return b.columnExpression(value, resource)
+		return b.unAliasedColumnExpression(value, resource)
 	}
-	expression := b.columnExpression(value, resource)
+	expression := b.unAliasedColumnExpression(value, resource)
 	if expression == value {
 		value = alias + value
 	} else {
@@ -372,7 +372,7 @@ func (b *Builder) updateSetValues() string {
 		if b.isUnique(column.Name()) {
 			continue
 		}
-		value := b.columnExpression(column.Name(), b.dest)
+		value := b.unAliasedColumnExpression(column.Name(), b.dest)
 		if value == column.Name() {
 			value = "t." + column.Name()
 		}
