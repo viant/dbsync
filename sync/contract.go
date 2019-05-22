@@ -147,6 +147,11 @@ func (r *Request) Init() error {
 			r.Source.Table = r.Table
 		}
 	}
+	if r.Schedule != nil {
+		if r.Schedule.At != nil {
+			return r.Schedule.At.Init()
+		}
+	}
 	return nil
 }
 
