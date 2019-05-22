@@ -114,7 +114,7 @@ func updateBatchedPartitions(session *Session) {
 		if partition.InSync {
 			continue
 		}
-		session.Log(partition, fmt.Sprintf("sync method: %v, %v",partition.Info.Method, partition.criteria))
+		session.Log(partition, fmt.Sprintf("sync method: %v, %v", partition.Info.Method, partition.criteria))
 		batch.info.DestCount += partition.Info.DestCount
 		batch.info.SourceCount += partition.Info.SourceCount
 		batch.info.SetMethod(partition.Info.Method)
@@ -131,7 +131,7 @@ func updateBatchedPartitions(session *Session) {
 		partition := NewPartition(session.Request.Partition, batch.criteria[i], session.Request.Chunk.Threads, session.Request.IDColumns[0])
 		partition.SetInfo(batch.statuses[i])
 		partition.Suffix = fmt.Sprintf("_tmp%v", i)
-		session.Log(partition, fmt.Sprintf("final sync method: %v, %v",partition.Info.Method, partition.criteria))
+		session.Log(partition, fmt.Sprintf("final sync method: %v, %v", partition.Info.Method, partition.criteria))
 		if partition.Method == SyncMethodInsert {
 			partition.Method = SyncMethodMerge
 		}
