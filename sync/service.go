@@ -102,7 +102,7 @@ func (s *service) sync(request *Request, response *Response) {
 		return
 	}
 
-	log.Printf("[%v] starting sync\n", request.ID())
+	log.Printf("[%v] starting %v sync\n", request.ID(), request.Table)
 	defer func() {
 		session.Job.Update()
 		log.Printf("[%v] changed: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.Transferred, int(session.Job.Elapsed/time.Millisecond))
