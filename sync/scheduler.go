@@ -118,10 +118,11 @@ func (s *Scheduler) Run() {
 		}
 		watGroup := &sync.WaitGroup{}
 		watGroup.Add(len(scheduled))
+		now := time.Now()
 		for _, toRun := range scheduled {
 			schedule, run := toRun.ScheduledRun()
+			schedule.Next(now)
 			go func(schedule *Schedule, run func(service Service) error) {
-				schedule.Next(time.Now())
 				watGroup.Done()
 				err := run(s.service)
 				schedule.RunCount++
