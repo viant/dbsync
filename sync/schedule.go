@@ -18,8 +18,8 @@ type Schedule struct {
 }
 
 //setNextRun sets next run
-func (s *Schedule) setNextRun(time time.Time) {
-	s.NextRun = &time
+func (s *Schedule) setNextRun(ts time.Time) {
+	s.NextRun = &ts
 }
 
 //IsDue returns true if schedule is due to run
@@ -27,7 +27,10 @@ func (s *Schedule) IsDue(baseTime time.Time) bool {
 	if s.Disabled {
 		return false
 	}
-	return !baseTime.Before(*s.NextRun)
+	if s.NextRun.Location() != nil {
+		baseTime = baseTime.In(s.NextRun.Location())
+	}
+	return baseTime.After(*s.NextRun) || baseTime.Equal(*s.NextRun)
 }
 
 //Validate checks if schedule is valid
@@ -40,6 +43,7 @@ func (s *Schedule) Validate() error {
 
 //Schedule schedules next run
 func (s *Schedule) Next(baseTime time.Time) {
+	baseTime = baseTime.UTC()
 	var nextTime = baseTime
 	if s.Frequency != nil {
 		duration, _ := s.Frequency.Duration()
