@@ -6,6 +6,7 @@ import (
 	"github.com/viant/toolbox"
 	"log"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -31,6 +32,7 @@ type service struct {
 	*Jobs
 	*StatRegistry
 	scheduler *Scheduler
+	mutex     *sync.Mutex
 }
 
 func (s *service) History(request *HistoryRequest) *HistoryResponse {
@@ -65,12 +67,16 @@ func (s *service) Sync(request *Request) *Response {
 		JobID:  request.ID(),
 		Status: StatusRunning,
 	}
+
+	s.mutex.Lock()
 	job := s.Jobs.Get(request.ID())
+	s.mutex.Unlock()
 	if job != nil && job.Status == StatusRunning {
 		response.Status = StatusError
 		response.Error = "previous sync is running"
 		return response
 	}
+
 	if request.Async {
 		go s.sync(request, response)
 	} else {
@@ -96,6 +102,7 @@ func (s *service) sync(request *Request, response *Response) {
 		return
 	}
 
+	log.Printf("[%v] starting sync\n", request.ID())
 	defer func() {
 		session.Job.Update()
 		log.Printf("[%v] changed: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.Transferred, int(session.Job.Elapsed/time.Millisecond))
@@ -502,6 +509,7 @@ func New(config *Config) (Service, error) {
 		Config:       config,
 		Jobs:         NewJobs(),
 		StatRegistry: NewStatRegistry(config.MaxHistory),
+		mutex:        &sync.Mutex{},
 	}
 	var err error
 	service.scheduler, err = NewScheduler(service, config)
