@@ -438,7 +438,7 @@ func (s *Session) BatchSyncInfo() error {
 	}
 	if matched == 0 && len(batchedCriteria) > 0 {
 		actualKeys := toolbox.MapKeysToStringSlice(s.Partitions.index)
-		s.Error(nil, fmt.Sprintf("invalid partition expression - unable to match sync status with keys: %v, \n actual: %v", keys, actualKeys))
+		s.Error(nil, fmt.Sprintf("warning: invalid partition expression - unable to match in batch sync status with keys: %v, \n actual: %v", keys, actualKeys))
 	}
 	return err
 }
