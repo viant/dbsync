@@ -153,7 +153,7 @@ func NewPartition(source strategy.Partition, values map[string]interface{}, chun
 	if len(source.Columns) > 0 {
 		for _, column := range source.Columns {
 			value := getValue(column, values)
-			if toolbox.IsSlice(value) {
+			if value == nil || toolbox.IsSlice(value) {
 				continue
 			}
 			suffix += fmt.Sprintf("%v", value)
