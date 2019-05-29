@@ -801,6 +801,85 @@ Add default import to the following service entry points:
 
 
 
+### Running adhoc date range db sync automation with endly
+
+
+```endly -r=run```
+
+@run.yaml
+```yaml
+init:
+  i: 1
+pipeline:
+  loop:
+    info:
+      action: print
+      init:
+        dstamp: $FormatTime('${i}daysAgo', 'yyyy-MM-dd')
+      message: processing $dstamp
+
+    
+    post:
+      when: $HasResource(request.json)
+      action: rest/runner:send
+      request: '@sync @request'
+
+    inc:
+      action: nop
+      logging: false
+      init:
+        _: ${self.i++}
+    until:
+      action: goto
+      logging: false
+      task: loop
+      when: $self.i <= 35
+    done:
+      action: print
+      comments: done
+
+```
+
+@sync.json
+```json
+{
+  "Method": "post",
+  "Request": $arg0,
+  "URL": "http://127.0.0.1:8081/v1/api/sync",
+  "Expect": {
+    "Status": "done"
+  }
+}
+```
+
+
+@request.json
+```json
+{
+    "Id":"event_${dstamp}",
+    "Table": "events",
+	"IDColumns": [
+        "id"
+    ],
+   "Source":"...",
+	"Dest": "...",
+	"Partition": {
+	    "Columns": [
+	        "event_type"
+	    ],
+	    "Threads": 5,
+	    "ProviderSQL":"SELECT event_type FROM db1.events WHERE DATE(timestamp) = '$dstamp' GROUP BY 1 ORDER BY 1"
+	},
+	"Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 2,
+        "BatchSize": 2048
+    }
+}
+```  
+
+
+
 ### Checking data sync quality
 
 In order to compare dataset between source and dest database, you can use [endly](http://github.com/viant/endly/) runner with compare workflow.
