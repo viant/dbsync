@@ -1,5 +1,6 @@
 {
     "Id":"$index",
+    "Debug":true,
 	"Table": "events",
 	"IDColumns": [
         "id"
@@ -20,7 +21,11 @@
 			"dbname": "db2"
 		}
 	},
+	"Diff": {
+	    "BatchSize":2
+	},
 	"Partition": {
+	    "BatchSize":2,
         "Columns": [
             "event_type"
         ],
@@ -29,6 +34,7 @@
         "ProviderSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
     },
     "Transfer": {
+        "TempDatabase":"transfer",
         "EndpointIP": "127.0.0.1:8080",
         "WriterThreads": 2,
         "BatchSize": 2048

@@ -1,3 +1,6 @@
+## May 21 2019 - v0.8.1
+- Patched schedule.AtTime with TZ
+
 ## May 21 2019 - v0.8.0
 - Added schedule.AtTime with TZ support scheduling option
 

@@ -1,10 +1,14 @@
 {
     "Id":"$index",
-	"Table": "events",
-	"IDColumns": [
+    "Table": "events",
+     "IDColumns": [
         "id"
     ],
-	"Source": {
+    "Debug":true,
+    "Diff": {
+	"BatchSize":12
+    },
+    "Source": {
 		"Credentials": "mysql-e2e",
 		"Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
 		"DriverName": "mysql",
@@ -20,7 +24,9 @@
 			"dbname": "db2"
 		}
 	},
-	"Partition": {
+     "Partition": {
+        "SynMode":"batch",
+        "BatchSize": 12,
         "Columns": [
             "event_type"
         ],

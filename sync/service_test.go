@@ -6,12 +6,16 @@ import (
 	_ "github.com/mattn/go-oci8"
 	"github.com/stretchr/testify/assert"
 	_ "github.com/viant/bgc"
+	"github.com/viant/dsc"
 	"log"
 	"testing"
 )
 
 func TestService_Sync(t *testing.T) {
-	requestURL := ""
+
+	dsc.Logf = dsc.StdoutLogger
+
+	requestURL := "/Projects/go/workspace/src/github.vianttech.com/adelphic/dbsync/ora2bq/sitemgnt/SITE_LIST_ENTRY.yaml"
 
 	request, err := NewSyncRequestFromURL(requestURL)
 	if !assert.Nil(t, err) {
