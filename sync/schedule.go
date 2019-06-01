@@ -3,7 +3,6 @@ package sync
 import (
 	"fmt"
 	"github.com/viant/toolbox"
-	"log"
 	"time"
 )
 
