@@ -1,5 +1,7 @@
-## May 21 2019 - v0.8.1
+## May 21 2019 - v0.8.2
 - Patched schedule.AtTime with TZ
+- Patched chunking with source continues streaming new data
+- Patched upper case aliasing
 
 ## May 21 2019 - v0.8.0
 - Added schedule.AtTime with TZ support scheduling option
