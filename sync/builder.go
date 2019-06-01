@@ -544,7 +544,11 @@ func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string
 
 func (b *Builder) formatColumn(column string) string {
 	if b.isUpperCase {
-		return strings.ToUpper(column)
+		column = strings.ToUpper(column)
+		aliasedCount := strings.Count(column, "T.")
+		if aliasedCount > 0 {
+			strings.Replace(column, "T.", "t.", aliasedCount)
+		}
 	}
 	return column
 }

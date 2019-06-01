@@ -17,6 +17,7 @@ type Partition struct {
 	criteria     map[string]interface{}
 	Status       string
 	SourceCount  int
+	SourceMax    int
 	DestCount    int
 	*Info
 	err error
@@ -136,6 +137,7 @@ func (p *Partition) AddChunk(chunk *Chunk) {
 func (p *Partition) SetInfo(info *Info) {
 	p.Info = info
 	p.SourceCount = info.SourceCount
+	p.SourceMax = info.SourceMax
 	p.DestCount = info.DestCount
 }
 

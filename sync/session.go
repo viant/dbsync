@@ -173,6 +173,22 @@ func (s *Session) sumRowCount(records Records) int {
 	return records.Sum(s.Builder.countColumnAlias)
 }
 
+func (s *Session) maxValue(records Records) int {
+	var result = 0
+	if len(records) == 0 {
+		return result
+	}
+	for _, record := range records {
+		if value := getValue(s.Builder.maxIDColumnAlias, record); value != nil {
+			if candidate := toolbox.AsInt(value); candidate > result {
+				result = candidate
+			}
+
+		}
+	}
+	return result
+}
+
 func (s *Session) sumRowDistinctCount(records Records) int {
 	return records.Sum(s.Builder.uniqueCountAlias)
 }
@@ -199,6 +215,7 @@ func (s *Session) setInfoRange(source, dest map[string]interface{}, info *Info) 
 	maxKey := s.Builder.maxIDColumnAlias
 
 	destValue := getValue(maxKey, dest)
+
 	info.MaxValue = toolbox.AsInt(source[maxKey])
 	if info.MaxValue < toolbox.AsInt(destValue) {
 		info.MaxValue = toolbox.AsInt(destValue)
@@ -291,6 +308,7 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 	}()
 	result.SourceCount = s.sumRowCount(sourceRecords)
 	result.DestCount = s.sumRowCount(destRecords)
+	result.SourceMax = s.maxValue(sourceRecords)
 
 	if len(destRecords) == 0 {
 		if len(sourceRecords) == 0 {
@@ -574,6 +592,9 @@ func NewSession(request *Request, response *Response, config *Config) (*Session,
 		isPartitioned:      request.Partition.ProviderSQL != "",
 		mux:                &sync.Mutex{},
 		differ:             &differ{Builder: builder},
+	}
+	session.differ.log = func(message string) {
+		session.Log(nil, message)
 	}
 	if session.isChunkedTransfer && !session.isBatchedChunk && session.isBatchedPartition {
 		return nil, fmt.Errorf("batchedPartitionStatus can not run with individual chunk sync")

@@ -111,8 +111,8 @@ func (c *chunker) getChunkUpperBound() int {
 }
 
 func (c *chunker) hasMore() bool {
-	return c.source.Count() != 0 || c.dest.Count() != 0
-
+	return (c.source.Count() != 0 || c.dest.Count() != 0) &&
+		(c.source.Max() <= c.partition.SourceMax) //in case of constantly changing source data chanking would never end without this condition
 }
 
 func newChunker(session *Session, partition *Partition) *chunker {

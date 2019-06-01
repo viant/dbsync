@@ -10,6 +10,7 @@ type Info struct {
 	SyncFromID    int
 	MinValue      int
 	MaxValue      int
+	SourceMax     int
 }
 
 //SetDestMaxID narrows sync info with matched dest ID in sync with source
