@@ -1,11 +1,13 @@
 package sync
 
 import (
+	"fmt"
 	"github.com/viant/toolbox"
 )
 
 type differ struct {
 	*Builder
+	log func(message string)
 }
 
 func (d *differ) IsEqual(index []string, source, dest []Record, status *Info) bool {
@@ -20,6 +22,9 @@ func (d *differ) IsEqual(index []string, source, dest []Record, status *Info) bo
 		discrepant := false
 		for k := range sourceRecord {
 			if !checkMapItem(sourceRecord, destRecord, k, func(source, dest interface{}) bool {
+				if source != dest {
+					fmt.Printf("diff for %v, source: %v dest: %v", k, source, dest)
+				}
 				return source == dest
 			}) {
 				discrepant = true
