@@ -13,6 +13,7 @@ import (
 )
 
 var defaultSchedulerLoadFrequencyMs = 5000
+var dateLayout = "2016-03-01 03:10:11"
 
 //ScheduleRunnable defines ScheduleRunnable contract
 type ScheduleRunnable interface {
@@ -121,7 +122,11 @@ func (s *Scheduler) Run() {
 		now := time.Now()
 		for _, toRun := range scheduled {
 			schedule, run := toRun.ScheduledRun()
+
 			schedule.Next(now)
+			remaining := time.Second * time.Duration(schedule.NextRun.Unix() - time.Now().Unix())
+			log.Printf("[%v] next run at: %v, remaining %s\n", toRun.ID(), schedule.NextRun.Format(dateLayout), remaining)
+
 			go func(schedule *Schedule, run func(service Service) error) {
 				watGroup.Done()
 				err := run(s.service)

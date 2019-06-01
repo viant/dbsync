@@ -20,7 +20,6 @@ type Schedule struct {
 
 //setNextRun sets next run
 func (s *Schedule) setNextRun(ts time.Time) {
-	log.Printf("[%v] scheduled: %v, remaining %s\n", s.SourceURL, ts, ts.Sub(time.Now()))
 	s.NextRun = &ts
 }
 
