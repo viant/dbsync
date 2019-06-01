@@ -42,10 +42,16 @@ pipeline:
       action: run
       request: '@app'
       tasks: '*'
+
   test:
-    action: run
-    request: '@regression/regression'
-    tasks: '*'
+    fetchDbIp:
+      when: $useDockerDBIP = true
+      action: run
+      request: '@dbip.yaml'
+    runTest:
+      action: run
+      request: '@regression/regression'
+      tasks: '*'
   destroy:
     app:
       buildTarget: $target
