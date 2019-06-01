@@ -3,6 +3,7 @@ package sync
 import (
 	"fmt"
 	"github.com/viant/toolbox"
+	"log"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type Schedule struct {
 
 //setNextRun sets next run
 func (s *Schedule) setNextRun(ts time.Time) {
+	log.Printf("[%v] scheduled: %v, remaining %s\n", s.SourceURL, ts, ts.Sub(time.Now()))
 	s.NextRun = &ts
 }
 
@@ -43,11 +45,14 @@ func (s *Schedule) Validate() error {
 
 //Schedule schedules next run
 func (s *Schedule) Next(baseTime time.Time) {
-	baseTime = baseTime.UTC()
 	var nextTime = baseTime
 	if s.Frequency != nil {
 		duration, _ := s.Frequency.Duration()
 		nextTime = baseTime.Add(duration)
+		if nextTime.Unix() < baseTime.Unix() { //sanity check next should always be in the future
+			//due to issue with tz amd 23 hour added extra check
+			nextTime = baseTime.Add(time.Hour)
+		}
 	} else if s.At != nil {
 		nextTime = s.At.Next(baseTime)
 	}
