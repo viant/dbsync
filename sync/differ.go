@@ -23,7 +23,7 @@ func (d *differ) IsEqual(index []string, source, dest []Record, status *Info) bo
 		for k := range sourceRecord {
 			if !checkMapItem(sourceRecord, destRecord, k, func(source, dest interface{}) bool {
 				if source != dest {
-					fmt.Printf("diff for %v, source: %v dest: %v", k, source, dest)
+					d.log(fmt.Sprintf("diff for %v, source: %v dest: %v\n", k, source, dest))
 				}
 				return source == dest
 			}) {

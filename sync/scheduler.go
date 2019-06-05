@@ -13,7 +13,7 @@ import (
 )
 
 var defaultSchedulerLoadFrequencyMs = 5000
-var dateLayout = "2016-03-01 03:10:11"
+var dateLayout = "2006-03-01 03:10:11"
 
 //ScheduleRunnable defines ScheduleRunnable contract
 type ScheduleRunnable interface {

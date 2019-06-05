@@ -1,3 +1,7 @@
+## May 21 2019 - v0.8.4
+- Patch date logging
+- Updated diff logging
+
 ## May 21 2019 - v0.8.2
 - Patched schedule.AtTime with TZ
 - Patched chunking with source continues streaming new data
