@@ -170,6 +170,7 @@ func (c *chunker) build(session *Session, partition *Partition) error {
 				session.Log(partition, fmt.Sprintf("updating chunk narrowed min: %v -> %v\n", info.SyncFromID, info.Method))
 			}
 		}
+
 		partition.WaitGroup.Add(1)
 		chunk := newChunk(c.source, c.dest, minValue, maxValue, partition, criteria)
 		session.Log(partition, fmt.Sprintf("chunk[%d]: sync method: %v [%v..%v] is syncing ...\n\tcount:(%d:%d), max:(%d:%d)", i, chunk.Method,

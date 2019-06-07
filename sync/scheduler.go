@@ -124,7 +124,7 @@ func (s *Scheduler) Run() {
 			schedule, run := toRun.ScheduledRun()
 
 			schedule.Next(now)
-			remaining := time.Second * time.Duration(schedule.NextRun.Unix() - time.Now().Unix())
+			remaining := time.Second * time.Duration(schedule.NextRun.Unix()-time.Now().Unix())
 			log.Printf("[%v] next run at: %v, remaining %s\n", toRun.ID(), schedule.NextRun.Format(dateLayout), remaining)
 
 			go func(schedule *Schedule, run func(service Service) error) {
