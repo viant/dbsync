@@ -17,7 +17,6 @@ type Partition struct {
 	criteria     map[string]interface{}
 	Status       string
 	SourceCount  int
-	SourceMax    int
 	DestCount    int
 	*Info
 	err error
@@ -137,7 +136,7 @@ func (p *Partition) AddChunk(chunk *Chunk) {
 func (p *Partition) SetInfo(info *Info) {
 	p.Info = info
 	p.SourceCount = info.SourceCount
-	p.SourceMax = info.SourceMax
+	p.SetSourceMax(info.SourceMax)
 	p.DestCount = info.DestCount
 }
 
@@ -148,6 +147,15 @@ func (p *Partition) SetSynMethod(method string) {
 	}
 	p.Method = method
 }
+
+
+func (p *Partition) SetSourceMax(max int) {
+	if p.SourceMax > max {
+		return
+	}
+	p.SourceMax = max
+}
+
 
 //NewPartition returns new partition
 func NewPartition(source strategy.Partition, values map[string]interface{}, chunkQueue int, uniqueColumn string) *Partition {

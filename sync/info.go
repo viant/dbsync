@@ -35,3 +35,10 @@ func (i *Info) SetMethod(method string) {
 	}
 	i.Method = method
 }
+
+func (i *Info) SetSourceMax(max int) {
+	if i.SourceMax > max {
+		return
+	}
+	i.SourceMax = max
+}

@@ -112,7 +112,8 @@ func (c *chunker) getChunkUpperBound() int {
 
 func (c *chunker) hasMore() bool {
 	return (c.source.Count() != 0 || c.dest.Count() != 0) &&
-		(c.source.Max() <= c.partition.SourceMax) //in case of constantly changing source data chanking would never end without this condition
+		(c.source.Max() <= c.partition.SourceMax || c.partition.SourceMax == 0)
+	//in case of constantly changing source data chunking would never end without this condition
 }
 
 func newChunker(session *Session, partition *Partition) *chunker {
@@ -159,6 +160,7 @@ func (c *chunker) build(session *Session, partition *Partition) error {
 			if c.countOnly {
 				continue
 			}
+
 			info, _ := session.GetSyncInfo(criteria, true)
 			session.Log(partition, fmt.Sprintf("chunk[%d]: [%v..%v] in sync: %v", i, minValue, maxValue, info.InSync))
 			if info.InSync {

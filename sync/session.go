@@ -308,7 +308,7 @@ func (s *Session) buildSyncInfo(sourceRecords, destRecords []Record, groupColumn
 	}()
 	result.SourceCount = s.sumRowCount(sourceRecords)
 	result.DestCount = s.sumRowCount(destRecords)
-	result.SourceMax = s.maxValue(sourceRecords)
+	result.SetSourceMax(s.maxValue(sourceRecords))
 
 	if len(destRecords) == 0 {
 		if len(sourceRecords) == 0 {

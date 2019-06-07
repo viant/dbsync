@@ -15,7 +15,7 @@ import (
 	"os"
 )
 
-const Version = "0.8.6"
+const Version = "0.8.7"
 
 var port = flag.Int("port", 8080, "service port")
 var url = flag.String("url", "cron", "schedule URL")
