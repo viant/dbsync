@@ -15,6 +15,8 @@ import (
 	"os"
 )
 
+const Version = "0.8.6"
+
 var port = flag.Int("port", 8080, "service port")
 var url = flag.String("url", "cron", "schedule URL")
 var debug = flag.Bool("debug", false, "debug flag")
@@ -42,6 +44,6 @@ func main() {
 	}
 	server := sync.NewServer(service, *port)
 	go server.StopOnSiginals(os.Interrupt)
-	fmt.Printf("dssync listening on :%d\n", *port)
+	fmt.Printf("dbsync %v listening on :%d\n", Version, *port)
 	server.ListenAndServe()
 }
