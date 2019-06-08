@@ -1,7 +1,7 @@
 package data
 
 import (
-	"dbsync/sync/diff"
+	"dbsync/sync/sql/diff"
 	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
@@ -14,7 +14,7 @@ type Comparator struct {
 	log func(message string)
 }
 
-//AreKeysInSync returns true if key of both record1 and record2 are in sync
+//AreKeysInSync returns true if key of both source and dest are in sync
 func (c *Comparator) AreKeysInSync(keys []string, record1, record2 Record) bool {
 	for _, key := range keys {
 		if ! c.IsKeyInSync(key, record1, record2) {
@@ -25,7 +25,7 @@ func (c *Comparator) AreKeysInSync(keys []string, record1, record2 Record) bool 
 }
 
 
-//IsKeyInSync returns true if key of both record1 and record2 are in sync
+//IsKeyInSync returns true if key of both source and dest are in sync
 func (c *Comparator) IsKeyInSync(key string, record1, record2 Record) bool {
 	value1 := record1[key]
 	value2, ok := record2[key]
@@ -42,7 +42,7 @@ func (c *Comparator) IsKeyInSync(key string, record1, record2 Record) bool {
 	return false
 }
 
-//IsInSync returns true if record1 and record2 are in sync
+//IsInSync returns true if source and dest are in sync
 func (c *Comparator) IsInSync(record1, record2 Record) bool {
 	if record1 == nil {
 		return record2 == nil 
@@ -85,6 +85,9 @@ func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
 
 //NewComparator creates a new comparator
 func NewComparator(log func(message string), columns ... *diff.Column) *Comparator{
+	if log == nil {
+		log = func(message string) {}
+	}
 	result := &Comparator{
 		log:log,
 		columns:make(map[string]*diff.Column),

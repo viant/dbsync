@@ -1,7 +1,7 @@
 package method
 
 import (
-	"dbsync/sync/diff"
+	"dbsync/sync/sql/diff"
 	"github.com/viant/toolbox"
 )
 

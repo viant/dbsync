@@ -1,0 +1,10 @@
+SELECT  id,
+MAX(ts) AS ts,
+MAX(event_type) AS event_type,
+MAX(ua) AS ua,
+MAX(dnt) AS dnt,
+MAX(charge) AS charge,
+MAX(payment) AS payment,
+MAX(modified) AS modified
+FROM events t
+GROUP BY id

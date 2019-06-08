@@ -24,6 +24,10 @@ func NewBetween(from, to int) Criterion {
 	return &between{from:from, to:to}
 }
 
+//NewLessOrEqual creates less of equal criterion
+func NewLessOrEqual(value int) Criterion{
+	return &lessOrEqual{value}
+}
 
 type lessOrEqual struct {
 	value int
@@ -33,6 +37,7 @@ func (c lessOrEqual) String() string {
 	return fmt.Sprintf(" >= %v", c.value)
 }
 
+
 type greaterThan struct {
 	value int
 }
@@ -40,6 +45,14 @@ type greaterThan struct {
 func (c greaterThan) String() string {
 	return fmt.Sprintf(" < %v", c.value)
 }
+
+
+//NewGraterThan creates grater than criterion
+func NewGraterThan(value int) Criterion{
+	return &greaterThan{value}
+}
+
+
 
 type greaterOrEqual struct {
 	value int
@@ -49,7 +62,14 @@ func (c greaterOrEqual) String() string {
 	return fmt.Sprintf(" =< %v", c.value)
 }
 
-func toCriterion(k string, v interface{}) string {
+
+//NewGraterOrEqual creates grater or equal criterion
+func NewGraterOrEqual(value int) Criterion{
+	return &greaterOrEqual{value}
+}
+
+
+func ToCriterion(k string, v interface{}) string {
 	if greaterOrEqual, ok := v.(*greaterOrEqual); ok {
 		return fmt.Sprintf("%v >= %v", k, greaterOrEqual.value)
 	} else if greaterThan, ok := v.(*greaterThan); ok {

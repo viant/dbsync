@@ -1,7 +1,7 @@
 package data
 
 import (
-	"dbsync/sync/diff"
+	"dbsync/sync/sql/diff"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -69,14 +69,14 @@ func TestComparator_IsInSync(t *testing.T) {
 			},
 		},
 		{
-			description: "out of sync, record2 is nil",
+			description: "out of sync, dest is nil",
 			record1: Record{
 				"k1": 1,
 				"k2": "abc",
 			},
 		},
 		{
-			description: "out of sync, record1 is nil",
+			description: "out of sync, source is nil",
 			record2: Record{
 				"k1": 1,
 				"k2": "abc",

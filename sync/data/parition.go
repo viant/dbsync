@@ -4,11 +4,13 @@ import (
 	"dbsync/sync/criteria"
 	"dbsync/sync/method"
 	"fmt"
+	"github.com/viant/toolbox"
 	"strings"
 	"sync"
-	"sync/atomic"
 )
 
+
+const partitionKeyTimeLayout = "20060102150405"
 
 
 //Partition represents a partition
@@ -21,18 +23,9 @@ type Partition struct {
 	*Chunks
 	*sync.WaitGroup
 	err error
-	done int32
 }
 
-//IsDone returns true if partition sync is done
-func (p *Partition) IsDone() bool {
-	return atomic.LoadInt32(&p.done) == 1
-}
 
-//SetDone sets done
-func (p *Partition) SetDone(done int32) {
-	atomic.StoreInt32(&p.done, done)
-}
 
 //AddChunk add chunk
 func (p *Partition) AddChunk(chunk *Chunk) {
@@ -50,33 +43,41 @@ func (p *Partition) AddChunk(chunk *Chunk) {
 }
 
 
-
-
-//NewPartition returns new partition
-func NewPartition(strategy *method.Strategy, record Record) *Partition {
+func (p *Partition) buildSuffix() string {
 	suffix := method.TransientTableSuffix
-	columns := strategy.Partition.Columns
+	columns := p.Partition.Columns
 	if len(columns) > 0 {
 		for _, column := range columns {
-			value, ok := record.Value(column)
+			value, ok := p.Values.Value(column)
 			if ! ok {
 				continue
+			}
+			if toolbox.IsTime(value) {
+				timeValue, _ := toolbox.ToTime(value, "")
+				value = timeValue.Format(partitionKeyTimeLayout)
 			}
 			suffix += fmt.Sprintf("%v", value)
 		}
 	}
-	IDColumn := ""
-	if len(strategy.IDColumns) == 1 {
-		IDColumn = strategy.IDColumns[0]
-	}
-
 	suffix = strings.Replace(suffix, "-", "", strings.Count(suffix, "-"))
 	suffix = strings.Replace(suffix, "+", "", strings.Count(suffix, "+"))
+	return suffix
+}
+
+
+func (p *Partition) Init() {
+	if len(p.IDColumns) == 1 {
+		p.IDColumn = p.IDColumns[0]
+	}
+	p.Suffix = p.buildSuffix()
+}
+
+
+//NewPartition returns new partition
+func NewPartition(strategy *method.Strategy, record Record) *Partition {
 	return &Partition{
 		Strategy:  strategy,
-		Suffix:    suffix,
 		Values:    record,
-		IDColumn:  IDColumn,
 		WaitGroup: &sync.WaitGroup{},
 		Chunks:    NewChunks(&strategy.Chunk),
 	}

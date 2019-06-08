@@ -1,6 +1,8 @@
-package sync
+package contract
 
 import (
+	"dbsync/sync/method"
+	"dbsync/sync/shared"
 	"fmt"
 	"github.com/viant/toolbox/url"
 	"strings"
@@ -20,7 +22,7 @@ const (
 //Request represnet sync request
 type Request struct {
 	Id       string
-	Strategy `yaml:",inline" json:",inline"`
+	method.Strategy `yaml:",inline" json:",inline"`
 	Transfer Transfer
 	Dest     *Resource
 	Source   *Resource
@@ -31,42 +33,8 @@ type Request struct {
 	Schedule *Schedule
 }
 
-//Response return response
-type Response struct {
-	JobID       string `json:",ommitempty"`
-	Status      string
-	Transferred int
-	Error       string `json:",ommitempty"`
-}
 
-//JobListRequest represents a list request
-type JobListRequest struct {
-	Ids []string //if empty return all job
-}
 
-//JobListResponse reprsents a list response
-type JobListResponse struct {
-	Jobs []*Job
-}
-
-//ScheduleListRequest represents a list request
-type ScheduleListRequest struct {
-}
-
-//ScheduleListResponse represents a list response
-type ScheduleListResponse struct {
-	Runnables []ScheduleRunnable
-}
-
-//HistoryRequest represent history request
-type HistoryRequest struct {
-	ID string
-}
-
-//HistoryResponse represent history response
-type HistoryResponse struct {
-	*Stats
-}
 
 //NewRequestFromURL create a new request from URL
 func NewRequestFromURL(URL string) (*Request, error) {
@@ -103,17 +71,18 @@ func (r *Request) Init() error {
 	if r.Dest == nil || r.Source == nil {
 		return nil
 	}
+
 	if r.MergeStyle == "" {
 		if r.Dest != nil {
 			switch r.Dest.DriverName {
 			case "mysql":
-				r.MergeStyle = DMLInsertOnDuplicateUpddate
+				r.MergeStyle = shared.DMLInsertOnDuplicateUpddate
 			case "sqlite3":
-				r.MergeStyle = DMLInsertOrReplace
+				r.MergeStyle = shared.DMLInsertOrReplace
 			case "oci8", "ora":
-				r.MergeStyle = DMLMergeInto
+				r.MergeStyle = shared.DMLMergeInto
 			default:
-				r.MergeStyle = DMLMerge
+				r.MergeStyle = shared.DMLMerge
 			}
 		}
 	}
@@ -191,19 +160,8 @@ func (r *Request) Validate() error {
 	return nil
 }
 
-//ScheduledRun returns schedule details and run function
-func (r *Request) ScheduledRun() (*Schedule, func(service Service) error) {
-	return r.Schedule, func(service Service) error {
-		response := service.Sync(r)
-		if response.Error != "" {
-			return fmt.Errorf(response.Error)
-		}
-		return nil
-	}
-}
-
 //UseUpperCaseSQL update id, partition column to upper case
-func (r *Request) UseUpperCase() {
+func (r *Request) UseUpperCaseSQL() {
 	if len(r.IDColumns) > 0 {
 		for i, v := range r.IDColumns {
 			r.IDColumns[i] = strings.ToUpper(v)
@@ -214,12 +172,5 @@ func (r *Request) UseUpperCase() {
 			r.Partition.Columns[i] = strings.ToUpper(v)
 		}
 	}
-
 }
 
-//NewSyncRequestFromURL creates a new resource from URL
-func NewSyncRequestFromURL(URL string) (*Request, error) {
-	request := &Request{}
-	resource := url.NewResource(URL)
-	return request, resource.Decode(request)
-}

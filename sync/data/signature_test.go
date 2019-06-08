@@ -1,7 +1,7 @@
 package data
 
 import (
-	"dbsync/sync/diff"
+	"dbsync/sync/sql/diff"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"strings"

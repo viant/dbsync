@@ -106,8 +106,8 @@ func TestAlignRecord(t *testing.T) {
 
 		AlignRecord(useCase.record1, useCase.record2)
 		for _, key := range useCase.expectKeys {
-			assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", useCase.record1[key]), fmt.Sprintf("record1[%v]: %v", key, useCase.description))
-			assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", useCase.record2[key]), fmt.Sprintf("record2[%v]: %v", key, useCase.description))
+			assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", useCase.record1[key]), fmt.Sprintf("source[%v]: %v", key, useCase.description))
+			assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", useCase.record2[key]), fmt.Sprintf("dest[%v]: %v", key, useCase.description))
 		}
 	}
 
@@ -227,8 +227,8 @@ func TestAlignRecords(t *testing.T) {
 			record1 := useCase.records1[i]
 			record2 := useCase.records2[i]
 			for _, key := range useCase.expectKeys {
-				assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", record1[key]), fmt.Sprintf("record1[%v]: %v", key, useCase.description))
-				assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", record2[key]), fmt.Sprintf("record2[%v]: %v", key, useCase.description))
+				assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", record1[key]), fmt.Sprintf("source[%v]: %v", key, useCase.description))
+				assert.Equal(t, useCase.expectType, fmt.Sprintf("%T", record2[key]), fmt.Sprintf("dest[%v]: %v", key, useCase.description))
 			}
 		}
 	}

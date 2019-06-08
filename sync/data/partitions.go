@@ -17,6 +17,11 @@ type Partitions struct {
 }
 
 
+//Get returns partition for supplied key
+func (p *Partitions) Get(key string) (*Partition) {
+	return p.index[key]
+}
+
 //Range range over partition
 func (p *Partitions) Range(handler func(partition *Partition) error) error {
 	partitions := p.values
@@ -71,14 +76,16 @@ func (p *Partitions) Init() {
 
 //NewPartitions creates a new partitions
 func NewPartitions(values []*Partition, strategy *method.Strategy) *Partitions {
-	var result = &Partitions{
+	threads := strategy.Partition.Threads
+	if threads == 0 {
+		threads = 1
+	}
+	return &Partitions{
 		Strategy:        strategy,
 		values:          values,
-		throttleChannel: make(chan bool, strategy.Partition.Threads),
+		throttleChannel: make(chan bool, threads),
 		Mutex:           &sync.Mutex{},
 		index:           make(map[string]*Partition),
 		WaitGroup:       &sync.WaitGroup{},
 	}
-	result.Init()
-	return result
 }
