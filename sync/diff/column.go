@@ -5,6 +5,7 @@ import (
 	"github.com/viant/toolbox"
 )
 
+
 //Column represents column expression for computing difference
 type Column struct {
 	Name             string

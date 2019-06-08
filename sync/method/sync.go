@@ -1,32 +1,14 @@
-package strategy
+package method
 
 const (
 	//SyncModeBatch persistency mode,  batched each chunk/partition merged with tmp transient table, then after all chunk transferred temp table marged with dest table
 	SyncModeBatch = "batch"
 	//SyncModeIndividual individual - each chunk/partition merged with dest table,
 	SyncModeIndividual = "individual"
-	//DMLMerge regular MERGE DML
-	DMLMerge = "merge"
-	//DMLMergeInto regular MERGE DML
-	DMLMergeInto = "mergeInto"
-	//DMLInsertOrReplace INSERT OR REPLACE DML
-	DMLInsertOrReplace = "insertOrReplace"
-	//DMLInsertOnDuplicateUpddate INSERT ON DUPLICATE UPDATE DML style
-	DMLInsertOnDuplicateUpddate = "insertOnDuplicateUpdate"
-
-	//DMLInsertOnConflictUpddate INSERT ON CONFLICT DO UPDATE DML style
-	DMLInsertOnConflictUpddate = "insertOnConflictUpdate"
-	//DMLInsert INSERT
-	DMLInsert = "insert"
-	//DMLDelete DELETE
-	DMLDelete = "delete"
-
-	//DMLDelete DELETE
-	TransientDMLDelete = "transientDelete"
 )
 
-//Method represents a sync strategy
-type Method struct {
+//Strategy represents a sync strategy
+type Strategy struct {
 	Chunk        Chunk
 	IDColumns    []string
 	Diff         Diff
@@ -38,7 +20,7 @@ type Method struct {
 }
 
 //Init initializes strategy
-func (s *Method) Init() error {
+func (s *Strategy) Init() error {
 	err := s.Diff.Init()
 	if err == nil {
 		if err = s.Partition.Init(); err == nil {
@@ -49,6 +31,6 @@ func (s *Method) Init() error {
 }
 
 //IsOptimized returns true if optimized sync
-func (s *Method) IsOptimized() bool {
+func (s *Strategy) IsOptimized() bool {
 	return  !s.Force
 }

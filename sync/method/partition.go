@@ -1,4 +1,4 @@
-package strategy
+package method
 
 const defaultPartitionThreads = 2
 const TransientTableSuffix = "_tmp"

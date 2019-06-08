@@ -1,6 +1,6 @@
 package sync
 
-//Info represents a sync info
+//Status represents a sync info
 type Info struct {
 	InSync        bool
 	Method        string
