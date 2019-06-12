@@ -1,2 +1,0 @@
-DELETE FROM events
-WHERE event_type >= 13

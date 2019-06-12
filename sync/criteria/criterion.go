@@ -20,12 +20,12 @@ func (b between) String() string {
 }
 
 //NewBetween creates new betwee criterion
-func NewBetween(from, to int) Criterion {
+func NewBetween(from, to int) *between {
 	return &between{from:from, to:to}
 }
 
 //NewLessOrEqual creates less of equal criterion
-func NewLessOrEqual(value int) Criterion{
+func NewLessOrEqual(value int) *lessOrEqual{
 	return &lessOrEqual{value}
 }
 
@@ -34,7 +34,7 @@ type lessOrEqual struct {
 }
 
 func (c lessOrEqual) String() string {
-	return fmt.Sprintf(" >= %v", c.value)
+	return fmt.Sprintf(" <= %v", c.value)
 }
 
 
@@ -43,12 +43,12 @@ type greaterThan struct {
 }
 
 func (c greaterThan) String() string {
-	return fmt.Sprintf(" < %v", c.value)
+	return fmt.Sprintf(" > %v", c.value)
 }
 
 
 //NewGraterThan creates grater than criterion
-func NewGraterThan(value int) Criterion{
+func NewGraterThan(value int) *greaterThan{
 	return &greaterThan{value}
 }
 
@@ -59,12 +59,12 @@ type greaterOrEqual struct {
 }
 
 func (c greaterOrEqual) String() string {
-	return fmt.Sprintf(" =< %v", c.value)
+	return fmt.Sprintf(" => %v", c.value)
 }
 
 
 //NewGraterOrEqual creates grater or equal criterion
-func NewGraterOrEqual(value int) Criterion{
+func NewGraterOrEqual(value int) *greaterOrEqual{
 	return &greaterOrEqual{value}
 }
 

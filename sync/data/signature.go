@@ -1,7 +1,7 @@
 package data
 
 import (
-	"dbsync/sync/sql/diff"
+	"dbsync/sync/model/strategy/diff"
 	"fmt"
 	"github.com/viant/toolbox"
 )
@@ -57,6 +57,9 @@ func (c *Signature) NotNullUniqueIDCount() int {
 
 //IsEqual returns true if signatures are equal
 func (c *Signature) IsEqual(signature *Signature) bool {
+	if signature == nil {
+		return false
+	}
 	return c.Count() == signature.Count() &&
 		c.Max() == signature.Max() &&
 		c.Min() == signature.Min()
@@ -72,7 +75,7 @@ func (c *Signature) ValidateIDConsistency() error {
 		return nil
 	}
 	if c.Count() != c.NotNullUniqueIDCount() {
-		return fmt.Errorf("unique column has NULL values, rowCount: %v, unique ID count: %v ", c.Count(), c.NotNullUniqueIDCount())
+		return fmt.Errorf("unique column has NULL Source, rowCount: %v, unique ID count: %v ", c.Count(), c.NotNullUniqueIDCount())
 	}
 	return fmt.Errorf(" data has unique ID duplicates, rowCount: %v, unique ID count: %v ", c.Count(), c.UniqueIDCount())
 }

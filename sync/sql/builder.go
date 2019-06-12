@@ -1,12 +1,11 @@
 package sql
 
 import (
-	"dbsync/sync/contract"
 	"dbsync/sync/criteria"
-	"dbsync/sync/method"
+	"dbsync/sync/model"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/model/strategy/diff"
 	"dbsync/sync/shared"
-	"dbsync/sync/sql/diff"
-	"dbsync/sync/util"
 	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
@@ -17,23 +16,17 @@ import (
 
 //Builder represents SQL builder
 type Builder struct {
-	method.Strategy //request sync meta
-	ddl              string
-	transferSuffix   string
-	tempDatabase     string
-	uniques          map[string]bool
-	source           *contract.Resource
-	dest             *contract.Resource
-	table            string
-	columns          []dsc.Column
-	columnsByName    map[string]dsc.Column
-	isUpperCase      bool
-	maxIDColumnAlias string
-	minIDColumnAlias string
-
-	countColumnAlias       string
-	uniqueCountAlias       string
-	uniqueNotNullSumtAlias string
+	strategy.Strategy //request sync meta
+	ddl            string
+	transferSuffix string
+	tempDatabase   string
+	uniques        map[string]bool
+	source         *model.Resource
+	dest           *model.Resource
+	table          string
+	columns        []dsc.Column
+	columnsByName  map[string]dsc.Column
+	isUpperCase    bool
 }
 
 //Table returns table name
@@ -41,7 +34,7 @@ func (b *Builder) Table(suffix string) string {
 	if suffix == "" {
 		return b.table
 	}
-	suffix = util.NormalizeTableName(suffix)
+	suffix = shared.NormalizeTableName(suffix)
 	if b.tempDatabase != "" {
 		return b.tempDatabase + "." + b.table + b.transferSuffix + suffix
 	}
@@ -49,23 +42,23 @@ func (b *Builder) Table(suffix string) string {
 }
 
 //QueryTable returns query table
-func (b *Builder) QueryTable(suffix string, resource *contract.Resource) string {
-	suffix = util.NormalizeTableName(suffix)
+func (b *Builder) QueryTable(suffix string, resource *model.Resource) string {
+	suffix = shared.NormalizeTableName(suffix)
 	if suffix == "" {
 		if resource.From != "" {
 			return fmt.Sprintf("(%s)", resource.From)
 		}
-		return b.table
+		return resource.Table
 	}
 	if b.tempDatabase != "" {
 		return b.tempDatabase + "." + b.table + b.transferSuffix + suffix
 	}
-	return b.table + b.transferSuffix + suffix
+	return resource.Table + b.transferSuffix + suffix
 }
 
 //DDLAsSelect returns transient table DDL for supplied suffix
 func (b *Builder) DDLFromSelect(suffix string) string {
-	suffix = util.NormalizeTableName(suffix)
+	suffix = shared.NormalizeTableName(suffix)
 	return fmt.Sprintf("CREATE TABLE %v AS SELECT * FROM %v WHERE 1 = 0", b.Table(suffix), b.Table(""))
 }
 
@@ -79,21 +72,21 @@ func (b *Builder) DDL(tempTable string) string {
 	return DDL
 }
 
-func (b *Builder) columnExpression(column string, resource *contract.Resource) string {
+func (b *Builder) columnExpression(column string, resource *model.Resource) string {
 	if pseudoColumn := resource.GetPseudoColumn(column); pseudoColumn != nil {
 		return pseudoColumn.Expression + " AS " + b.formatColumn(column)
 	}
 	return column
 }
 
-func (b *Builder) unAliasedColumnExpression(column string, resource *contract.Resource) string {
+func (b *Builder) unAliasedColumnExpression(column string, resource *model.Resource) string {
 	if pseudoColumn := resource.GetPseudoColumn(column); pseudoColumn != nil {
 		return pseudoColumn.Expression
 	}
 	return column
 }
 
-func (b *Builder) defaultChunkDQL(resource *contract.Resource) string {
+func (b *Builder) defaultChunkDQL(resource *model.Resource) string {
 	var projection = []string{
 		fmt.Sprintf("COUNT(1) AS %v", b.formatColumn("count_value")),
 	}
@@ -112,7 +105,7 @@ LIMIT $limit
 }
 
 //ChunkDQL returns chunk DQL
-func (b *Builder) ChunkDQL(resource *contract.Resource, max, limit int, values map[string]interface{}) (string, error) {
+func (b *Builder) ChunkDQL(resource *model.Resource, max, limit int, values map[string]interface{}) string {
 	state := data.NewMap()
 	state.Put("hint", resource.Hint)
 	state.Put("max", max)
@@ -131,10 +124,10 @@ func (b *Builder) ChunkDQL(resource *contract.Resource, max, limit int, values m
 		chunkSQL = b.defaultChunkDQL(resource)
 	}
 	DQL := state.ExpandAsText(chunkSQL)
-	return DQL, nil
+	return DQL
 }
 
-func (b *Builder) toCriteriaList(filter map[string]interface{}, resource *contract.Resource) []string {
+func (b *Builder) toCriteriaList(filter map[string]interface{}, resource *model.Resource) []string {
 	var whereCriteria = make([]string, 0)
 	if len(filter) == 0 {
 		return whereCriteria
@@ -150,7 +143,7 @@ func (b *Builder) toCriteriaList(filter map[string]interface{}, resource *contra
 	return whereCriteria
 }
 
-func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *contract.Resource) string {
+func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *model.Resource) string {
 	if len(criteria) == 0 && len(resource.Criteria) == 0 {
 		return ""
 	}
@@ -160,7 +153,7 @@ func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *con
 }
 
 //CountDQL returns count DQL for supplied resource and filter
-func (b *Builder) CountDQL(suffix string, resource *contract.Resource, criteria map[string]interface{}) string {
+func (b *Builder) CountDQL(suffix string, resource *model.Resource, criteria map[string]interface{}) string {
 	var projection = []string{
 		fmt.Sprintf("COUNT(1) AS %v", b.formatColumn("count_value")),
 	}
@@ -184,7 +177,7 @@ func (b *Builder) isUnique(candidate string) bool {
 }
 
 //DQL returns sync DQL
-func (b *Builder) DQL(suffix string, resource *contract.Resource, values map[string]interface{}, dedupe bool) string {
+func (b *Builder) DQL(suffix string, resource *model.Resource, values map[string]interface{}, dedupe bool) string {
 	var projection = make([]string, 0)
 	var dedupeFunction = ""
 	if dedupe {
@@ -204,7 +197,7 @@ func (b *Builder) DQL(suffix string, resource *contract.Resource, values map[str
 			projection = append(projection, fmt.Sprintf("%v(%v) AS %v", dedupeFunction, expression.Expression, b.formatColumn(column.Name())))
 			continue
 		}
-		expression:= resource.GetPseudoColumn(column.Name())
+		expression := resource.GetPseudoColumn(column.Name())
 		if expression == nil {
 			projection = append(projection, fmt.Sprintf("%v", b.formatColumn(column.Name())))
 			continue
@@ -254,14 +247,14 @@ func (b *Builder) init() {
 			}
 		}
 	}
-	b.addStandardDiffColumns()
+	b.addStandardSignatureColumns()
 	for _, column := range b.IDColumns {
 		b.uniques[strings.ToLower(column)] = true
 	}
 }
 
-//DiffDQL returns sync difference DQL
-func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *contract.Resource) (string, []string) {
+//SignatureDQL returns sync difference DQL
+func (b *Builder) SignatureDQL(resource *model.Resource, criteria map[string]interface{}) (string) {
 	return b.partitionDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
 		for _, column := range b.Diff.Columns {
 			if _, has := dimension[column.Name]; has {
@@ -272,7 +265,7 @@ func (b *Builder) DiffDQL(criteria map[string]interface{}, resource *contract.Re
 	})
 }
 
-func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *contract.Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) (string, []string) {
+func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *model.Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) (string) {
 	var projection = make([]string, 0)
 	var groupBy = make([]string, 0)
 	var i = 1
@@ -302,7 +295,7 @@ func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *contra
 	if len(groupBy) > 0 {
 		SQL += fmt.Sprintf("\nORDER BY %s", strings.Join(groupBy, ","))
 	}
-	return SQL, toolbox.MapKeysToStringSlice(dimension)
+	return SQL
 }
 
 //DML returns DML
@@ -311,21 +304,21 @@ func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface
 		return "", fmt.Errorf("sufifx was empty")
 	}
 	switch dmlType {
-	case shared.DMLInsertOrReplace:
+	case  shared.DMLInsertOrReplace:
 		return b.insertReplaceDML(suffix, filter), nil
-	case shared.DMLInsertOnDuplicateUpddate:
+	case  shared.DMLInsertOnDuplicateUpddate:
 		return b.insertOnDuplicateUpdateDML(suffix, filter), nil
-	case shared.DMLInsertOnConflictUpddate:
+	case  shared.DMLInsertOnConflictUpddate:
 		return b.insertOnConflictUpdateDML(suffix, filter), nil
-	case shared.DMLMerge:
+	case  shared.DMLMerge:
 		return b.mergeDML(suffix, filter), nil
-	case shared.DMLMergeInto:
+	case  shared.DMLMergeInto:
 		return b.mergeIntoDML(suffix, filter), nil
-	case shared.DMLInsert:
+	case  shared.DMLInsert:
 		return b.insertDML(suffix, filter), nil
 	case shared.TransientDMLDelete:
 		return b.transientDeleteDML(suffix, filter), nil
-	case shared.DMLDelete:
+	case  shared.DMLDelete:
 		return b.deleteDML(suffix, filter), nil
 	}
 	return "", fmt.Errorf("unsupported %v", dmlType)
@@ -335,7 +328,7 @@ func (b *Builder) insertNameAndValues() (string, string) {
 	return b.aliasedInsertNameAndValues("", "")
 }
 
-func (b *Builder) aliasValue(alias string, value string, resource *contract.Resource) string {
+func (b *Builder) aliasValue(alias string, value string, resource *model.Resource) string {
 	if alias == "" {
 		return b.unAliasedColumnExpression(value, resource)
 	}
@@ -434,7 +427,7 @@ WHEN NOT MATCHED THEN
   VALUES(%v)
 `
 
-func (b *Builder) filterCriteriaColumn(key, alias string, resource *contract.Resource) string {
+func (b *Builder) filterCriteriaColumn(key, alias string, resource *model.Resource) string {
 	column := b.unAliasedColumnExpression(key, b.dest)
 	if strings.Contains(column, ".") && !strings.Contains(column, alias+".") {
 		column = strings.Replace(column, "t.", alias+".", len(column))
@@ -484,7 +477,19 @@ func (b *Builder) mergeWithTemplateDML(suffix string, filter map[string]interfac
 		names, values)
 }
 
-func (b *Builder) getInsertWhereClause(filter map[string]interface{}) string {
+func (b *Builder) getInsertWhereClause(filter map[string]interface{}, dedupe bool) string {
+	where := b.getInsertWhere(filter, dedupe)
+	if where == "" {
+		return ""
+	}
+	aliasCount := strings.Count(where, "d.")
+	if aliasCount == 0 {
+		return where
+	}
+	return strings.Replace(where,"d.", "", aliasCount)
+}
+
+func (b *Builder) getInsertWhere(filter map[string]interface{}, dedupe bool) string {
 	if len(b.IDColumns) > 0 {
 		innerWhere := ""
 		var innerCriteria = make([]string, 0)
@@ -496,7 +501,10 @@ func (b *Builder) getInsertWhereClause(filter map[string]interface{}) string {
 			innerCriteria = append(innerCriteria, criteria.ToCriterion(column, v))
 		}
 		if len(innerCriteria) > 0 {
-			innerWhere = "WHERE  " + strings.Join(innerCriteria, " AND ")
+			innerWhere = "\nWHERE  " + strings.Join(innerCriteria, " AND ")
+		}
+		if ! dedupe {
+			return innerWhere
 		}
 		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v t %v)", strings.Join(b.IDColumns, ","), strings.Join(b.IDColumns, ","), b.Table(""), innerWhere)
 		return "\nWHERE " + inCriteria
@@ -505,11 +513,11 @@ func (b *Builder) getInsertWhereClause(filter map[string]interface{}) string {
 }
 
 func (b *Builder) insertDML(suffix string, filter map[string]interface{}) string {
-	return b.baseInsert(suffix, false) + b.getInsertWhereClause(filter)
+	return b.baseInsert(suffix, false) + b.getInsertWhereClause(filter, true)
 }
 
 func (b *Builder) insertReplaceDML(suffix string, filter map[string]interface{}) string {
-	return b.baseInsert(suffix, true) + b.getInsertWhereClause(filter)
+	return b.baseInsert(suffix, true) + b.getInsertWhereClause(filter, false)
 }
 
 func (b *Builder) transientDeleteDML(suffix string, filter map[string]interface{}) string {
@@ -523,7 +531,7 @@ func (b *Builder) transientDeleteDML(suffix string, filter map[string]interface{
 			whereClause = " WHERE " + inCriteria
 		}
 	}
-	whereClause = util.RemoveTableAliases(whereClause, "t")
+	whereClause = shared.RemoveTableAliases(whereClause, "t")
 	return fmt.Sprintf("DELETE FROM %v %v", b.Table(suffix), whereClause)
 }
 
@@ -538,7 +546,7 @@ func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string
 			whereClause = " WHERE " + inCriteria
 		}
 	}
-	whereClause = util.RemoveTableAliases(whereClause, "t")
+	whereClause = shared.RemoveTableAliases(whereClause, "t")
 	return fmt.Sprintf("DELETE FROM %v %v", b.Table(""), whereClause)
 }
 
@@ -553,10 +561,11 @@ func (b *Builder) formatColumn(column string) string {
 	return column
 }
 
-func (b *Builder) addStandardDiffColumns() {
-	b.countColumnAlias = b.formatColumn("cnt")
+func (b *Builder) addStandardSignatureColumns() {
+
+	countColumnAlias := diff.AliasCount
 	for _, candidate := range b.Diff.Columns {
-		if candidate.Name == b.countColumnAlias {
+		if candidate.Name == countColumnAlias {
 			return
 		}
 	}
@@ -568,30 +577,34 @@ func (b *Builder) addStandardDiffColumns() {
 
 	for _, unique := range b.IDColumns {
 		if len(b.IDColumns) == 1 {
-			b.maxIDColumnAlias = b.formatColumn("max_" + unique)
-			b.minIDColumnAlias = b.formatColumn("min_" + unique)
+			idKey := b.IDColumns[0]
+			minColumnAlias := fmt.Sprintf(diff.AliasMinIdTemplate, idKey)
+			maxColumnAlias := fmt.Sprintf(diff.AliasMaxIdTemplate, idKey)
+			uniqueIDCountColumnAlias := fmt.Sprintf(diff.AliasUniqueIDCountTemplate, idKey)
+			nonNullIDCountColumnAlias := fmt.Sprintf(diff.AliasNonNullIDCountTemplate, idKey)
 
-			b.uniqueCountAlias = b.formatColumn("unique_cnt")
+			
+		
 			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "COUNT",
 				Name:  unique,
-				Alias: b.uniqueCountAlias,
+				Alias: b.formatColumn(uniqueIDCountColumnAlias),
 			})
-			b.uniqueNotNullSumtAlias = b.formatColumn("non_cnt")
+		
 			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "SUM",
 				Name:  "(CASE WHEN " + unique + " IS NOT NULL THEN 1 ELSE 0 END)",
-				Alias: b.uniqueNotNullSumtAlias,
+				Alias: b.formatColumn(nonNullIDCountColumnAlias),
 			})
 			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "MAX",
 				Name:  unique,
-				Alias: b.maxIDColumnAlias,
+				Alias: b.formatColumn(maxColumnAlias),
 			})
 			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "MIN",
 				Name:  unique,
-				Alias: b.minIDColumnAlias,
+				Alias: b.formatColumn(minColumnAlias),
 			})
 
 		}
@@ -660,29 +673,31 @@ func isUpperCaseTable(columns []dsc.Column) bool {
 	return true
 }
 
-
 //NewBuilder creates a new builder
-func NewBuilder(request *contract.Request, ddl string, destColumns []dsc.Column) (*Builder, error) {
-	transferSuffix := request.Transfer.Suffix
+func NewBuilder(sync *model.Sync, ddl string, destColumns []dsc.Column) (*Builder, error) {
+	if len(destColumns) == 0 {
+		return nil, fmt.Errorf("columns were empty")
+	}
+	transferSuffix := sync.Transfer.Suffix
 	if transferSuffix != "" && !strings.HasPrefix(transferSuffix, "_") {
 		transferSuffix = "_" + transferSuffix
 	}
 	isUpperCaseTable := isUpperCaseTable(destColumns)
 	builder := &Builder{
-		tempDatabase:   request.Transfer.TempDatabase,
-		Strategy:       request.Strategy,
+		tempDatabase:   sync.Transfer.TempDatabase,
+		Strategy:       sync.Strategy,
 		columns:        destColumns,
 		columnsByName:  make(map[string]dsc.Column),
-		table:          request.Dest.Table,
-		source:         request.Source,
+		table:          sync.Dest.Table,
+		source:         sync.Source,
 		ddl:            ddl,
-		dest:           request.Dest,
+		dest:           sync.Dest,
 		isUpperCase:    isUpperCaseTable,
 		transferSuffix: transferSuffix,
 	}
 	builder.init()
 	if isUpperCaseTable {
-		request.UseUpperCaseSQL()
+		sync.UseUpperCaseSQL()
 	}
 	return builder, nil
 }

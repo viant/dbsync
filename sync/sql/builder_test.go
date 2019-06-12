@@ -3,9 +3,9 @@ package sql
 import (
 	"dbsync/sync/contract"
 	"dbsync/sync/criteria"
-	"dbsync/sync/method"
-	"dbsync/sync/shared"
-	"dbsync/sync/sql/diff"
+	"dbsync/sync/model"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/model/strategy/diff"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +40,7 @@ func TestBuilder_DDL(t *testing.T) {
 		log.Fatal(err)
 	}
 	_ = request.Init()
-	builder, err := NewBuilder(request, "CREATE TABLE events (ID int, name varchar2(255))", getTestColumns())
+	builder, err := NewBuilder(request.Sync, "CREATE TABLE events (ID int, name varchar2(255))", getTestColumns())
 
 	{ //basic DDL with suffix
 		actualDDL := builder.DDL("_tmp")
@@ -60,7 +60,7 @@ func TestBuilder_DDLFromSelect(t *testing.T) {
 		log.Fatal(err)
 	}
 	_ = request.Init()
-	builder, err := NewBuilder(request, "",  getTestColumns())
+	builder, err := NewBuilder(request.Sync, "",  getTestColumns())
 
 	{ //basic DDL with suffix
 		actualDDL := builder.DDLFromSelect("_tmp")
@@ -77,8 +77,8 @@ func TestBuilder_ChunkDQL(t *testing.T) {
 		suffix       string
 		expectDifURI string
 		idColumns    []string
-		resource     *contract.Resource
-		partition    *method.Partition
+		resource     *model.Resource
+		partition    *strategy.Partition
 		max          int
 		limit        int
 		filter       map[string]interface{}
@@ -97,7 +97,7 @@ func TestBuilder_ChunkDQL(t *testing.T) {
 			description: "custom chunk dql",
 			idColumns:   []string{"id"},
 			suffix:      "_tmp",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				Table: "events",
 				ChunkSQL: `SELECT
   MIN(ID) AS MIN_VALUE,
@@ -129,7 +129,7 @@ FROM (
 			description: "custom chunk with filter dql",
 			idColumns:   []string{"id"},
 			suffix:      "_tmp",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				Table: "events",
 				ChunkSQL: `SELECT
   MIN(ID) AS MIN_VALUE,
@@ -169,9 +169,9 @@ FROM (
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
 		{
-			actualDQL, err := builder.ChunkDQL(request.Source, useCase.max, useCase.limit, useCase.filter)
+			actualDQL := builder.ChunkDQL(request.Source, useCase.max, useCase.limit, useCase.filter)
 			assert.Nil(t, err, useCase.description)
 
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/chunk/expect/%v", useCase.expectDifURI))
@@ -195,9 +195,9 @@ func TestBuilder_CountDQL(t *testing.T) {
 		suffix       string
 		expectDifURI string
 		idColumns    []string
-		partition    *method.Partition
-		resource     *contract.Resource
-		diff         *method.Diff
+		partition    *strategy.Partition
+		resource     *model.Resource
+		diff         *strategy.Diff
 		filter       map[string]interface{}
 
 		hasError bool
@@ -237,7 +237,7 @@ func TestBuilder_CountDQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
 		{
 			actualDQL := builder.CountDQL(useCase.suffix, request.Source, useCase.filter)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/count/expect/%v", useCase.expectDifURI))
@@ -260,9 +260,9 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		description  string
 		expectDifURI string
 		idColumns    []string
-		partition    *method.Partition
-		resource     *contract.Resource
-		diff         *method.Diff
+		partition    *strategy.Partition
+		resource     *model.Resource
+		diff         *strategy.Diff
 		filter       map[string]interface{}
 
 		hasError bool
@@ -276,7 +276,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			description:  "count only based dql",
 			idColumns:    []string{"id"},
 			expectDifURI: "id_based/count_only.txt",
-			diff: &method.Diff{
+			diff: &strategy.Diff{
 				CountOnly: true,
 			},
 		},
@@ -284,7 +284,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			description:  "custom based dql",
 			idColumns:    []string{"id"},
 			expectDifURI: "id_based/custom.txt",
-			diff: &method.Diff{
+			diff: &strategy.Diff{
 				CountOnly: true,
 				Columns: []*diff.Column{
 					{
@@ -306,7 +306,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			description:  "count only based with filter dql",
 			idColumns:    []string{"id"},
 			expectDifURI: "filter/count_only.txt",
-			diff: &method.Diff{
+			diff: &strategy.Diff{
 				CountOnly: true,
 			},
 			filter: map[string]interface{}{
@@ -317,7 +317,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			description:  "custom based with filter dql",
 			idColumns:    []string{"id"},
 			expectDifURI: "filter/custom.txt",
-			diff: &method.Diff{
+			diff: &strategy.Diff{
 				CountOnly: true,
 				Columns: []*diff.Column{
 					{
@@ -334,7 +334,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			description:  "single id based partition dql",
 			idColumns:    []string{"id"},
 			expectDifURI: "partition/all.txt",
-			partition: &method.Partition{
+			partition: &strategy.Partition{
 				Columns: []string{
 					"event_type",
 				},
@@ -344,10 +344,10 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			description:  "single id based position partition dql",
 			idColumns:    []string{"id"},
 			expectDifURI: "partition/all_position.txt",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				PositionReference: true,
 			},
-			partition: &method.Partition{
+			partition: &strategy.Partition{
 				Columns: []string{
 					"event_type",
 				},
@@ -356,10 +356,10 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		{
 			description:  "non  id based position partition dql",
 			expectDifURI: "non_id/all.txt",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				PositionReference: true,
 			},
-			partition: &method.Partition{
+			partition: &strategy.Partition{
 				Columns: []string{
 					"event_type",
 				},
@@ -368,13 +368,13 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with resource filter dql",
 			expectDifURI: "non_id/resource_filter.txt",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
 				},
 			},
-			partition: &method.Partition{
+			partition: &strategy.Partition{
 				Columns: []string{
 					"event_type",
 				},
@@ -384,13 +384,13 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with global and resource filter dql",
 			expectDifURI: "non_id/mixed_filter.txt",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
 				},
 			},
-			partition: &method.Partition{
+			partition: &strategy.Partition{
 				Columns: []string{
 					"event_type",
 				},
@@ -423,16 +423,16 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
 		{
-			actualDQL, _ := builder.DiffDQL(useCase.filter, request.Source)
+			actualDQL := builder.SignatureDQL(request.Source, useCase.filter)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/dif/expect/%v", useCase.expectDifURI))
 			expectedDQL, err := loadTextFile(expectURL)
 			if !assert.Nil(t, err, useCase.description) {
 				continue
 			}
 			if !assert.EqualValues(t, normalizeSQL(expectedDQL), normalizeSQL(actualDQL), useCase.description) {
-				fmt.Printf("DiffDQL %v : \n-------------\n%v\n\n\n\n==============\n", useCase.description, actualDQL)
+				fmt.Printf("SignatureDQL %v : \n-------------\n%v\n\n\n\n==============\n", useCase.description, actualDQL)
 
 			}
 		}
@@ -447,9 +447,9 @@ func TestBuilder_DQL(t *testing.T) {
 		expectDifURI string
 		suffix       string
 		idColumns    []string
-		partition    *method.Partition
-		resource     *contract.Resource
-		diff         *method.Diff
+		partition    *strategy.Partition
+		resource     *model.Resource
+		diff         *strategy.Diff
 		filter       map[string]interface{}
 
 		hasError bool
@@ -463,13 +463,13 @@ func TestBuilder_DQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with resource filter dql",
 			expectDifURI: "non_id/resource_filter.txt",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
 				},
 			},
-			partition: &method.Partition{
+			partition: &strategy.Partition{
 				Columns: []string{
 					"event_type",
 				},
@@ -479,13 +479,13 @@ func TestBuilder_DQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with global and resource filter dql",
 			expectDifURI: "non_id/mixed_filter.txt",
-			resource: &contract.Resource{
+			resource: &model.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
 				},
 			},
-			partition: &method.Partition{
+			partition: &strategy.Partition{
 				Columns: []string{
 					"event_type",
 				},
@@ -511,7 +511,7 @@ func TestBuilder_DQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
 		{
 			actualDQL := builder.DQL(useCase.suffix, request.Source, useCase.filter, len(request.IDColumns) > 0)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/dql/expect/%v", useCase.expectDifURI))
@@ -546,49 +546,49 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id based insert",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsert,
+			dmlType:      shared.DMLInsert,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based insert or replace",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsertOrReplace,
+			dmlType:      shared.DMLInsertOrReplace,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based insert on duplicate update",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsertOnDuplicateUpddate,
+			dmlType:      shared.DMLInsertOnDuplicateUpddate,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based insert on conflict update",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsertOnConflictUpddate,
+			dmlType:      shared.DMLInsertOnConflictUpddate,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based merge",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLMerge,
+			dmlType:      shared.DMLMerge,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based merge into",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLMergeInto,
+			dmlType:      shared.DMLMergeInto,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based dml delete",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLDelete,
+			dmlType:      shared.DMLDelete,
 			idColumns:   []string{"id"},
 		},
 
@@ -596,7 +596,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id based transient delete",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     shared.TransientDMLDelete,
+			dmlType:     model.TransientDMLDelete,
 			idColumns:   []string{"id"},
 		},
 
@@ -604,7 +604,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based insert or replace",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsertOrReplace,
+			dmlType:      shared.DMLInsertOrReplace,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": 4,
@@ -614,7 +614,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based  insert on duplicate update",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsertOnDuplicateUpddate,
+			dmlType:      shared.DMLInsertOnDuplicateUpddate,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": " > 4",
@@ -624,7 +624,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based  insert on conflict update",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsertOnConflictUpddate,
+			dmlType:      shared.DMLInsertOnConflictUpddate,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": " < 4",
@@ -634,7 +634,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based merge",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLMerge,
+			dmlType:      shared.DMLMerge,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewBetween(1, 10),
@@ -644,7 +644,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based merge into",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLMergeInto,
+			dmlType:      shared.DMLMergeInto,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewLessOrEqual(1),
@@ -654,7 +654,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based dml delete",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLDelete,
+			dmlType:      shared.DMLDelete,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
@@ -665,7 +665,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id based transient delete",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     shared.TransientDMLDelete,
+			dmlType:     model.TransientDMLDelete,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
@@ -677,7 +677,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:      shared.DMLInsertOrReplace,
+			dmlType:       shared.DMLInsertOrReplace,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -685,7 +685,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:      shared.DMLInsertOnDuplicateUpddate,
+			dmlType:       shared.DMLInsertOnDuplicateUpddate,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -693,7 +693,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:      shared.DMLInsertOnConflictUpddate,
+			dmlType:       shared.DMLInsertOnConflictUpddate,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -701,7 +701,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:      shared.DMLMerge,
+			dmlType:       shared.DMLMerge,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -709,7 +709,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:      shared.DMLMergeInto,
+			dmlType:       shared.DMLMergeInto,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -717,7 +717,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:      shared.DMLDelete,
+			dmlType:       shared.DMLDelete,
 			idColumns:    []string{"id"},
 		},
 
@@ -725,20 +725,20 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single non id based insert",
 			group:       "non_id",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsert,
+			dmlType:      shared.DMLInsert,
 		},
 		{
 			description: "single non id based dml delete",
 			group:       "non_id",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLDelete,
+			dmlType:      shared.DMLDelete,
 		},
 
 		{
 			description: "single non id based with filter insert",
 			group:       "non_id_filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLInsert,
+			dmlType:      shared.DMLInsert,
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
 			},
@@ -747,7 +747,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single non id based with filter dml delete",
 			group:       "non_id_filter",
 			suffix:      "_tmp",
-			dmlType:     shared.DMLDelete,
+			dmlType:      shared.DMLDelete,
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
 			},
@@ -758,7 +758,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:       "error",
 			suffix:      "",
 			hasError:    true,
-			dmlType:     shared.DMLDelete,
+			dmlType:      shared.DMLDelete,
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
 			},
@@ -778,7 +778,7 @@ func TestBuilder_DML(t *testing.T) {
 		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
 		assert.Nil(t, err)
 		assert.NotNil(t, builder)
 		actualSQL, err := builder.DML(useCase.dmlType, useCase.suffix, useCase.filter)
@@ -833,7 +833,7 @@ func TestBuilder_AppendDML(t *testing.T) {
 		err = request.Init()
 		assert.Nil(t, err, useCase.description)
 		request.IDColumns = useCase.idColumns
-		builder, err := NewBuilder(request, "", getTestColumns())
+		builder, err := NewBuilder(request.Sync, "", getTestColumns())
 		assert.Nil(t, err, useCase.description)
 		actualSQL := builder.AppendDML("_src1", "_dst2")
 		expectURL := path.Join(parent, fmt.Sprintf("test/builder/dml/append/%v", useCase.expectDMLURI))
@@ -844,7 +844,7 @@ func TestBuilder_AppendDML(t *testing.T) {
 		}
 
 		if !assert.EqualValues(t, normalizeSQL(expectedSQL), normalizeSQL(actualSQL)) {
-			fmt.Printf("APPEND shared.DML %v - %v: \n-------------\n%v\n\n\n\n==============\n", useCase.expectDMLURI, useCase.description, actualSQL)
+			fmt.Printf("APPEND  shared.DML %v - %v: \n-------------\n%v\n\n\n\n==============\n", useCase.expectDMLURI, useCase.description, actualSQL)
 
 		}
 

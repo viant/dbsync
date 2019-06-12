@@ -1,9 +1,0 @@
-INSERT  INTO events_clone(id,ts,event_type,ua,dnt,charge,payment,modified) SELECT id,ts,event_type,ua,dnt,charge,payment,modified FROM events_clone_tmp t
-ON DUPLICATE KEY
- UPDATE ts = t.ts,
-	event_type = t.event_type,
-	ua = t.ua,
-	dnt = t.dnt,
-	charge = t.charge,
-	payment = t.payment,
-	modified = t.modified

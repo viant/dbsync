@@ -2,53 +2,85 @@ package data
 
 import (
 	"dbsync/sync/criteria"
-	"dbsync/sync/method"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/shared"
 	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
-	"sync"
 )
-
 
 const partitionKeyTimeLayout = "20060102150405"
 
-
 //Partition represents a partition
 type Partition struct {
-	*method.Strategy
+	*strategy.Strategy
 	IDColumn string
-	Suffix string
-	Values Record
-	*Status
+	Transferable
 	*Chunks
-	*sync.WaitGroup
 	err error
 }
 
 
 
-//AddChunk add chunk
-func (p *Partition) AddChunk(chunk *Chunk) {
-	for k, v := range p.Values {
-		if _, has := chunk.Criteria[k]; has {
+//Get returns partition for supplied key
+func (p *Partition) BatchTransferable() *Transferable {
+	result := &Transferable{
+		Suffix:p.Suffix,
+		Method:shared.SyncMethodInsert,
+		Status: &Status{
+			Source:&Signature{},
+			Dest:&Signature{},
+		},
+	}
+	chunks := p.chunks
+	//Chunks
+	for i:=0;i<len(chunks);i++ {
+		transferable := chunks[i].Transferable
+		if transferable.ShouldDelete() {
 			continue
 		}
-		chunk.Criteria[k] = v
+		if transferable.Method != shared.SyncMethodMerge {
+			result.Method = transferable.Method
+		}
+		if transferable.Status == nil {
+			continue
+		}
+		result.Source.CountValue = result.Source.Count() + transferable.Source.Count()
 	}
-	chunk.Index = p.ChunkSize()
-	chunk.Suffix = fmt.Sprintf("%v_chunk_%05d", p.Suffix, chunk.Index)
-
-	chunk.Criteria[p.IDColumn] = criteria.NewBetween(chunk.Min(), chunk.Max())
-	p.Chunks.Add(chunk)
+	return result
 }
 
 
+//SetError set errors
+func (p *Partition) SetError(err error) {
+	if err == nil {
+		return
+	}
+	p.err = err
+	p.CloseOffer()
+	p.Close()
+}
+
+//AddChunk add chunks
+func (p *Partition) AddChunk(chunk *Chunk) {
+	for k, v := range p.Filter {
+		if _, has := chunk.Filter[k]; has {
+			continue
+		}
+		chunk.Filter[k] = v
+	}
+	chunk.Index = p.ChunkSize()
+	chunk.Suffix = fmt.Sprintf("%v_chunk_%05d", p.Suffix, chunk.Index)
+	chunk.Filter[p.IDColumn] = criteria.NewBetween(chunk.Min(), chunk.Max())
+	p.Chunks.Offer(chunk)
+}
+
 func (p *Partition) buildSuffix() string {
-	suffix := method.TransientTableSuffix
+	suffix := shared.TransientTableSuffix
 	columns := p.Partition.Columns
 	if len(columns) > 0 {
 		for _, column := range columns {
-			value, ok := p.Values.Value(column)
+			value, ok := p.Filter.Value(column)
 			if ! ok {
 				continue
 			}
@@ -72,13 +104,21 @@ func (p *Partition) Init() {
 	p.Suffix = p.buildSuffix()
 }
 
+func (p *Partition) InitWithMethod(method, suffix string) {
+	p.IDColumn = p.IDColumns[0]
+	p.Suffix = suffix
+	p.Status = &Status{
+		Method: method,
+		Source: &Signature{},
+		Dest:   &Signature{},
+	}
+}
 
 //NewPartition returns new partition
-func NewPartition(strategy *method.Strategy, record Record) *Partition {
+func NewPartition(strategy *strategy.Strategy, record Record) *Partition {
 	return &Partition{
 		Strategy:  strategy,
-		Values:    record,
-		WaitGroup: &sync.WaitGroup{},
+		Transferable: Transferable{Filter: record},
 		Chunks:    NewChunks(&strategy.Chunk),
 	}
 }

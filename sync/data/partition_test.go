@@ -1,7 +1,7 @@
 package data
 
 import (
-	"dbsync/sync/method"
+	"dbsync/sync/model/strategy"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -17,8 +17,8 @@ func TestPartition_Init(t *testing.T) {
 	}{
 		{
 			description: "default partition",
-			partition: NewPartition(&method.Strategy{
-				Partition: method.Partition{},
+			partition: NewPartition(&strategy.Strategy{
+				Partition: strategy.Partition{},
 			}, Record{
 				"k1": 1, "k2": 2,
 			}),
@@ -26,8 +26,8 @@ func TestPartition_Init(t *testing.T) {
 		},
 		{
 			description: "single column partition",
-			partition: NewPartition(&method.Strategy{
-				Partition: method.Partition{
+			partition: NewPartition(&strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1"},
 				},
 			}, Record{
@@ -37,8 +37,8 @@ func TestPartition_Init(t *testing.T) {
 		},
 		{
 			description: "single column partition with ID",
-			partition: NewPartition(&method.Strategy{
-				Partition: method.Partition{
+			partition: NewPartition(&strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1"},
 				},
 				IDColumns: []string{"id"},
@@ -50,8 +50,8 @@ func TestPartition_Init(t *testing.T) {
 		},
 		{
 			description: "multi column partition with ID",
-			partition: NewPartition(&method.Strategy{
-				Partition: method.Partition{
+			partition: NewPartition(&strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1", "k3"},
 				},
 				IDColumns: []string{"id"},
@@ -62,9 +62,9 @@ func TestPartition_Init(t *testing.T) {
 			expectID:     "id",
 		},
 		{
-			description: "multi column partition with ID and missing values",
-			partition: NewPartition(&method.Strategy{
-				Partition: method.Partition{
+			description: "multi column partition with ID and missing Source",
+			partition: NewPartition(&strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1", "k5", "k3"},
 				},
 				IDColumns: []string{"id"},

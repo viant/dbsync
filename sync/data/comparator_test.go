@@ -1,15 +1,20 @@
 package data
 
 import (
-	"dbsync/sync/sql/diff"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/model/strategy/diff"
+	"dbsync/sync/shared"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
+
+
 func TestComparator_IsInSync(t *testing.T) {
 
-	var log = func(message string) {}
+	var ctx = &shared.Context{}
+
 	var useCases = []struct {
 		description string
 		columns     []*diff.Column
@@ -76,7 +81,7 @@ func TestComparator_IsInSync(t *testing.T) {
 			},
 		},
 		{
-			description: "out of sync, source is nil",
+			description: "out of sync, Source is nil",
 			record2: Record{
 				"k1": 1,
 				"k2": "abc",
@@ -110,8 +115,8 @@ func TestComparator_IsInSync(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		comparator := NewComparator(log, useCase.columns...)
-		actual := comparator.IsInSync(useCase.record1, useCase.record2)
+		comparator := NewComparator(&strategy.Diff{Columns:useCase.columns})
+		actual := comparator.IsInSync(ctx, useCase.record1, useCase.record2)
 		assert.EqualValues(t, useCase.expect, actual, useCase.description)
 	}
 
@@ -119,7 +124,6 @@ func TestComparator_IsInSync(t *testing.T) {
 
 func TestComparator_IsSimilar(t *testing.T) {
 
-	var log = func(message string) {}
 	var useCases = []struct {
 		description string
 		key         string
@@ -172,7 +176,7 @@ func TestComparator_IsSimilar(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		comparator := NewComparator(log, useCase.column)
+		comparator := NewComparator(&strategy.Diff{Columns:[]*diff.Column{useCase.column}})
 		actual := comparator.IsSimilar(useCase.key, useCase.value1, useCase.value2)
 		assert.EqualValues(t, useCase.expect, actual, useCase.description)
 	}

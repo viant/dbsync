@@ -1,7 +1,7 @@
 package data
 
 import (
-	"dbsync/sync/sql/diff"
+	"dbsync/sync/model/strategy/diff"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -50,7 +50,7 @@ func TestSignature_ValidateIDConsistency(t *testing.T) {
 				"cnt": 10,
 				fmt.Sprintf(diff.AliasUniqueIDCountTemplate, "id"):    8,
 			},
-			error: "unique column has NULL values",
+			error: "unique column has NULL Source",
 		},
 
 
@@ -62,7 +62,7 @@ func TestSignature_ValidateIDConsistency(t *testing.T) {
 				fmt.Sprintf(diff.AliasUniqueIDCountTemplate, "id"):  10,
 				fmt.Sprintf(diff.AliasNonNullIDCountTemplate, "id"): 10,
 			},
-			error: "unique column has NULL values",
+			error: "unique column has NULL Source",
 		},
 		{
 			description: "record ID inconsistent - ID duplicates",

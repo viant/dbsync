@@ -1,7 +1,9 @@
 package data
 
 import (
-	"dbsync/sync/sql/diff"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/model/strategy/diff"
+	"dbsync/sync/shared"
 	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
@@ -11,22 +13,20 @@ import (
 //Comparator represent record comparator
 type Comparator struct {
 	columns map[string]*diff.Column
-	log func(message string)
 }
 
-//AreKeysInSync returns true if key of both source and dest are in sync
-func (c *Comparator) AreKeysInSync(keys []string, record1, record2 Record) bool {
+//AreKeysInSync returns true if key of both Source and dest are in sync
+func (c *Comparator) AreKeysInSync(ctx *shared.Context, keys []string, record1, record2 Record) bool {
 	for _, key := range keys {
-		if ! c.IsKeyInSync(key, record1, record2) {
+		if ! c.IsKeyInSync(ctx, key, record1, record2) {
 			return false
 		}
 	}
 	return true
 }
 
-
-//IsKeyInSync returns true if key of both source and dest are in sync
-func (c *Comparator) IsKeyInSync(key string, record1, record2 Record) bool {
+//IsKeyInSync returns true if key of both Source and dest are in sync
+func (c *Comparator) IsKeyInSync(ctx *shared.Context, key string, record1, record2 Record) bool {
 	value1 := record1[key]
 	value2, ok := record2[key]
 	if ! ok {
@@ -38,12 +38,12 @@ func (c *Comparator) IsKeyInSync(key string, record1, record2 Record) bool {
 	if c.IsSimilar(key, value1, value2) {
 		return true
 	}
-	c.log(fmt.Sprintf("difference at %v: %v != %v\n", key, value1, value2))
+	ctx.Log(fmt.Sprintf("difference at %v: %v != %v\n", key, value1, value2))
 	return false
 }
 
-//IsInSync returns true if source and dest are in sync
-func (c *Comparator) IsInSync(record1, record2 Record) bool {
+//IsInSync returns true if Source and dest are in sync
+func (c *Comparator) IsInSync(ctx *shared.Context, record1, record2 Record) bool {
 	if record1 == nil {
 		return record2 == nil 
 	}
@@ -52,7 +52,7 @@ func (c *Comparator) IsInSync(record1, record2 Record) bool {
 	}
 	AlignRecord(record1, record2)
 	for key := range record1 {
-		if ! c.IsKeyInSync(key, record1, record2) {
+		if ! c.IsKeyInSync(ctx, key, record1, record2) {
 			return false
 		}
 	}
@@ -84,15 +84,11 @@ func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
 
 
 //NewComparator creates a new comparator
-func NewComparator(log func(message string), columns ... *diff.Column) *Comparator{
-	if log == nil {
-		log = func(message string) {}
-	}
+func NewComparator(strategy *strategy.Diff) *Comparator{
 	result := &Comparator{
-		log:log,
 		columns:make(map[string]*diff.Column),
 	}
-	for _, column := range columns {
+	for _, column := range strategy.Columns {
 		result.columns[strings.ToLower(column.Name)] = column
 	}
 	return result

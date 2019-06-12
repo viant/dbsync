@@ -24,7 +24,7 @@ func (r Router) api() http.Handler {
 	router := toolbox.NewServiceRouter(
 		toolbox.ServiceRouting{
 			HTTPMethod: "POST",
-			URI:        fmt.Sprintf("%v/sync", baseURI),
+			URI:        fmt.Sprintf("%v/sync1", baseURI),
 			Handler:    r.service.Sync,
 			Parameters: []string{"request"},
 		},

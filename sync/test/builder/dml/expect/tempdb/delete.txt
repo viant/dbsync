@@ -1,1 +1,0 @@
-DELETE FROM events  WHERE (id) NOT IN (SELECT id FROM transfer.events_tmp)

@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"dbsync/sync/contract"
 	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
@@ -10,14 +11,11 @@ import (
 	"time"
 )
 
-const (
-	transferURL       = "http://%v/v1/api/transfer"
-	transferStatusURL = "http://%v/v1/api/task/"
-)
 
-//Service represents a sync service
+
+//Service represents a sync1 service
 type Service interface {
-	//Sync sync source with destination
+	//Sync sync1 source with destination
 	Sync(request *Request) *Response
 	//ListJobs list active jobs
 	ListJobs(request *JobListRequest) *JobListResponse
@@ -73,19 +71,38 @@ func (s *service) Sync(request *Request) *Response {
 	s.mutex.Unlock()
 	if job != nil && job.Status == StatusRunning {
 		response.Status = StatusError
-		response.Error = "previous sync is running"
+		response.Error = "previous sync1 is running"
 		return response
 	}
 
 	if request.Async {
-		go s.sync(request, response)
+		go s.sync1(request, response)
 	} else {
-		s.sync(request, response)
+		s.sync1(request, response)
 	}
 	return response
 }
 
-func (s *service) sync(request *Request, response *Response) {
+func (s *service) sync(request *contract.Request, response *contract.Response) error {
+	err := request.Init()
+	if err == nil {
+		if err = request.Validate(); err == nil {
+			session := NewSession(request.Sync)
+			if err = session.Init(); err == nil {
+				defer func() { _ = session.Close() }()
+				if err = session.Partitioner.Build();err ==nil {
+					err = 	session.Partitioner.Sync()
+				}
+			}
+		}
+	}
+	return err
+}
+
+
+
+
+func (s *service) sync1(request *Request, response *Response) {
 	if err := request.Init(); response.SetError(err) {
 		log.Print(err)
 		return
@@ -96,13 +113,13 @@ func (s *service) sync(request *Request, response *Response) {
 		return
 	}
 
-	session, err := NewSession(request, response, s.Config)
+	session, err := NewSession1(request, response, s.Config)
 	if response.SetError(err) {
 		log.Print(err)
 		return
 	}
 
-	log.Printf("[%v] starting %v sync\n", request.ID(), request.Table)
+	log.Printf("[%v] starting %v sync1\n", request.ID(), request.Table)
 	defer func() {
 		session.Job.Update()
 		log.Printf("[%v] changed: %v, processed: %v, time taken %v ms\n", request.ID(), session.Job.Progress.SourceCount, session.Job.Progress.Transferred, int(session.Job.Elapsed/time.Millisecond))
@@ -142,7 +159,7 @@ func (s *service) sync(request *Request, response *Response) {
 	session.SetStatus(StatusDone)
 }
 
-func (s *service) buildPartitions(session *Session) error {
+func (s *service) buildPartitions(session *Session1) error {
 	var partitionsRecords = make([]map[string]interface{}, 0)
 	if session.Request.Partition.ProviderSQL != "" {
 		session.Job.Stage = "reading partitions"
@@ -172,7 +189,8 @@ func (s *service) buildPartitions(session *Session) error {
 	return nil
 }
 
-func (s *service) createTransientDest(session *Session, suffix string) error {
+
+func (s *service) createTransientDest(session *Session1, suffix string) error {
 	if suffix == "" {
 		return fmt.Errorf("suffix was empty")
 	}
@@ -195,7 +213,7 @@ func (s *service) createTransientDest(session *Session, suffix string) error {
 	return err
 }
 
-func (s *service) transferDataWithRetries(session *Session, transferJob *TransferJob) error {
+func (s *service) transferDataWithRetries(session *Session1, transferJob *TransferJob) error {
 	var err error
 
 	for transferJob.Attempts < transferJob.MaxRetries {
@@ -213,7 +231,7 @@ func (s *service) transferDataWithRetries(session *Session, transferJob *Transfe
 	return err
 }
 
-func (s *service) transferData(session *Session, transferJob *TransferJob) error {
+func (s *service) transferData(session *Session1, transferJob *TransferJob) error {
 	if err := s.createTransientDest(session, transferJob.Suffix); err != nil {
 		return err
 	}
@@ -232,14 +250,17 @@ func (s *service) transferData(session *Session, transferJob *TransferJob) error
 	}
 	if response.Status == StatusDone {
 		if response != nil && response.WriteCount > 0 {
-			transferJob.SetTransferredCount(response.WriteCount)
+			transferJob.SetTransferred(response.WriteCount)
 		}
 		return nil
 	}
 	return waitForSync(response.TaskID, transferJob)
 }
 
-func (s *service) transferDataChunks(session *Session, partition *Partition) {
+
+
+
+func (s *service) transferDataChunks(session *Session1, partition *Partition) {
 	index := 0
 	for !session.IsClosed() {
 		if index >= partition.ChunkSize() {
@@ -258,7 +279,9 @@ func (s *service) transferDataChunks(session *Session, partition *Partition) {
 	}
 }
 
-func (s *service) transferDataChunk(session *Session, partition *Partition, index int) {
+
+
+func (s *service) transferDataChunk(session *Session1, partition *Partition, index int) {
 	defer partition.WaitGroup.Done()
 	defer func() { <-partition.channel }()
 	chunk := partition.Chunk(index)
@@ -287,12 +310,14 @@ func (s *service) transferDataChunk(session *Session, partition *Partition, inde
 	}
 }
 
-func (s *service) removeInconsistency(session *Session, chunk *Chunk, partition *Partition) error {
+
+
+func (s *service) removeInconsistency(session *Session1, chunk *Chunk, partition *Partition) error {
 	return s.deleteData(session, chunk.Suffix, chunk.Criteria)
 }
 
-//appendNewRecords removed all record from transient table that exist in dest, then appends only new
-func (s *service) appendNewRecords(session *Session, suffix string, criteria map[string]interface{}) error {
+//dedupeAppend removed all record from transient table that exist in dest, then appends only new
+func (s *service) appendNewRecords(session *Session1, suffix string, criteria map[string]interface{}) error {
 	DML := session.Builder.transientDeleteDML(suffix, criteria)
 	session.Log(nil, fmt.Sprintf("DML(transient):\n\t%v", DML))
 	if _, err := session.DestDB.Execute(DML); err != nil {
@@ -301,7 +326,7 @@ func (s *service) appendNewRecords(session *Session, suffix string, criteria map
 	return s.appendData(session, suffix, "")
 }
 
-func (s *service) mergeData(session *Session, suffix string, criteria map[string]interface{}) error {
+func (s *service) mergeData(session *Session1, suffix string, criteria map[string]interface{}) error {
 	if session.Request.AppendOnly {
 		return s.appendNewRecords(session, suffix, criteria)
 	}
@@ -315,13 +340,13 @@ func (s *service) mergeData(session *Session, suffix string, criteria map[string
 	return err
 }
 
-func (s *service) mergePartitionData(session *Session, partition *Partition) error {
+func (s *service) mergePartitionData(session *Session1, partition *Partition) error {
 	session.Partitions.Lock()
 	defer session.Partitions.Unlock()
 	return s.mergeData(session, partition.Suffix, partition.criteria)
 }
 
-func (s *service) appendData(session *Session, sourceSuffix, destSuffix string) error {
+func (s *service) appendData(session *Session1, sourceSuffix, destSuffix string) error {
 	DML := session.Builder.AppendDML(sourceSuffix, destSuffix)
 	session.Log(nil, fmt.Sprintf("DML(append):\n\t%v", DML))
 	var err error
@@ -331,7 +356,7 @@ func (s *service) appendData(session *Session, sourceSuffix, destSuffix string) 
 	return err
 }
 
-func (s *service) dropTable(session *Session, table string) error {
+func (s *service) dropTable(session *Session1, table string) error {
 	dialect := dsc.GetDatastoreDialect(session.DestDB.Config().DriverName)
 	dbName, _ := dialect.GetCurrentDatastore(session.DestDB)
 
@@ -341,11 +366,11 @@ func (s *service) dropTable(session *Session, table string) error {
 	return dialect.DropTable(session.DestDB, dbName, table)
 }
 
-func (s *service) deletePartitionData(session *Session, partition *Partition) error {
+func (s *service) deletePartitionData(session *Session1, partition *Partition) error {
 	return s.deleteData(session, partition.Suffix, partition.criteria)
 }
 
-func (s *service) deleteData(session *Session, suffix string, criteria map[string]interface{}) error {
+func (s *service) deleteData(session *Session1, suffix string, criteria map[string]interface{}) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	DML, err := session.Builder.DML(DMLDelete, suffix, criteria)
@@ -357,7 +382,9 @@ func (s *service) deleteData(session *Session, suffix string, criteria map[strin
 	return err
 }
 
-func (s *service) getPartitionSyncInfo(session *Session, partition *Partition, optimizeSync bool) (*Info, error) {
+
+
+func (s *service) getPartitionSyncInfo(session *Session1, partition *Partition, optimizeSync bool) (*Info, error) {
 	if partition.Info != nil {
 		return partition.Info, nil
 	}
@@ -378,11 +405,11 @@ func (s *service) getPartitionSyncInfo(session *Session, partition *Partition, o
 	return partition.Info, nil
 }
 
-func (s *service) syncDataPartitions(session *Session) error {
+func (s *service) syncDataPartitions(session *Session1) error {
 	optimizeSync := !session.Request.Force
 
 	if optimizeSync {
-		session.Job.Stage = "batching partitions sync status"
+		session.Job.Stage = "batching partitions sync1 status"
 		if err := session.BatchSyncInfo(); err != nil {
 			return err
 		}
@@ -430,9 +457,9 @@ func (s *service) syncDataPartitions(session *Session) error {
 	return nil
 }
 
-func (s *service) syncTransferred(session *Session, partition *Partition) error {
+func (s *service) syncTransferred(session *Session1, partition *Partition) error {
 	var err error
-	session.Log(partition, fmt.Sprintf("sync method: %v", partition.Method))
+	session.Log(partition, fmt.Sprintf("sync1 method: %v", partition.Method))
 	if !session.isBatchedChunk {
 		return nil
 	}
@@ -456,7 +483,7 @@ func (s *service) syncTransferred(session *Session, partition *Partition) error 
 	return err
 }
 
-func (s *service) syncDataPartition(session *Session, partition *Partition) error {
+func (s *service) syncDataPartition(session *Session1, partition *Partition) error {
 	if err := s.createTransientDest(session, partition.Suffix); err != nil {
 		return err
 	}
@@ -465,7 +492,7 @@ func (s *service) syncDataPartition(session *Session, partition *Partition) erro
 	return s.transferDataWithRetries(session, transferJob)
 }
 
-func (s *service) syncDataPartitionWithChunks(session *Session, partition *Partition) error {
+func (s *service) syncDataPartitionWithChunks(session *Session1, partition *Partition) error {
 	var err error
 	if err = s.createTransientDest(session, partition.Suffix); err != nil {
 		return err

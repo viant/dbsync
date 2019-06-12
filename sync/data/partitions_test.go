@@ -1,24 +1,31 @@
 package data
 
 import (
-	"dbsync/sync/method"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/shared"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/assertly"
+	"github.com/viant/toolbox"
 	"testing"
 )
 
 func TestPartitions_Validate(t *testing.T) {
+
+
+	ctx := &shared.Context{}
+
 	var useCases = []struct {
 		description string
-		strategy    *method.Strategy
+		strategy    *strategy.Strategy
 		source      Record
 		dest        Record
 		valid       bool
 	}{
 		{
 			description: "valid partition records",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"group"},
 				},
 				IDColumns: []string{"id"},
@@ -35,8 +42,8 @@ func TestPartitions_Validate(t *testing.T) {
 		},
 		{
 			description: "valid partition - no partition columns",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{},
 				},
 				IDColumns: []string{"id"},
@@ -50,9 +57,9 @@ func TestPartitions_Validate(t *testing.T) {
 			valid:true,
 		},
 		{
-			description: "invalid partition values",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			description: "invalid partition Source",
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"group"},
 				},
 				IDColumns: []string{"id"},
@@ -69,9 +76,9 @@ func TestPartitions_Validate(t *testing.T) {
 		},
 	}
 	for _, useCase := range useCases {
-		comparator := NewComparator(nil, useCase.strategy.Diff.Columns...)
+		comparator := NewComparator(strategy.NewDiff(useCase.strategy.Diff.Columns...))
 		partitions := NewPartitions([]*Partition{}, useCase.strategy)
-		err := partitions.Validate(comparator, useCase.source, useCase.dest)
+		err := partitions.Validate(ctx, comparator, useCase.source, useCase.dest)
 		if useCase.valid {
 			assert.Nil(t, err, useCase.description)
 			continue
@@ -84,15 +91,15 @@ func TestPartitions_Validate(t *testing.T) {
 func TestPartitions_Range(t *testing.T) {
 	var useCases = []struct {
 		description      string
-		strategy         *method.Strategy
+		strategy         *strategy.Strategy
 		partitionValues  Records
 		errorAfterRepeat int
 		expectCount      int
 	}{
 		{
 			description: "range with 4 repeats (single thread)",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1"},
 				},
 				IDColumns: []string{"id"},
@@ -108,8 +115,8 @@ func TestPartitions_Range(t *testing.T) {
 
 		{
 			description: "range with 4 repeats (2 threads)",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1"},
 					Threads: 2,
 				},
@@ -126,8 +133,8 @@ func TestPartitions_Range(t *testing.T) {
 
 		{
 			description: "error - range with 4 repeats (2 threads)",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1"},
 					Threads: 2,
 				},
@@ -172,14 +179,14 @@ func TestPartitions_Init(t *testing.T) {
 
 	var useCases = []struct {
 		description     string
-		strategy        *method.Strategy
+		strategy        *strategy.Strategy
 		partitionValues Records
 		expectIndex     []string
 	}{
 		{
 			description: "no partition data",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1", "k5", "k3"},
 				},
 				IDColumns: []string{"id"},
@@ -187,8 +194,8 @@ func TestPartitions_Init(t *testing.T) {
 		},
 		{
 			description: "partition empty data",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1", "k5", "k3"},
 				},
 				IDColumns: []string{"id"},
@@ -199,8 +206,8 @@ func TestPartitions_Init(t *testing.T) {
 		},
 		{
 			description: "single key index",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1"},
 				},
 				IDColumns: []string{"id"},
@@ -213,8 +220,8 @@ func TestPartitions_Init(t *testing.T) {
 		},
 		{
 			description: "multi key index",
-			strategy: &method.Strategy{
-				Partition: method.Partition{
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
 					Columns: []string{"k1", "k10"},
 				},
 				IDColumns: []string{"id"},
@@ -243,3 +250,55 @@ func TestPartitions_Init(t *testing.T) {
 		}
 	}
 }
+
+
+func TestPartitions_BatchCriteria(t *testing.T) {
+
+	var useCases = []struct {
+		description     string
+		strategy        *strategy.Strategy
+		partitionValues Records
+		expect     interface{}
+	}{
+		{
+			description: "single key index with 2 item batch criteria",
+			strategy: &strategy.Strategy{
+				Partition: strategy.Partition{
+					Columns: []string{"k1"},
+					BatchSize:2,
+				},
+				Diff:strategy.Diff{
+					BatchSize:2,
+				},
+				IDColumns: []string{"id"},
+			},
+			partitionValues: Records{
+				Record{"k1": 1},
+				Record{"k1": 2},
+				Record{"k1": 3},
+			},
+			expect: `[
+	{
+		"k1": [1,2]
+	},
+	{
+		"k1": [3]
+	}
+]`,
+		},
+
+	}
+
+	for _, useCase := range useCases {
+		var args= make([]*Partition, len(useCase.partitionValues))
+		for i := range args {
+			args[i] = NewPartition(useCase.strategy, useCase.partitionValues[i])
+		}
+		partitions := NewPartitions(args, useCase.strategy)
+		partitions.Init()
+		criteria := partitions.Criteria()
+		if ! assertly.AssertValues(t, useCase.expect, criteria, useCase.description) {
+			_= toolbox.DumpIndent(criteria, true)
+		}
+	}
+	}

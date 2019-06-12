@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-//Stats represents past sync statistics
+//Stats represents past sync1 statistics
 type Stats struct {
 	maxHistory int
 	ID         string
@@ -20,7 +20,7 @@ type StatRegistry struct {
 	mux        *sync.Mutex
 }
 
-//RunStat represents sync stats
+//RunStat represents sync1 stats
 type RunStat struct {
 	StartTime            time.Time
 	EndTime              time.Time
@@ -30,10 +30,12 @@ type RunStat struct {
 	Transferred          int
 	Methods              map[string]int
 	PartitionTransferred int
+	ChunkTransferred     int
 	Error                string
 }
 
-//Add add sync stat
+
+//Add add sync1 stat
 func (s *Stats) Add(syncStat *RunStat) {
 	s.mux.Lock()
 	defer s.mux.Unlock()

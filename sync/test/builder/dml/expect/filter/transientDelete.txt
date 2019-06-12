@@ -1,3 +1,0 @@
-DELETE FROM events_tmp
-WHERE event_type >= 13 AND (id) IN (SELECT id FROM events t
-WHERE event_type >= 13)

@@ -1,4 +1,0 @@
-SELECT COUNT(1) AS count_value,
-	MIN(id) AS min_value,
-	MAX(id) AS max_value
-FROM events_tmp t

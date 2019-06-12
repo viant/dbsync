@@ -1,9 +1,0 @@
-SELECT
-  MIN(ID) AS MIN_VALUE,
-  MAX(ID) AS MAX_VALUE,
-  COUNT(1) AS COUNT_VALUE
-FROM (
-      SELECT   /*+ INDEX_ASC(t PK_ID)*/ ID
-      FROM events t
-      WHERE ROWNUM <= 20
-) t

@@ -1,9 +1,0 @@
-SELECT COUNT(1) AS count_value,
-	MIN(id) AS min_value,
-	MAX(id) AS max_value
-FROM (
-SELECT id
-FROM events t  WHERE id  > 30
-ORDER BY id
-LIMIT 20
-) t

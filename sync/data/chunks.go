@@ -1,38 +1,88 @@
 package data
 
 import (
-	"dbsync/sync/method"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/shared"
 	"sync"
+	"time"
 )
 
-//Chunks represents chunks
+//Chunks represents chunksChan
 type Chunks struct {
-	strategy *method.Chunk
-	chunks   []*Chunk
-	channel  chan bool
-	mux      *sync.Mutex
+	strategy   *strategy.Chunk
+	chunks     []*Chunk
+	chunksChan chan *Chunk
+	closeChan  chan bool
+	*sync.WaitGroup
+	*sync.Mutex
 }
 
-//ChunkSize returns chunk size
+//ChunkSize returns chunks size
+func (c *Chunks) Range(handler func(chunk *Chunk) error) error {
+	for i := range c.chunks {
+		chunk := c.chunks[i]
+		if err := handler(chunk); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+
+func (c *Chunks) Take(ctx *shared.Context) *Chunk {
+	select {
+	case chunk := <-c.chunksChan:
+		return chunk
+	case <-c.closeChan:
+		return nil
+
+	}
+}
+
+
+func (c *Chunks) CloseOffer() {
+	for i := 0; i < c.strategy.Threads; i++ {
+		select {
+		case c.closeChan <- true:
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+}
+
+
+func (c *Chunks) Close() {
+	close(c.closeChan)
+	close(c.chunksChan)
+}
+
+
+//ChunkSize returns chunks size
 func (c *Chunks) ChunkSize() int {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	return len(c.chunks)
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	result := len(c.chunks)
+	return result
 }
 
-//Add adds a chunk
-func (c *Chunks) Add(chunk *Chunk) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
+//Add adds a chunks
+func (c *Chunks) Offer(chunk *Chunk) {
+	c.chunksChan <- chunk
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
 	c.chunks = append(c.chunks, chunk)
 }
 
-//NewChunks creates a new chunks
-func NewChunks(strategy *method.Chunk) *Chunks {
+//NewChunks creates a new chunksChan
+func NewChunks(strategy *strategy.Chunk) *Chunks {
+	if strategy.Threads == 0 {
+		strategy.Threads = 1
+	}
+	threads := strategy.Threads
 	return &Chunks{
-		strategy: strategy,
-		chunks:   make([]*Chunk, 0),
-		channel:  make(chan bool, strategy.Size),
-		mux:      &sync.Mutex{},
+		strategy:   strategy,
+		Mutex:&sync.Mutex{},
+		WaitGroup:  &sync.WaitGroup{},
+		chunksChan: make(chan *Chunk, (2*threads)+1),
+		closeChan:  make(chan bool, threads),
 	}
 }

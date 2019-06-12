@@ -14,7 +14,7 @@ require (
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/stretchr/testify v1.3.0
 	github.com/viant/asc v0.5.0
-	github.com/viant/assertly v0.4.8 // indirect
+	github.com/viant/assertly v0.4.8
 	github.com/viant/bgc v0.7.0
 	github.com/viant/dsc v0.10.1
 	github.com/viant/dsunit v0.8.1

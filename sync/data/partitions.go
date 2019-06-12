@@ -1,30 +1,77 @@
 package data
 
 import (
-	"dbsync/sync/method"
+	"dbsync/sync/criteria"
+	"dbsync/sync/model/strategy"
+	"dbsync/sync/shared"
 	"fmt"
 	"sync"
 )
 
 //Partitions represents partitions
 type Partitions struct {
-	*method.Strategy
-	values          []*Partition
+	*strategy.Strategy
+	Source          []*Partition
+	Dest            []*Partition
+	CrossResource   bool
 	index           map[string]*Partition
 	throttleChannel chan bool
 	*sync.Mutex
 	*sync.WaitGroup
 }
 
-
 //Get returns partition for supplied key
 func (p *Partitions) Get(key string) (*Partition) {
 	return p.index[key]
 }
 
+
+//Get returns partition for supplied key
+func (p *Partitions) BatchTransferable() *Transferable {
+	result := &Transferable{
+		Suffix:shared.TransientTableSuffix,
+		Method:shared.SyncMethodInsert,
+		Status: &Status{
+			Source:&Signature{},
+			Dest:&Signature{},
+		},
+	}
+	partitions := p.Source
+	for i:=0;i<len(partitions);i++ {
+		transferable := partitions[i].Transferable
+		if transferable.ShouldDelete() {
+			continue
+		}
+		if transferable.Method != shared.SyncMethodMerge {
+			result.Method = transferable.Method
+		}
+		if transferable.Status == nil {
+			continue
+		}
+		result.Source.CountValue = result.Source.Count() + transferable.Source.Count()
+	}
+	return result
+}
+
+
+func (p *Partitions) Criteria() []map[string]interface{} {
+
+	batch := criteria.NewBatch(p.Strategy.Diff.BatchSize)
+
+	_ = p.Range(func(partition *Partition) error {
+		batch.Add(partition.Filter)
+		return nil
+	})
+	result := batch.Get()
+	if len(result) == 0 {
+		result = append(result, map[string]interface{}{})
+	}
+	return result
+}
+
 //Range range over partition
 func (p *Partitions) Range(handler func(partition *Partition) error) error {
-	partitions := p.values
+	partitions := p.Source
 	for i := range partitions {
 		p.Add(1)
 		p.throttleChannel <- true
@@ -36,7 +83,7 @@ func (p *Partitions) Range(handler func(partition *Partition) error) error {
 	}
 
 	p.Wait()
-	for _, partition := range p.values {
+	for _, partition := range p.Source {
 		if partition.err != nil {
 			return partition.err
 		}
@@ -44,13 +91,16 @@ func (p *Partitions) Range(handler func(partition *Partition) error) error {
 	return nil
 }
 
-//Validate checks if partition value for source and dest are valid
-func (p *Partitions) Validate(comparator *Comparator, source, dest Record) error {
+//Validate checks if partition value for Source and dest are valid
+func (p *Partitions) Validate(ctx *shared.Context, comparator *Comparator, source, dest Record) error {
 	keys := p.Partition.Columns
 	if len(keys) == 0 {
 		return nil
 	}
-	if ! comparator.AreKeysInSync(keys, source, dest) {
+	if len(dest) == 0 {
+		return nil
+	}
+	if ! comparator.AreKeysInSync(ctx, keys, source, dest) {
 		return fmt.Errorf("inconsistent partition value: %v, src: %v, dest:%v", keys, source.Index(keys), dest.Index(keys))
 	}
 	return nil
@@ -61,31 +111,48 @@ func (p *Partitions) Key(record Record) string {
 	return record.Index(p.Strategy.Partition.Columns)
 }
 
-//Init indexes partitions values
+//Keys returns all partition keys
+func (p *Partitions) Keys() []string {
+	var result = make([]string, 0)
+	for k := range p.index {
+		result = append(result, k)
+	}
+	return result
+}
+
+//Init indexes partitions Source
 func (p *Partitions) Init() {
-	partitionValues := p.values
-	if len(p.values) == 0 || len(partitionValues[0].Values) == 0 {
+	partitionValues := p.Source
+	if len(p.Source) == 0 || len(partitionValues[0].Filter) == 0 {
 		return
 	}
-	for _, partitionValue := range partitionValues {
-		key := p.Key(partitionValue.Values)
-		p.index[key] = partitionValue
+	for i := range partitionValues {
+		partition := partitionValues[i]
+		partition.Init()
+		key := p.Key(partition.Filter)
+		p.index[key] = partition
 	}
 }
 
 
+
 //NewPartitions creates a new partitions
-func NewPartitions(values []*Partition, strategy *method.Strategy) *Partitions {
+func NewPartitions(source []*Partition, strategy *strategy.Strategy) *Partitions {
+	if len(source) == 0 {
+		partition := NewPartition(strategy, Record{})
+		source = []*Partition{partition}
+	}
 	threads := strategy.Partition.Threads
 	if threads == 0 {
+		strategy.Partition.Threads = 1
 		threads = 1
 	}
 	return &Partitions{
-		Strategy:        strategy,
-		values:          values,
-		throttleChannel: make(chan bool, threads),
-		Mutex:           &sync.Mutex{},
-		index:           make(map[string]*Partition),
-		WaitGroup:       &sync.WaitGroup{},
+		Strategy:          strategy,
+		Source:            source,
+		throttleChannel:   make(chan bool, threads),
+		Mutex:             &sync.Mutex{},
+		index:             make(map[string]*Partition),
+		WaitGroup:         &sync.WaitGroup{},
 	}
 }

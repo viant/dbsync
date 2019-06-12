@@ -1,1 +1,0 @@
-SELECT COUNT(1) AS count_value FROM events t
