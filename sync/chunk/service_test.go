@@ -1,8 +1,9 @@
 package chunk
 
 import (
+	"dbsync/sync/core"
 	"dbsync/sync/dao"
-	"dbsync/sync/data"
+	"dbsync/sync/jobs"
 	"dbsync/sync/model"
 	"dbsync/sync/model/strategy/pseudo"
 	"dbsync/sync/shared"
@@ -18,6 +19,7 @@ import (
 )
 
 var chunkerTestConfig *dsc.Config
+var jobService jobs.Service
 
 func init() {
 	parent := toolbox.CallerDirectory(3)
@@ -26,6 +28,7 @@ func init() {
 		Descriptor: path.Join(parent, "test/db/mydb"),
 	}
 	_ = chunkerTestConfig.Init()
+	jobService = jobs.New()
 }
 
 func TestChunker_Build(t *testing.T) {
@@ -46,15 +49,15 @@ func TestChunker_Build(t *testing.T) {
 		expectCount      int
 		expectInSync     int
 		expect           interface{}
-		partitionStatus *data.Status
+		partitionStatus *core.Status
 	}{
 
 		{
 			description:      "insert",
 			chunkSize:        5,
-			partitionStatus: &data.Status{
-				Source:&data.Signature{MinValue:1, MaxValue:11, CountValue:11},
-				Dest:&data.Signature{MinValue:0, MaxValue:0, CountValue:0},
+			partitionStatus: &core.Status{
+				Source:&core.Signature{MinValue: 1, MaxValue:11, CountValue:11},
+				Dest:&core.Signature{MinValue: 0, MaxValue:0, CountValue:0},
 			},
 			partitionColumns: []string{"event_type"},
 			caseDataURI:      "insert",
@@ -71,9 +74,9 @@ func TestChunker_Build(t *testing.T) {
 		{
 			description:      "various strategies",
 			chunkSize:        5,
-			partitionStatus: &data.Status{
-				Source:&data.Signature{MinValue:1, MaxValue:11, CountValue:11},
-				Dest:&data.Signature{MinValue:0, MaxValue:0, CountValue:0},
+			partitionStatus: &core.Status{
+				Source:&core.Signature{MinValue: 1, MaxValue:11, CountValue:11},
+				Dest:&core.Signature{MinValue: 0, MaxValue:0, CountValue:0},
 			},
 			partitionColumns: []string{"event_type"},
 			caseDataURI:      "merge",
@@ -90,9 +93,9 @@ func TestChunker_Build(t *testing.T) {
 		{
 			description:      "in sync /append ",
 			chunkSize:        5,
-			partitionStatus: &data.Status{
-				Source:&data.Signature{MinValue:1, MaxValue:11, CountValue:11},
-				Dest:&data.Signature{MinValue:0, MaxValue:0, CountValue:0},
+			partitionStatus: &core.Status{
+				Source:&core.Signature{MinValue: 1, MaxValue:11, CountValue:11},
+				Dest:&core.Signature{MinValue: 0, MaxValue:0, CountValue:0},
 			},
 			partitionColumns: []string{"event_type"},
 			caseDataURI:      "in_sync",
@@ -131,16 +134,16 @@ func TestChunker_Build(t *testing.T) {
 			continue
 		}
 
-		partition := data.NewPartition(&dbSync.Strategy, useCase.filter)
+		partition := core.NewPartition(&dbSync.Strategy, useCase.filter)
 		partition.Status = useCase.partitionStatus
-		chunker := New(dbSync, partition, service, shared.NewMutex())
+		chunker := New(dbSync, partition, service, shared.NewMutex(), jobService)
 		err = chunker.Build(ctx)
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		actualInSync := 0
 		actual := make(map[string]interface{})
-		_ =  partition.Chunks.Range(func(chunk *data.Chunk) error {
+		_ =  partition.Chunks.Range(func(chunk *core.Chunk) error {
 			if chunk.InSync {
 				actualInSync++
 				return nil

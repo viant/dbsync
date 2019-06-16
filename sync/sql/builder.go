@@ -34,7 +34,7 @@ func (b *Builder) Table(suffix string) string {
 	if suffix == "" {
 		return b.table
 	}
-	suffix = shared.NormalizeTableName(suffix)
+	suffix = normalizeTableName(suffix)
 	if b.tempDatabase != "" {
 		return b.tempDatabase + "." + b.table + b.transferSuffix + suffix
 	}
@@ -43,7 +43,7 @@ func (b *Builder) Table(suffix string) string {
 
 //QueryTable returns query table
 func (b *Builder) QueryTable(suffix string, resource *model.Resource) string {
-	suffix = shared.NormalizeTableName(suffix)
+	suffix = normalizeTableName(suffix)
 	if suffix == "" {
 		if resource.From != "" {
 			return fmt.Sprintf("(%s)", resource.From)
@@ -58,7 +58,7 @@ func (b *Builder) QueryTable(suffix string, resource *model.Resource) string {
 
 //DDLAsSelect returns transient table DDL for supplied suffix
 func (b *Builder) DDLFromSelect(suffix string) string {
-	suffix = shared.NormalizeTableName(suffix)
+	suffix = normalizeTableName(suffix)
 	return fmt.Sprintf("CREATE TABLE %v AS SELECT * FROM %v WHERE 1 = 0", b.Table(suffix), b.Table(""))
 }
 
@@ -531,7 +531,7 @@ func (b *Builder) transientDeleteDML(suffix string, filter map[string]interface{
 			whereClause = " WHERE " + inCriteria
 		}
 	}
-	whereClause = shared.RemoveTableAliases(whereClause, "t")
+	whereClause = removeTableAliases(whereClause, "t")
 	return fmt.Sprintf("DELETE FROM %v %v", b.Table(suffix), whereClause)
 }
 
@@ -546,7 +546,7 @@ func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string
 			whereClause = " WHERE " + inCriteria
 		}
 	}
-	whereClause = shared.RemoveTableAliases(whereClause, "t")
+	whereClause = removeTableAliases(whereClause, "t")
 	return fmt.Sprintf("DELETE FROM %v %v", b.Table(""), whereClause)
 }
 

@@ -9,6 +9,7 @@ const defaultDiffBatchSize = 512
 
 //DiffStrategy represents difference signature computation strategy
 type Diff struct {
+	Append           bool `description:"if specified only records where dest.ID > source.ID will be transfer "`
 	Columns          []*diff.Column
 	CountOnly        bool
 	Depth            int `description:"controls detection of data that is similar"`
@@ -35,8 +36,8 @@ func (d *Diff) Init() error {
 }
 
 //NewDiff creates new diff strategy
-func NewDiff(columns ... *diff.Column)*Diff {
+func NewDiff(columns ...*diff.Column) *Diff {
 	return &Diff{
-		Columns:columns,
+		Columns: columns,
 	}
 }

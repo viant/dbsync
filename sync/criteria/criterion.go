@@ -7,6 +7,7 @@ import (
 )
 
 
+//Criterion represents criterion
 type Criterion fmt.Stringer
 
 

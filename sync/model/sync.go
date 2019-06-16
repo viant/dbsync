@@ -4,9 +4,8 @@ import (
 	"dbsync/sync/model/strategy"
 	"dbsync/sync/shared"
 	"fmt"
+	"github.com/viant/toolbox/url"
 )
-
-
 
 type Sync struct {
 	strategy.Strategy `yaml:",inline" json:",inline"`
@@ -17,6 +16,7 @@ type Sync struct {
 	Criteria          map[string]interface{}
 	Schedule          *Schedule
 	Async             bool
+	Debug             bool
 }
 
 //Init initialized Request
@@ -89,8 +89,6 @@ func (r *Sync) Init() error {
 	return nil
 }
 
-
-
 //Validate checks if Request is valid
 func (r *Sync) Validate() error {
 	if r.Source == nil {
@@ -126,4 +124,11 @@ func (r *Sync) Validate() error {
 		return fmt.Errorf("dest: %v", err)
 	}
 	return nil
+}
+
+//NewSyncFromURL returns new sync from URL
+func NewSyncFromURL(URL string) (*Sync, error) {
+	result := &Sync{}
+	resource := url.NewResource(URL)
+	return result, resource.Decode(result)
 }

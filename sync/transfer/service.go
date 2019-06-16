@@ -1,8 +1,8 @@
 package transfer
 
 import (
+	"dbsync/sync/core"
 	"dbsync/sync/dao"
-	"dbsync/sync/data"
 	"dbsync/sync/model"
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
@@ -22,10 +22,11 @@ const (
 
 //Service represents transfer service
 type Service interface {
-	NewRequest(ctx *shared.Context, transferable *data.Transferable) *Request
-
-	Post(ctx *shared.Context, request *Request, transferable *data.Transferable) error
+	NewRequest(ctx *shared.Context, transferable *core.Transferable) *Request
+	Post(ctx *shared.Context, request *Request, transferable *core.Transferable) error
 }
+
+
 
 type service struct {
 	*model.Sync
@@ -50,7 +51,7 @@ func (s *service) destConfig(ctx *shared.Context) *dsc.Config {
 	return result
 }
 
-func (s *service) NewRequest(ctx *shared.Context, transferable *data.Transferable) *Request {
+func (s *service) NewRequest(ctx *shared.Context, transferable *core.Transferable) *Request {
 	DQL := s.Builder.DQL("", s.Source, transferable.Filter, false)
 	suffix := transferable.Suffix
 	if transferable.IsDirect {
@@ -72,11 +73,11 @@ func (s *service) NewRequest(ctx *shared.Context, transferable *data.Transferabl
 		Async:       s.Async,
 		WriterCount: s.Transfer.WriterThreads,
 		BatchSize:   s.Transfer.BatchSize,
-		Mode:        "insert",
+		Mode:        shared.SyncMethodInsert,
 	}
 }
 
-func (s *service) waitForSync(syncTaskID int, transferable *data.Transferable) (error) {
+func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) (error) {
 	statusURL := fmt.Sprintf(transferStatusURL, s.Transfer.EndpointIP)
 	URL := statusURL + fmt.Sprintf("%d", syncTaskID)
 	response := &Response{}
@@ -101,7 +102,8 @@ func (s *service) waitForSync(syncTaskID int, transferable *data.Transferable) (
 	return nil
 }
 
-func (s *service) Post(ctx *shared.Context, request *Request, transferable *data.Transferable) (err error) {
+func (s *service) Post(ctx *shared.Context, request *Request, transferable *core.Transferable) (err error) {
+	transferable.DQL = request.Source.Query
 	if ! transferable.IsDirect {
 		if err = s.dao.CreateTransientTable(ctx, transferable.Suffix); err != nil {
 			return err
@@ -126,7 +128,7 @@ func (s *service) Post(ctx *shared.Context, request *Request, transferable *data
 	return err
 }
 
-func (s *service) post(ctx *shared.Context, request *Request, transferable *data.Transferable) (err error) {
+func (s *service) post(ctx *shared.Context, request *Request, transferable *core.Transferable) (err error) {
 	targetURL := fmt.Sprintf(transferURL, s.Transfer.EndpointIP)
 	ctx.Log(fmt.Sprintf("post: %v\n", targetURL))
 	if ctx.Debug {

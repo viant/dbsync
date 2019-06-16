@@ -417,7 +417,7 @@ func TestService_Signature(t *testing.T) {
 		},
 	}
 
-	ctx := &shared.Context{}
+	ctx := &shared.Context{Debug:false,}
 	for _, useCase := range useCases {
 		sync := &model.Sync{
 			Source: useCase.resource,
@@ -624,7 +624,7 @@ func TestService_ChunkSignature(t *testing.T) {
 
 }
 
-func TestService_CreateTransientTable(t *testing.T) {
+func TestService_RecreateTransientTable(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
 	if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
 
@@ -679,7 +679,7 @@ func TestService_CreateTransientTable(t *testing.T) {
 		service := New(sync)
 		err = service.Init(ctx)
 		assert.Nil(t, err)
-		err = service.CreateTransientTable(ctx, useCase.suffix)
+		err = service.RecreateTransientTable(ctx, useCase.suffix)
 		if useCase.hasError {
 			assert.NotNil(t, err, useCase.description)
 			continue

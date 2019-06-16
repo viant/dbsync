@@ -40,6 +40,11 @@ const (
 	TransientDMLDelete = "transientDelete"
 
 
+	//SyncKindDirect direct king
+	SyncKindDirect = "direct"
+
+	//SyncKindInSync in sync
+	SyncKindInSync = "inSync"
 
 	//SyncMethodInsert insert sync1 method
 	SyncMethodInsert = "insert"

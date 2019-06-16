@@ -2,6 +2,7 @@ package criteria
 
 import "sync"
 
+//BatchMap represents a batch map
 type BatchMap struct {
 	batchSize int
 	mutex     *sync.Mutex
@@ -27,7 +28,7 @@ func (b *BatchMap) Range(handler func(key string, batch *Batch) error) (err erro
 	return err
 }
 
-//Add adds key, value to the bathc
+//add adds key, value to the bathc
 func (b *BatchMap) Add(key string, values map[string]interface{}) {
 	b.mutex.Lock()
 	batchMap, ok := b.items[key]

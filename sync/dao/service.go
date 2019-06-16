@@ -1,8 +1,8 @@
 package dao
 
 import (
+	"dbsync/sync/core"
 	"dbsync/sync/criteria"
-	"dbsync/sync/data"
 	"dbsync/sync/model"
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
@@ -16,15 +16,15 @@ import (
 var SuffixWasEmptyErr = errors.New("suffix was empty")
 
 type Service interface {
-	Partitions(ctx *shared.Context, kind model.ResourceKind) (data.Records, error)
+	Partitions(ctx *shared.Context, kind model.ResourceKind) (core.Records, error)
 
-	Signatures(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (data.Records, error)
+	Signatures(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (core.Records, error)
 
-	Signature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (data.Record, error)
+	Signature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (core.Record, error)
 
-	CountSignature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (*data.Signature, error)
+	CountSignature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (*core.Signature, error)
 
-	ChunkSignature(ctx *shared.Context, kind model.ResourceKind, offset, limit int, filter map[string]interface{}) (*data.Signature, error)
+	ChunkSignature(ctx *shared.Context, kind model.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error)
 
 	ExecSQL(ctx *shared.Context, SQL string) error
 
@@ -68,7 +68,7 @@ func (s *service) Builder() *sql.Builder {
 	return s.builder
 }
 
-func (s *service) Partitions(ctx *shared.Context, kind model.ResourceKind) (data.Records, error) {
+func (s *service) Partitions(ctx *shared.Context, kind model.ResourceKind) (core.Records, error) {
 	dbResource := s.dbResource(kind)
 	return s.partitions(ctx, dbResource)
 
@@ -85,6 +85,7 @@ func (s *service) DropTransientTable(ctx *shared.Context,suffix string) (err err
 			return err
 		}
 	}
+	ctx.Log(fmt.Sprintf("DROP TABLE %v\n", table))
 	dialect := dsc.GetDatastoreDialect(s.dest.DB.Config().DriverName)
 	return dialect.DropTable(s.dest.DB, dbName, table)
 
@@ -99,7 +100,6 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 	if suffix == "" {
 		return SuffixWasEmptyErr
 	}
-	_ = s.DropTransientTable(ctx, suffix)
 	dbName := s.Transfer.TempDatabase
 	if dbName == "" {
 		if dbName, err = s.DbName(ctx, model.ResourceKindDest); err != nil {
@@ -118,8 +118,8 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 	return s.ExecSQL(ctx, DDL)
 }
 
-func (s *service) partitions(ctx *shared.Context, resource *dbResource) (data.Records, error) {
-	result := data.Records{}
+func (s *service) partitions(ctx *shared.Context, resource *dbResource) (core.Records, error) {
+	result := core.Records{}
 	ctx.Log(resource.PartitionSQL)
 	if resource.PartitionSQL == "" {
 		return nil, fmt.Errorf("partitionSQL was empty")
@@ -128,12 +128,12 @@ func (s *service) partitions(ctx *shared.Context, resource *dbResource) (data.Re
 	return result, err
 }
 
-func (s *service) Signatures(ctx *shared.Context,kind model.ResourceKind, filter map[string]interface{}) (data.Records, error) {
+func (s *service) Signatures(ctx *shared.Context,kind model.ResourceKind, filter map[string]interface{}) (core.Records, error) {
 	dbResource := s.dbResource(kind)
 	return s.signatures(ctx, dbResource, filter)
 }
 
-func (s *service) Signature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (data.Record, error) {
+func (s *service) Signature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (core.Record, error) {
 	result, err := s.Signatures(ctx, kind, filter)
 	if err != nil {
 		return nil, err
@@ -146,21 +146,21 @@ func (s *service) Signature(ctx *shared.Context, kind model.ResourceKind, filter
 	return nil, nil
 }
 
-func (s *service) signatures(ctx *shared.Context, dbResource *dbResource, filter map[string]interface{}) (data.Records, error) {
-	result := data.Records{}
+func (s *service) signatures(ctx *shared.Context, dbResource *dbResource, filter map[string]interface{}) (core.Records, error) {
+	result := core.Records{}
 	SQL := s.builder.SignatureDQL(dbResource.Resource, filter)
 	ctx.Log(SQL)
 	err := dbResource.DB.ReadAll(&result, SQL, nil, nil)
 	return result, err
 }
 
-func (s *service) CountSignature(ctx *shared.Context,kind model.ResourceKind, filter map[string]interface{}) (*data.Signature, error) {
+func (s *service) CountSignature(ctx *shared.Context,kind model.ResourceKind, filter map[string]interface{}) (*core.Signature, error) {
 	dbResource := s.dbResource(kind)
 	return s.countSignature(ctx, dbResource, filter)
 }
 
-func (s *service) countSignature(ctx *shared.Context, dbResource *dbResource, filter map[string]interface{}) (*data.Signature, error) {
-	result := &data.Signature{}
+func (s *service) countSignature(ctx *shared.Context, dbResource *dbResource, filter map[string]interface{}) (*core.Signature, error) {
+	result := &core.Signature{}
 	SQL := s.builder.CountDQL("", dbResource.Resource, filter)
 	ctx.Log(SQL)
 	ok, err := dbResource.DB.ReadSingle(result, SQL, nil, nil)
@@ -170,13 +170,13 @@ func (s *service) countSignature(ctx *shared.Context, dbResource *dbResource, fi
 	return result, err
 }
 
-func (s *service) ChunkSignature(ctx *shared.Context,kind model.ResourceKind, offset, limit int, filter map[string]interface{}) (*data.Signature, error) {
+func (s *service) ChunkSignature(ctx *shared.Context,kind model.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error) {
 	dbResource := s.dbResource(kind)
 	return s.chunkSignature(ctx, dbResource, offset, limit, filter)
 }
 
-func (s *service) chunkSignature(ctx *shared.Context, dbResource *dbResource, offset, limit int, filter map[string]interface{}) (*data.Signature, error) {
-	result := &data.Signature{}
+func (s *service) chunkSignature(ctx *shared.Context, dbResource *dbResource, offset, limit int, filter map[string]interface{}) (*core.Signature, error) {
+	result := &core.Signature{}
 	if len(filter) == 0 {
 		filter = map[string]interface{}{}
 	}

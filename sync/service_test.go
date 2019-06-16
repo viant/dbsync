@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"dbsync/sync/shared"
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
 	//_ "github.com/mattn/go-oci8"
@@ -20,7 +21,7 @@ func TestService_Sync(t *testing.T) {
 	if !assert.Nil(t, err) {
 		log.Fatal(err)
 	}
-	service, err := New(&Config{Debug: true})
+	service, err := New(&shared.Config{Debug: true})
 	assert.Nil(t, err)
 	response := service.Sync(request)
 	assert.EqualValues(t, "", response.Error)

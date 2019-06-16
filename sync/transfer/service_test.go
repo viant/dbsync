@@ -103,7 +103,7 @@ func TestService_NewRequest(t *testing.T) {
 		err = srv.Init()
 		assert.Nil(t, err, useCase.description)
 
-		request := srv.NewRequest(ctx, &data.Transferable{
+		request := srv.NewRequest(ctx, &core.Transferable{
 			Suffix: useCase.suffix,
 		})
 		if !assertly.AssertValues(t, useCase.expect, request, useCase.description) {
@@ -228,7 +228,7 @@ func TestService_Post(t *testing.T) {
 		err = srv.Init()
 		assert.Nil(t, err, useCase.description)
 
-		transferable := &data.Transferable{
+		transferable := &core.Transferable{
 			Suffix: useCase.suffix,
 		}
 		request := srv.NewRequest(ctx, transferable)

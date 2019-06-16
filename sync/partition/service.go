@@ -2,10 +2,12 @@ package partition
 
 import (
 	"dbsync/sync/chunk"
+	"dbsync/sync/core"
 	"dbsync/sync/criteria"
 	"dbsync/sync/dao"
-	"dbsync/sync/data"
 	"dbsync/sync/diff"
+	"dbsync/sync/history"
+	"dbsync/sync/jobs"
 	"dbsync/sync/merge"
 	"dbsync/sync/model"
 	"dbsync/sync/model/strategy"
@@ -14,43 +16,55 @@ import (
 	"fmt"
 )
 
+
+type Service interface {
+
+	Build(ctx *shared.Context) error
+
+	Sync(ctx *shared.Context) error
+
+}
+
+
 //service represents partition
 type service struct {
-	Partitions *data.Partitions
+	Partitions *core.Partitions
 	Mutex      *shared.Mutex
-	*data.Comparator
+	*core.Comparator
 	diff.Service
 	Transfer transfer.Service
 	Merger   merge.Service
 	DbSync   *model.Sync
+	job      jobs.Service
+	history  history.Service
 	*strategy.Strategy
 	dao dao.Service
 }
 
 //Build build partition sync status
-func (p *service) Build(ctx *shared.Context) error {
-	if err := p.buildBatched(ctx); err != nil {
+func (s *service) Build(ctx *shared.Context) error {
+	if err := s.buildBatched(ctx); err != nil {
 		return err
 	}
-	return p.buildIndividual(ctx)
+	return s.buildIndividual(ctx)
 }
 
-func (p *service) Sync(ctx *shared.Context) (err error) {
-	if p.Partitions == nil {
+func (s *service) Sync(ctx *shared.Context) (err error) {
+	if s.Partitions == nil {
 		return fmt.Errorf("partitions were empy")
 	}
-	switch p.Partition.SyncMode {
+	switch s.Partition.SyncMode {
 	case shared.SyncModeBatch:
-		err = p.syncInBatches(ctx)
+		err = s.syncInBatches(ctx)
 	default:
-		err = p.syncIndividually(ctx, p.Partitions)
+		err = s.syncIndividually(ctx, s.Partitions)
 	}
 	return err
 }
 
-func (p *service) syncInBatches(ctx *shared.Context) error {
-	batchMap := criteria.NewBatchMap(p.Partition.BatchSize)
-	_ = p.Partitions.Range(func(partition *data.Partition) error {
+func (s *service) syncInBatches(ctx *shared.Context) error {
+	batchMap := criteria.NewBatchMap(s.Partition.BatchSize)
+	_ = s.Partitions.Range(func(partition *core.Partition) error {
 		if partition.Status.InSync {
 			return nil
 		}
@@ -58,60 +72,62 @@ func (p *service) syncInBatches(ctx *shared.Context) error {
 		return nil
 	})
 
-	var partitionData = make([]*data.Partition, 0)
-	counter := 0
+	var partitionData = make([]*core.Partition, 0)
 	_ = batchMap.Range(func(key string, batch *criteria.Batch) error {
 		items := batch.Get()
 		for i := range items {
-			partition := data.NewPartition(p.Strategy, items[i])
-			partition.InitWithMethod(key, fmt.Sprintf("_%03d_%05d", counter, i))
+			partition := core.NewPartition(s.Strategy, items[i])
+			partition.InitWithMethod(key, fmt.Sprintf("_%s%05d", key[0:1], i+1))
 			partitionData = append(partitionData, partition)
-			if source, dest, err := p.Fetch(ctx, items[i]); err == nil {
-				partition.Source = data.NewSignatureFromRecord(p.IDColumn(), source)
-				partition.Dest = data.NewSignatureFromRecord(p.IDColumn(), dest)
+			if source, dest, err := s.Fetch(ctx, items[i]); err == nil {
+				partition.Source = core.NewSignatureFromRecord(s.IDColumn(), source)
+				partition.Dest = core.NewSignatureFromRecord(s.IDColumn(), dest)
 			}
 		}
 		return nil
 	})
-	partitions := data.NewPartitions(partitionData, p.Strategy)
-	return p.syncIndividually(ctx, partitions)
+	partitions := core.NewPartitions(partitionData, s.Strategy)
+	return s.syncIndividually(ctx, partitions)
 }
 
-func (p *service) mergeBatch(ctx *shared.Context, partitions *data.Partitions) (err error) {
+func (s *service) mergeBatch(ctx *shared.Context, partitions *core.Partitions) (err error) {
 	transferable := partitions.BatchTransferable()
-	if err = p.Merger.Merge(ctx, transferable); err == nil {
-		_ = p.dao.DropTransientTable(ctx, shared.TransientTableSuffix)
-	}
-	return err
+	return s.Merger.Merge(ctx, transferable);
 }
 
-func (p *service) syncIndividually(ctx *shared.Context, partitions *data.Partitions) (err error) {
-	isChunked := p.Chunk.Size > 0
-	isBatched := p.Partition.SyncMode == shared.SyncModeBatch
+func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partitions) (err error) {
+	isChunked := s.Chunk.Size > 0
+	isBatched := s.Partition.SyncMode == shared.SyncModeBatch
 
 	if isBatched {
-		if err = p.dao.RecreateTransientTable(ctx, shared.TransientTableSuffix); err != nil {
+		if err = s.dao.RecreateTransientTable(ctx, shared.TransientTableSuffix); err != nil {
 			return err
 		}
 		defer func() {
 			if err == nil {
-				err = p.mergeBatch(ctx, partitions)
+				err = s.mergeBatch(ctx, partitions)
 			}
 		}()
 	}
 
 	//This run with multi go routines
-	err = partitions.Range(func(partition *data.Partition) error {
-		if isChunked {
-			return p.syncPartitionChunks(ctx, partition)
+	err = partitions.Range(func(partition *core.Partition) error {
+		if partition.Status == nil || partition.InSync {
+			return nil
 		}
-		return p.syncPartition(ctx, partition)
+		if partition.InSync {
+			return nil
+		}
+		if isChunked {
+			return s.syncPartitionChunks(ctx, partition)
+		}
+		return s.syncPartition(ctx, partition)
 	})
 	return err
 }
 
-func (p *service) syncPartitionChunks(ctx *shared.Context, partition *data.Partition) (err error) {
-	chunker := chunk.New(p.DbSync, partition, p.dao, p.Mutex)
+func (s *service) syncPartitionChunks(ctx *shared.Context, partition *core.Partition) (err error) {
+	chunker := chunk.New(s.DbSync, partition, s.dao, s.Mutex, s.job)
 	if err = chunker.Init(); err != nil {
 		return err
 	}
@@ -121,36 +137,37 @@ func (p *service) syncPartitionChunks(ctx *shared.Context, partition *data.Parti
 	return chunker.Sync(ctx)
 }
 
-func (p *service) syncPartition(ctx *shared.Context, partition *data.Partition) (err error) {
-	isBatchMode := p.Partition.SyncMode == shared.SyncModeBatch
+func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) (err error) {
+	isBatchMode := s.Partition.SyncMode == shared.SyncModeBatch
 
-	if p.DirectAppend && partition.Transferable.Method == shared.SyncMethodInsert {
+	if s.DirectAppend && partition.Transferable.Method == shared.SyncMethodInsert {
 		partition.Transferable.Suffix = ""
 		partition.IsDirect = true
 	}
-	request := p.Transfer.NewRequest(ctx, &partition.Transferable)
-	if err = p.Transfer.Post(ctx, request, &partition.Transferable); err != nil {
+	request := s.Transfer.NewRequest(ctx, &partition.Transferable)
+	s.job.Get(ctx.ID).Add(&partition.Transferable)
+	if err = s.Transfer.Post(ctx, request, &partition.Transferable); err != nil {
 		return err
 	}
 	if partition.IsDirect {
 		return nil
 	}
-	transferable := partition.Transferable
+	transferable := partition.Transferable.Clone()
 	//Only merge/append can be batched
 	if isBatchMode && ! transferable.ShouldDelete() {
 		transferable.OwnerSuffix = shared.TransientTableSuffix
 		transferable.Method = shared.SyncMethodInsert
 	}
-	return p.Merger.Merge(ctx, &transferable)
+	return s.Merger.Merge(ctx, transferable)
 }
 
-func (p *service) buildBatched(ctx *shared.Context) (err error) {
-	if ! p.IsOptimized() {
+func (s *service) buildBatched(ctx *shared.Context) (err error) {
+	if ! s.IsOptimized() {
 		return nil
 	}
-	partitionsCriteria := p.Partitions.Criteria()
+	partitionsCriteria := s.Partitions.Criteria()
 	for i := range partitionsCriteria {
-		if err := p.buildBatch(ctx, partitionsCriteria[i]); err != nil {
+		if err := s.buildBatch(ctx, partitionsCriteria[i]); err != nil {
 			break
 		}
 	}
@@ -158,60 +175,64 @@ func (p *service) buildBatched(ctx *shared.Context) (err error) {
 }
 
 //build build status to all  partition, ideally al should be done in batch
-func (p *service) buildIndividual(ctx *shared.Context) (err error) {
-	return p.Partitions.Range(func(partition *data.Partition) error {
+func (s *service) buildIndividual(ctx *shared.Context) (err error) {
+	return s.Partitions.Range(func(partition *core.Partition) error {
 		if partition.Status != nil {
 			return nil
 		}
-		source, dest, err := p.Fetch(ctx, partition.Filter)
+		source, dest, err := s.Fetch(ctx, partition.Filter)
 		if err != nil {
 			return err
 		}
-		partition.Status, err = p.Check(ctx, source, dest, partition.Filter)
+		if partition.Status, err = s.Check(ctx, source, dest, partition.Filter); err == nil {
+			partition.Init()
+		}
 		return err
 	})
 }
 
-func (p *service) buildBatch(ctx *shared.Context, filter map[string]interface{}) error {
-	sourceSignatures, err := p.dao.Signatures(ctx, model.ResourceKindSource, filter)
+func (s *service) buildBatch(ctx *shared.Context, filter map[string]interface{}) error {
+	sourceSignatures, err := s.dao.Signatures(ctx, model.ResourceKindSource, filter)
 	if err != nil {
 		return err
 	}
 	if len(sourceSignatures) == 0 {
 		return nil //nothing to sync
 	}
-	destSignatures, err := p.dao.Signatures(ctx, model.ResourceKindDest, filter)
+	destSignatures, err := s.dao.Signatures(ctx, model.ResourceKindDest, filter)
 	if err != nil {
 		return err
 	}
-	data.AlignRecords(sourceSignatures, destSignatures)
-	index, err := p.match(ctx, sourceSignatures, destSignatures)
+	core.AlignRecords(sourceSignatures, destSignatures)
+	index, err := s.match(ctx, sourceSignatures, destSignatures)
 	if err != nil {
 		return err
 	}
-	if err = p.validate(ctx, index); err != nil {
+	if err = s.validate(ctx, index); err != nil {
 		return err
 	}
 
 	for key := range index.Source {
 		source := index.Source[key]
 		dest := index.Dest[key]
-		partition := p.Partitions.Get(key)
+
+		partition := s.Partitions.Get(key)
 		if partition == nil {
 			continue
 		}
-		if partition.Status, err = p.Check(ctx, source, dest, partition.Filter); err != nil {
+		partition.Status, err = s.Check(ctx, source, dest, partition.Filter)
+		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (p *service) validate(ctx *shared.Context, index *data.Index) error {
+func (s *service) validate(ctx *shared.Context, index *core.Index) error {
 	for key := range index.Source {
 		source := index.Source[key]
 		dest := index.Dest[key]
-		if err := p.Partitions.Validate(ctx, p.Comparator, source, dest); err != nil {
+		if err := s.Partitions.Validate(ctx, s.Comparator, source, dest); err != nil {
 			return err
 		}
 	}
@@ -219,14 +240,14 @@ func (p *service) validate(ctx *shared.Context, index *data.Index) error {
 
 }
 
-func (p *service) match(ctx *shared.Context, source, dest data.Records) (*data.Index, error) {
-	result := data.NewIndex()
+func (s *service) match(ctx *shared.Context, source, dest core.Records) (*core.Index, error) {
+	result := core.NewIndex()
 	if len(source) == 1 {
 		result.Source[""] = source[0]
 		result.Dest[""] = dest[0]
 		return result, nil
 	}
-	indexer := data.NewIndexer(p.Partition.Columns)
+	indexer := core.NewIndexer(s.Partition.Columns)
 	index := indexer.Index(source, dest)
 	if hasDest := len(index.Dest) > 0; hasDest {
 		return index, nil
@@ -234,51 +255,54 @@ func (p *service) match(ctx *shared.Context, source, dest data.Records) (*data.I
 
 	//if no even one batch dest has been found, try to get individual dest
 	for key := range index.Source {
-		partition := p.Partitions.Get(key)
+		partition := s.Partitions.Get(key)
 		if partition == nil {
 			continue
 		}
-		if dest, _ := p.dao.Signatures(ctx, model.ResourceKindDest, partition.Filter); len(dest) == 1 {
+		if dest, _ := s.dao.Signatures(ctx, model.ResourceKindDest, partition.Filter); len(dest) == 1 {
 			index.Dest[key] = dest[0]
 		}
 	}
 	return index, nil
 }
 
-func (p *service) Init(ctx *shared.Context) error {
-	if p.Strategy == nil {
+func (s *service) Init(ctx *shared.Context) error {
+	if s.Strategy == nil {
 		return fmt.Errorf("strategy was empty")
 	}
-	return p.loadPartitions(ctx)
+	return s.loadPartitions(ctx)
 }
 
-func (p *service) loadPartitions(ctx *shared.Context) error {
-	var source = make([]*data.Partition, 0)
-	if p.Partition.ProviderSQL != "" {
-		values, err := p.dao.Partitions(ctx, model.ResourceKindSource)
+func (s *service) loadPartitions(ctx *shared.Context) error {
+	var source = make([]*core.Partition, 0)
+	if s.Partition.ProviderSQL != "" {
+		values, err := s.dao.Partitions(ctx, model.ResourceKindSource)
 		if err != nil {
 			return err
 		}
 		for i := range values {
-			source = append(source, data.NewPartition(p.Strategy, values[i]))
+			source = append(source, core.NewPartition(s.Strategy, values[i]))
 		}
 	}
 
 	//TODO load dest partition if SQL defined and detect missing (removed from source - to remove also in dest if present)
-	p.Partitions = data.NewPartitions(source, p.Strategy)
+	s.Partitions = core.NewPartitions(source, s.Strategy)
+	s.Partitions.Init()
 	return nil
 }
 
 //New creates new partition service
-func New(sync *model.Sync, dao dao.Service, mutex *shared.Mutex) *service {
+func New(sync *model.Sync, dao dao.Service, mutex *shared.Mutex, jobbService jobs.Service, historyService history.Service) *service {
 	return &service{
 		dao:        dao,
 		Service:    diff.New(sync, dao),
-		Comparator: data.NewComparator(&sync.Diff),
+		Comparator: core.NewComparator(&sync.Diff),
 		Merger:     merge.New(sync, dao, mutex),
 		Transfer:   transfer.New(sync, dao),
 		DbSync:     sync,
 		Strategy:   &sync.Strategy,
 		Mutex:      mutex,
+		job:        jobbService,
+		history:    historyService,
 	}
 }

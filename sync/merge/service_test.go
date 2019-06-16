@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"dbsync/sync/core"
 	"dbsync/sync/dao"
 	"dbsync/sync/data"
 	"dbsync/sync/model"
@@ -36,7 +37,7 @@ func TestService_Sync(t *testing.T) {
 		caseDataURI  string
 		iDColumns    []string
 		appendOnly   bool
-		transferable *data.Transferable
+		transferable *core.Transferable
 		hasError     bool
 	}{
 
@@ -45,7 +46,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "append_only",
 			appendOnly:  true,
 			iDColumns:   []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "_tmp",
 				Method: shared.SyncMethodInsert,
 			},
@@ -57,7 +58,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "append",
 
 			iDColumns: []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "_tmp",
 				Method: shared.SyncMethodInsert,
 			},
@@ -69,7 +70,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "merge",
 
 			iDColumns: []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "_tmp",
 				Method: shared.SyncMethodMerge,
 			},
@@ -79,7 +80,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "delete_merge",
 
 			iDColumns: []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "_tmp",
 				Method: shared.SyncMethodDeleteMerge,
 				Filter: map[string]interface{}{"id": ">=5"},
@@ -91,7 +92,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "delete_insert",
 
 			iDColumns: []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "_tmp",
 				Method: shared.SyncMethodDeleteInsert,
 				Filter: map[string]interface{}{"id": ">=5"},
@@ -103,7 +104,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "delete_insert_noid_filter",
 
 			iDColumns: []string{},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "_tmp",
 				Method: shared.SyncMethodDeleteInsert,
 				Filter: map[string]interface{}{"id": ">=5"},
@@ -114,7 +115,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "delete_insert_noid",
 
 			iDColumns: []string{},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "_tmp",
 				Method: shared.SyncMethodDeleteInsert,
 				Filter: map[string]interface{}{"id": ">=5"},
@@ -126,7 +127,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "append_only",
 			appendOnly:  true,
 			iDColumns:   []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "",
 				Method: shared.SyncMethodDeleteMerge,
 			},
@@ -137,7 +138,7 @@ func TestService_Sync(t *testing.T) {
 			caseDataURI: "append_only",
 			appendOnly:  true,
 			iDColumns:   []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				IsDirect:true,
 				Suffix: "",
 				Method: shared.SyncMethodDeleteMerge,
@@ -148,7 +149,7 @@ func TestService_Sync(t *testing.T) {
 			description: "error - unknown method",
 			caseDataURI: "append_only",
 			iDColumns:   []string{"id"},
-			transferable: &data.Transferable{
+			transferable: &core.Transferable{
 				Suffix: "",
 				Method: "blah blah",
 			},

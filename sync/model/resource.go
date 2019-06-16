@@ -55,6 +55,9 @@ func (r *Resource) GetPseudoColumn(column string) *pseudo.Column {
 
 func (r *Resource) Init() error {
 	r.indexPseudoColumns()
+	if r.Config == nil {
+		return nil
+	}
 	return r.Config.Init()
 }
 

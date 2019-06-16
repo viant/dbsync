@@ -8,4 +8,3 @@ MAX(payment) AS payment,
 MAX(modified) AS modified
 FROM transfer.events_tmp t
 GROUP BY id) t
-WHERE (id) NOT IN (SELECT id FROM events t )

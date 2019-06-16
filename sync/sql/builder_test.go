@@ -1,11 +1,11 @@
 package sql
 
 import (
-	"dbsync/sync/contract"
 	"dbsync/sync/criteria"
 	"dbsync/sync/model"
 	"dbsync/sync/model/strategy"
 	"dbsync/sync/model/strategy/diff"
+	"dbsync/sync/shared"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -35,12 +35,12 @@ func getTestColumns() []dsc.Column {
 func TestBuilder_DDL(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
 	baseRequestURL := path.Join(parent, "test/builder/dif/base_request.yaml")
-	request, err := contract.NewRequestFromURL(baseRequestURL)
+	request, err := model.NewSyncFromURL(baseRequestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)
 	}
 	_ = request.Init()
-	builder, err := NewBuilder(request.Sync, "CREATE TABLE events (ID int, name varchar2(255))", getTestColumns())
+	builder, err := NewBuilder(request, "CREATE TABLE events (ID int, name varchar2(255))", getTestColumns())
 
 	{ //basic DDL with suffix
 		actualDDL := builder.DDL("_tmp")
@@ -55,12 +55,12 @@ func TestBuilder_DDL(t *testing.T) {
 func TestBuilder_DDLFromSelect(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
 	baseRequestURL := path.Join(parent, "test/builder/dif/base_request.yaml")
-	request, err := contract.NewRequestFromURL(baseRequestURL)
+	request, err := model.NewSyncFromURL(baseRequestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)
 	}
 	_ = request.Init()
-	builder, err := NewBuilder(request.Sync, "",  getTestColumns())
+	builder, err := NewBuilder(request, "",  getTestColumns())
 
 	{ //basic DDL with suffix
 		actualDDL := builder.DDLFromSelect("_tmp")
@@ -152,7 +152,7 @@ FROM (
 
 	for _, useCase := range useCases {
 
-		request, err := contract.NewRequestFromURL(baseRequestURL)
+		request, err := model.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -169,7 +169,7 @@ FROM (
 			continue
 		}
 
-		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
+		builder, err := NewBuilder(request, "",  getTestColumns())
 		{
 			actualDQL := builder.ChunkDQL(request.Source, useCase.max, useCase.limit, useCase.filter)
 			assert.Nil(t, err, useCase.description)
@@ -217,7 +217,7 @@ func TestBuilder_CountDQL(t *testing.T) {
 
 	for _, useCase := range useCases {
 
-		request, err := contract.NewRequestFromURL(baseRequestURL)
+		request, err := model.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -237,7 +237,7 @@ func TestBuilder_CountDQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
+		builder, err := NewBuilder(request, "",  getTestColumns())
 		{
 			actualDQL := builder.CountDQL(useCase.suffix, request.Source, useCase.filter)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/count/expect/%v", useCase.expectDifURI))
@@ -403,7 +403,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 
 	for _, useCase := range useCases {
 
-		request, err := contract.NewRequestFromURL(baseRequestURL)
+		request, err := model.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -423,7 +423,8 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
+		builder, err := NewBuilder(request, "",  getTestColumns())
+		assert.Nil(t, err)
 		{
 			actualDQL := builder.SignatureDQL(request.Source, useCase.filter)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/dif/expect/%v", useCase.expectDifURI))
@@ -497,7 +498,7 @@ func TestBuilder_DQL(t *testing.T) {
 	}
 	for _, useCase := range useCases {
 
-		request, err := contract.NewRequestFromURL(baseRequestURL)
+		request, err := model.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -511,7 +512,7 @@ func TestBuilder_DQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
+		builder, err := NewBuilder(request, "",  getTestColumns())
 		{
 			actualDQL := builder.DQL(useCase.suffix, request.Source, useCase.filter, len(request.IDColumns) > 0)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/dql/expect/%v", useCase.expectDifURI))
@@ -596,7 +597,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id based transient delete",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:     model.TransientDMLDelete,
+			dmlType:     shared.TransientDMLDelete,
 			idColumns:   []string{"id"},
 		},
 
@@ -665,7 +666,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id based transient delete",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:     model.TransientDMLDelete,
+			dmlType:     shared.TransientDMLDelete,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
@@ -766,7 +767,7 @@ func TestBuilder_DML(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		request, err := contract.NewRequestFromURL(baseRequestURL)
+		request, err := model.NewSyncFromURL(baseRequestURL)
 		assert.Nil(t, err)
 		assert.NotNil(t, request)
 		request.IDColumns = useCase.idColumns
@@ -778,7 +779,7 @@ func TestBuilder_DML(t *testing.T) {
 		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		builder, err := NewBuilder(request.Sync, "",  getTestColumns())
+		builder, err := NewBuilder(request, "",  getTestColumns())
 		assert.Nil(t, err)
 		assert.NotNil(t, builder)
 		actualSQL, err := builder.DML(useCase.dmlType, useCase.suffix, useCase.filter)
@@ -828,12 +829,12 @@ func TestBuilder_AppendDML(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		request, err := contract.NewRequestFromURL(baseRequestURL)
+		request, err := model.NewSyncFromURL(baseRequestURL)
 		assert.Nil(t, err, useCase.description)
 		err = request.Init()
 		assert.Nil(t, err, useCase.description)
 		request.IDColumns = useCase.idColumns
-		builder, err := NewBuilder(request.Sync, "", getTestColumns())
+		builder, err := NewBuilder(request, "", getTestColumns())
 		assert.Nil(t, err, useCase.description)
 		actualSQL := builder.AppendDML("_src1", "_dst2")
 		expectURL := path.Join(parent, fmt.Sprintf("test/builder/dml/append/%v", useCase.expectDMLURI))
