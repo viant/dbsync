@@ -42,6 +42,7 @@ func (s *service) Show(request *ShowRequest) *ShowResponse {
 func (s *service) Register(coreJob *core.Job) *Job {
 	job := NewJob(coreJob)
 	s.registry.register(job)
+	return job
 }
 
 

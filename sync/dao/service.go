@@ -110,6 +110,7 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 	if err = s.ExecSQL(ctx, DDL); err == nil {
 		return nil
 	}
+
 	//Fallback to dialect DDL
 	DDL = s.builder.DDL(suffix)
 	if s.Transfer.TempDatabase != "" {

@@ -20,21 +20,19 @@ type Partition struct {
 	err error
 }
 
-
-
 //Get returns partition for supplied key
 func (p *Partition) BatchTransferable() *Transferable {
 	result := &Transferable{
-		Suffix:p.Suffix,
+		Suffix: p.Suffix,
 		Status: &Status{
-			Method:shared.SyncMethodInsert,
-			Source:&Signature{},
-			Dest:&Signature{},
+			Method: shared.SyncMethodInsert,
+			Source: &Signature{},
+			Dest:   &Signature{},
 		},
 	}
 	chunks := p.chunks
 	//Chunks
-	for i:=0;i<len(chunks);i++ {
+	for i := 0; i < len(chunks); i++ {
 		transferable := chunks[i].Transferable
 		if transferable.ShouldDelete() {
 			continue
@@ -49,7 +47,6 @@ func (p *Partition) BatchTransferable() *Transferable {
 	}
 	return result
 }
-
 
 //SetError set errors
 func (p *Partition) SetError(err error) {
@@ -96,7 +93,7 @@ func (p *Partition) buildSuffix() string {
 				}
 				value = aSlice[0]
 			}
-			suffixValue = append(suffixValue , toolbox.AsString(value))
+			suffixValue = append(suffixValue, toolbox.AsString(value))
 		}
 		suffix += strings.Join(suffixValue, "_")
 
@@ -105,7 +102,6 @@ func (p *Partition) buildSuffix() string {
 	suffix = strings.Replace(suffix, "+", "", strings.Count(suffix, "+"))
 	return suffix
 }
-
 
 func (p *Partition) Init() {
 	if p.Strategy == nil {
@@ -130,8 +126,8 @@ func (p *Partition) InitWithMethod(method, suffix string) {
 //NewPartition returns new partition
 func NewPartition(strategy *strategy.Strategy, record Record) *Partition {
 	return &Partition{
-		Strategy:  strategy,
+		Strategy:     strategy,
 		Transferable: Transferable{Filter: record},
-		Chunks:    NewChunks(&strategy.Chunk),
+		Chunks:       NewChunks(&strategy.Chunk),
 	}
 }

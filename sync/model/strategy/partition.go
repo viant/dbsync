@@ -8,12 +8,13 @@ const defaultPartitionThreads = 2
 
 //PartitionStrategy represents partition info
 type Partition struct {
-	ProviderSQL string
+	ProviderSQL string // Deprecated: use Source.PartitionSQL instead
 	Columns     []string
 	Threads     int
 	SyncMode    string `description:"persistency sync mode: batched or individual"`
 	BatchSize   int
 }
+
 
 //MaxThreads returns batch size for max elements
 func (p *Partition) MaxThreads(max int) int {

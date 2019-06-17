@@ -33,5 +33,5 @@ func main() {
 	server := transfer.NewServer(service, *port)
 	go server.StopOnSiginals(os.Interrupt)
 	fmt.Printf("dstransfer listening on :%d\n", *port)
-	server.ListenAndServe()
+	log.Fatal(server.ListenAndServe())
 }

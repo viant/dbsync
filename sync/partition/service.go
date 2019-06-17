@@ -66,6 +66,7 @@ func (s *service) syncInBatches(ctx *shared.Context) error {
 	batchMap := criteria.NewBatchMap(s.Partition.BatchSize)
 	_ = s.Partitions.Range(func(partition *core.Partition) error {
 		if partition.Status.InSync {
+			s.job.Get(ctx.ID).Add(&partition.Transferable)
 			return nil
 		}
 		batchMap.Add(partition.Status.Method, partition.Filter)
@@ -112,10 +113,11 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 
 	//This run with multi go routines
 	err = partitions.Range(func(partition *core.Partition) error {
-		if partition.Status == nil || partition.InSync {
+		if partition.Status == nil {
 			return nil
 		}
 		if partition.InSync {
+			s.job.Get(ctx.ID).Add(&partition.Transferable)
 			return nil
 		}
 		if isChunked {
@@ -273,9 +275,10 @@ func (s *service) Init(ctx *shared.Context) error {
 	return s.loadPartitions(ctx)
 }
 
+
 func (s *service) loadPartitions(ctx *shared.Context) error {
 	var source = make([]*core.Partition, 0)
-	if s.Partition.ProviderSQL != "" {
+	if s.DbSync.Source.PartitionSQL!= "" {
 		values, err := s.dao.Partitions(ctx, model.ResourceKindSource)
 		if err != nil {
 			return err

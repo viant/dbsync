@@ -81,7 +81,7 @@ func (s *service) Sync(ctx *shared.Context) (err error) {
 
 	isBatchMode := s.Chunk.SyncMode == shared.SyncModeBatch
 	if isBatchMode {
-		if err = s.dao.CreateTransientTable(ctx, s.partition.Suffix); err != nil {
+		if err = s.dao.RecreateTransientTable(ctx, s.partition.Suffix); err != nil {
 			return err
 		}
 		defer func() {

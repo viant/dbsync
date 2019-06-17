@@ -12,7 +12,6 @@ type service struct {
 	registry *registry
 }
 
-
 func (s *service) Get(ID string) *core.Job {
 	jobs := s.registry.list()
 	for  i := range jobs {

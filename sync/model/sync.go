@@ -100,6 +100,11 @@ func (r *Sync) Validate() error {
 	if r.Dest.Table == "" {
 		return fmt.Errorf("dest table was empty")
 	}
+	if r.Source.PartitionSQL != "" {
+		if len(r.Partition.Columns) == 0 {
+			return fmt.Errorf("partition.columns were empty")
+		}
+	}
 
 	if r.Transfer.EndpointIP == "" {
 		return fmt.Errorf("transfer.endpointIP was empty")

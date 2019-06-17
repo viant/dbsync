@@ -8,13 +8,14 @@ import (
 	"dbsync/sync/partition"
 	"dbsync/sync/scheduler"
 	"dbsync/sync/shared"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 )
 
-var previousJobRunningErr = errors.New("previous sync1 is running")
+var previousJobRunningErr = errors.New("previous sync is running")
 
 //Service represents a sync1 service
 type Service interface {
@@ -80,7 +81,8 @@ func (s *service) sync(request *Request) (response *Response, err error) {
 	return response, err
 }
 
-func (s *service) onJobDone(job *core.Job, response *Response, err error) {
+func (s *service) onJobDone(ctx *shared.Context, job *core.Job, response *Response, err error) {
+	job.Done(time.Now())
 	if err != nil {
 		response.SetError(err)
 		if job.Status != shared.StatusError {
@@ -88,8 +90,9 @@ func (s *service) onJobDone(job *core.Job, response *Response, err error) {
 			job.Error = err.Error()
 		}
 	}
-	now := time.Now()
-	job.EndTime = &now
+
+	data, _ := json.Marshal(job)
+	ctx.Log(fmt.Sprintf("completed: %s\n", data))
 	historyJob := s.history.Register(job)
 	response.Transferred = historyJob.Transferred
 	response.SourceCount = historyJob.SourceCount
@@ -98,11 +101,11 @@ func (s *service) onJobDone(job *core.Job, response *Response, err error) {
 
 
 func (s *service) runSyncJob(job *core.Job, request *Request, response *Response) (err error) {
+	ctx := shared.NewContext(job.ID, request.Debug)
 	defer func() {
-		s.onJobDone(job, response, err)
+		s.onJobDone(ctx, job, response, err)
 	}()
 	dbSync := request.Sync
-	ctx := shared.NewContext(job.ID, request.Debug)
 	service := dao.New(dbSync)
 	if err = service.Init(ctx); err != nil {
 		return err
@@ -123,6 +126,7 @@ func (s *service) getJob(ID string) (*core.Job, error) {
 	if job.IsRunning() {
 		return nil, previousJobRunningErr
 	}
+	job.Status = shared.StatusRunning
 	return job, nil
 }
 

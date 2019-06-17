@@ -1,0 +1,18 @@
+table: events2
+idColumns:
+  - id
+partition:
+  columns:
+    - event_type
+source:
+  table: events1
+  descriptor: test/db/mydb
+  driverName: sqlite3
+  partitionSQL: SELECT event_type FROM events1 GROUP BY 1
+dest:
+  descriptor: test/db/mydb
+  driverName: sqlite3
+transfer:
+  endpointIP: 127.0.0.1:8080
+  batchSize: 2048
+  writerThreads: 2

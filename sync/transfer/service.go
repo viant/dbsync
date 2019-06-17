@@ -105,7 +105,7 @@ func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) (
 func (s *service) Post(ctx *shared.Context, request *Request, transferable *core.Transferable) (err error) {
 	transferable.DQL = request.Source.Query
 	if ! transferable.IsDirect {
-		if err = s.dao.CreateTransientTable(ctx, transferable.Suffix); err != nil {
+		if err = s.dao.RecreateTransientTable(ctx, transferable.Suffix); err != nil {
 			return err
 		}
 	}

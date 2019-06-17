@@ -126,7 +126,6 @@ func (p *Partitions) Init() {
 	if len(p.Source) == 0 || len(items[0].Filter) == 0 {
 		return
 	}
-
 	for i := range items {
 		partition := items[i]
 		partition.Init()

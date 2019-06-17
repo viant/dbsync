@@ -33,7 +33,7 @@ func (c *Signature) Max() int {
 
 //Count returns count value
 func (c *Signature) Count() int {
-	if c.CountValue == nil {
+	if c == nil || c.CountValue == nil {
 		return 0
 	}
 	return toolbox.AsInt(c.CountValue)

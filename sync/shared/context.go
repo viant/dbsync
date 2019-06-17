@@ -1,6 +1,9 @@
 package shared
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 //Context represent a context
 type Context struct {
@@ -12,6 +15,9 @@ type Context struct {
 //Log logs
 func (c *Context) Log(v ... interface{}) {
 	if c.Debug {
+		if len(v) > 0 {
+			v[0] = fmt.Sprintf("[%v] %v", c.ID, v[0])
+		}
 		log.Print(v...)
 	}
 }

@@ -9,10 +9,10 @@ import (
 //Request represnet sync1 request
 type Request struct {
 	Id string
-
 	*model.Sync
 	Schedule *model.Schedule
 }
+
 
 //Response return response
 type Response struct {
@@ -28,7 +28,11 @@ type Response struct {
 func NewRequestFromURL(URL string) (*Request, error) {
 	resource := url.NewResource(URL)
 	result := &Request{}
-	return result, resource.Decode(result)
+	err := resource.Decode(result)
+	if err == nil {
+		err = result.Init()
+	}
+	return result, err
 }
 
 //ID returns sync1 request ID
