@@ -1,3 +1,9 @@
+## May 21 2019 - v0.9.0
+- Major refactoring/restructuring
+- Added cross partition sync (with removal)
+- Added diff.NewIDOnly strategy
+- Added DirectAppend option (to bypass transient table for inserts/streaming)
+
 ## May 21 2019 - v0.8.4
 - Patch date logging
 - Updated diff logging
