@@ -1,0 +1,6 @@
+SELECT COUNT(1) AS cnt,
+	COUNT(DISTINCT id) AS unique_cnt_id,
+	SUM((CASE WHEN id IS NOT NULL THEN 1 ELSE 0 END)) AS non_null_cnt_id,
+	MAX(id) AS max_id,
+	MIN(id) AS min_id
+FROM events t

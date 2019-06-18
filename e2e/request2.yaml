@@ -1,0 +1,42 @@
+table: CI_SITE
+debug: true
+criteria:
+  ID: ' > 1741624106'
+
+IDColumns:
+  - ID
+
+
+Chunk:
+  Size: 409600
+
+Source:
+  Credentials: mysql-ci_ads
+  Descriptor: "[username]:[password]@tcp(10.55.1.145:3306)/[dbname]?parseTime=true"
+  DriverName: mysql
+  Parameters:
+    dbname: ci_ads
+  pseudoColumns:
+    - name: TEST_FIELD
+      expression: 'NULL'
+
+Dest:
+  Credentials: gcp-e2e
+  DriverName: bigquery
+  Parameters:
+    datasetId: e2e_ci_ads
+
+Diff:
+  Depth: 1
+  Columns:
+    - Name: UPDATETIMED
+      Func: MAX
+    - Name: CREATED
+      Func: MAX
+
+Transfer:
+  EndpointIP: 127.0.0.1:8080
+  WriterThreads: 2
+  BatchSize: 819200
+
+

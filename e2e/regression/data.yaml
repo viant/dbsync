@@ -16,6 +16,14 @@ pipeline:
         driverName: mysql
         descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
         credentials: $mysqlCredentials
+  db3:
+    register:
+      action: dsunit:register
+      datastore: db3
+      config:
+        driverName: mysql
+        descriptor: '[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true'
+        credentials: $mysqlCredentials
   pgdb:
     register:
       action: dsunit:register

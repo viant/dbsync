@@ -12,7 +12,7 @@ Input:
 Output:
    -  db2.events has all records synchronized from db1.events
    -  job status: http://localhost:8081/v1/api/job/$index
-      - source count: 17
-      - dest count: 1
-      - transferred: 17
+      - source count: 19
+      - dest count: 2
+      - transferred: 19
 

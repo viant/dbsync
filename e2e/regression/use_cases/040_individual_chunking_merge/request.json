@@ -4,8 +4,6 @@
 	"IDColumns": [
         "id"
     ],
-    "Debug":true,
-
     "Diff": {
         "Depth":3,
         "Columns": [

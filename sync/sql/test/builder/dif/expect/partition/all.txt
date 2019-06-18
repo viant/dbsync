@@ -1,0 +1,16 @@
+SELECT event_type,
+	SUM(COALESCE(id, 0)) AS sum_id,
+	MAX(ts) AS max_ts,
+	COUNT(DISTINCT COALESCE(ua, ' ')) AS cnt_ua,
+	COUNT(DISTINCT COALESCE(dnt, 0)) AS cnt_dnt,
+	SUM(COALESCE(charge, 0)) AS sum_charge,
+	SUM(COALESCE(payment, 0)) AS sum_payment,
+	MAX(modified) AS max_modified,
+	COUNT(1) AS cnt,
+	COUNT(DISTINCT id) AS unique_cnt_id,
+	SUM((CASE WHEN id IS NOT NULL THEN 1 ELSE 0 END)) AS non_null_cnt_id,
+	MAX(id) AS max_id,
+	MIN(id) AS min_id
+FROM events t
+GROUP BY event_type
+ORDER BY event_type

@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"dbsync/sync/scheduler"
 	"fmt"
 	"github.com/viant/toolbox"
 	"net/http"
@@ -31,20 +32,20 @@ func (r Router) api() http.Handler {
 		toolbox.ServiceRouting{
 			HTTPMethod: "GET",
 			URI:        fmt.Sprintf("%v/jobs", baseURI),
-			Handler:    r.service.ListJobs,
+			Handler:    r.service.Jobs().List,
 			Parameters: []string{""},
 		},
 		toolbox.ServiceRouting{
 			HTTPMethod: "GET",
 			URI:        fmt.Sprintf("%v/job/{ids}", baseURI),
-			Handler:    r.service.ListJobs,
+			Handler:    r.service.Jobs().List,
 			Parameters: []string{"ids"},
 		},
 		toolbox.ServiceRouting{
 			HTTPMethod: "GET",
 			URI:        fmt.Sprintf("%v/schedules", baseURI),
-			Handler: func() *ScheduleListResponse {
-				return r.service.ListScheduled(&ScheduleListRequest{})
+			Handler: func() *scheduler.ListResponse {
+				return r.service.Scheduler().List(&scheduler.ListRequest{})
 			},
 			Parameters: []string{},
 		},
@@ -52,9 +53,17 @@ func (r Router) api() http.Handler {
 			HTTPMethod: "GET",
 			URI:        fmt.Sprintf("%v/history/{id}", baseURI),
 			Parameters: []string{"id"},
-			Handler:    r.service.History,
+			Handler:    r.service.History().Show,
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "GET",
+			URI:        fmt.Sprintf("%v/status", baseURI),
+			Parameters: []string{"id"},
+			Handler:    r.service.History().Status,
 		},
 	)
+
+
 
 	return http.HandlerFunc(func(writer http.ResponseWriter, reader *http.Request) {
 		defer func() {

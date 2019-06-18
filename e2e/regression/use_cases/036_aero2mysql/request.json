@@ -2,13 +2,15 @@
     "Id":"$index",
     "Table": "events",
     "Force": true,
+    "AppendOnly": true,
     "Source": {
         "DriverName": "aerospike",
         "Descriptor": "tcp(${dbIP.aero}:3000)/test",
         "Parameters": {
             "dateFormat": "yyyy-MM-dd hh:mm:ss",
             "keyColumn": "id",
-            "namespace":"test"
+            "namespace":"test",
+            "host": "${dbIP.aero}"
         }
     },
     "Dest": {

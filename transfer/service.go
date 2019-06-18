@@ -202,11 +202,11 @@ func (s *Service) readData(request *Request, response *Response, task *Task) err
 	upperCaseData := false
 	lowerCaseData := false
 	table := task.dest.TableDescriptorRegistry().Get(request.Dest.Table)
+
 	if table != nil && len(table.Columns) > 0 {
 		upperCaseData = isUpperCaseTable(table.Columns)
 		lowerCaseData = isLowerCaseTable(table.Columns)
 	}
-
 	err = task.source.ReadAllWithHandler(request.Source.Query, nil, func(scanner dsc.Scanner) (bool, error) {
 		if task.HasError() {
 			return false, nil
