@@ -45,14 +45,14 @@ func TestService_Sync(t *testing.T) {
 			description: "partition with id base",
 			caseURI:     "id_based",
 			expectResponse: `{
-	"DestCount": 6,
+	"DestCount": 5,
 	"JobID": "events2",
-	"SourceCount": 8,
-	"Status": "running",
-	"Transferred": 8
+	"SourceCount": 7,
+	"Status": "done",
+	"Transferred": 7
 }`,
 			expectJob: `{
-	"DestCount": 6,
+	"DestCount": 5,
 	"ID": "events2",
 	"Partitions": {
 		"deleteMerge": 1,
@@ -60,10 +60,11 @@ func TestService_Sync(t *testing.T) {
 		"insert": 1,
 		"merge": 1
 	},
-	"SourceCount": 8,
+	"SourceCount": 7,
 	"Status": "done",
-	"Transferred": 8
-}`,
+	"Transferred": 7
+}
+`,
 		},
 	}
 

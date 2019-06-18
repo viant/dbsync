@@ -29,7 +29,7 @@ func TestService_Transfer(t *testing.T) {
 	assert.NotNil(t, service)
 	response := service.Transfer(request)
 	assert.NotNil(t, response)
-	assert.Equal(t, "ok", response.Status)
+	assert.Equal(t, "done", response.Status)
 	for {
 		taskStatus := service.Task(response.TaskID, nil)
 		if taskStatus.Status == "running" {

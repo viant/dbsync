@@ -118,7 +118,7 @@ func (s *service) runSyncJob(ctx *shared.Context, job *core.Job, request *Reques
 	if err = service.Init(ctx); err != nil {
 		return err
 	}
-	partitionService := partition.New(dbSync, service, shared.NewMutex(), s.jobs, s.history)
+		partitionService := partition.New(dbSync, service, shared.NewMutex(), s.jobs, s.history)
 	defer func() {
 		_ = partitionService.Close()
 	}()

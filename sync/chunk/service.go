@@ -19,6 +19,7 @@ import (
 type Service interface {
 	Build(tx *shared.Context) error
 	Sync(tx *shared.Context) error
+
 }
 
 type service struct {

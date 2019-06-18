@@ -22,6 +22,8 @@ type Service interface {
 
 	Sync(ctx *shared.Context) error
 
+	Init(ctx *shared.Context) error
+
 	Close() error
 }
 
@@ -160,9 +162,9 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 
 func (s *service) syncPartitionChunks(ctx *shared.Context, partition *core.Partition) (err error) {
 	chunker := chunk.New(s.DbSync, partition, s.dao, s.Mutex, s.job, s.Transfer)
-	if err = chunker.Init(); err != nil {
-		return err
-	}
+	//if err = chunker.Init(); err != nil {
+	//	return err
+	//}
 	return chunker.Sync(ctx)
 }
 
