@@ -83,14 +83,21 @@ func (s *service) syncInBatches(ctx *shared.Context) error {
 	var partitionData = make([]*core.Partition, 0)
 	_ = batchMap.Range(func(key string, batch *criteria.Batch) error {
 		items := batch.Get()
+
 		for i := range items {
 			partition := core.NewPartition(s.Strategy, items[i])
 			partition.InitWithMethod(key, fmt.Sprintf("_%s%05d", key[0:1], i+1))
 			partitionData = append(partitionData, partition)
-			if source, dest, err := s.Fetch(ctx, items[i]); err == nil {
-				partition.Source = core.NewSignatureFromRecord(s.IDColumn(), source)
-				partition.Dest = core.NewSignatureFromRecord(s.IDColumn(), dest)
+
+
+			source, dest, err := s.FetchAll(ctx, items[i])
+			if err == nil {
+				partition.Source = source.Signature(s.IDColumn())
+				partition.Dest = dest.Signature(s.IDColumn())
 			}
+			status := partition.Status
+			ctx.Log(fmt.Sprintf("(%v): in sync: %v, %v\n", partition.Filter, status.InSync, status.Method))
+
 		}
 		return nil
 	})
@@ -102,7 +109,6 @@ func (s *service) mergeBatch(ctx *shared.Context, partitions *core.Partitions) (
 	transferable := partitions.BatchTransferable()
 	return s.Merger.Merge(ctx, transferable);
 }
-
 
 func (s *service) onSyncDone(ctx *shared.Context, partitions *core.Partitions) (err error) {
 	isBatched := s.Partition.SyncMode == shared.SyncModeBatch
@@ -140,7 +146,7 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 			return nil
 		}
 		if partition.Status.InSyncWithID > 0 {
-			partition.SetMinID(s.IDColumn(), partition.Status.InSyncWithID + 1)
+			partition.SetMinID(s.IDColumn(), partition.Status.InSyncWithID+1)
 		}
 
 		if isChunked {
@@ -222,10 +228,13 @@ func (s *service) buildBatch(ctx *shared.Context, filter map[string]interface{})
 		return err
 	}
 	core.AlignRecords(sourceSignatures, destSignatures)
-	index, err := s.match(ctx, sourceSignatures, destSignatures)
+
+	dateLayout := s.Partitions.FindDateLayout(sourceSignatures[0])
+	index, err := s.match(ctx, sourceSignatures, destSignatures, dateLayout)
 	if err != nil {
 		return err
 	}
+
 	if err = s.validate(ctx, index); err != nil {
 		return err
 	}
@@ -257,14 +266,15 @@ func (s *service) validate(ctx *shared.Context, index *core.Index) error {
 
 }
 
-func (s *service) match(ctx *shared.Context, source, dest core.Records) (*core.Index, error) {
+func (s *service) match(ctx *shared.Context, source, dest core.Records, dateLayout string) (*core.Index, error) {
 	result := core.NewIndex()
 	if len(source) == 1 {
 		result.Source[""] = source[0]
 		result.Dest[""] = dest[0]
 		return result, nil
 	}
-	indexer := core.NewIndexer(s.Partition.Columns)
+
+	indexer := core.NewIndexer(s.Partition.Columns, dateLayout)
 	index := indexer.Index(source, dest)
 	if hasDest := len(index.Dest) > 0; hasDest {
 		return index, nil
@@ -362,7 +372,7 @@ func (s *service) removePartitions(ctx *shared.Context) error {
 		if len(s.toRemove[i].Filter) == 0 {
 			continue
 		}
-		if err := s.Merger.Delete(ctx, s.toRemove[i].Filter);err != nil {
+		if err := s.Merger.Delete(ctx, s.toRemove[i].Filter); err != nil {
 			return err
 		}
 	}

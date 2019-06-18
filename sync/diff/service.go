@@ -5,7 +5,6 @@ import (
 	"dbsync/sync/core"
 	"dbsync/sync/criteria"
 	"dbsync/sync/dao"
-
 	"dbsync/sync/shared"
 	"fmt"
 )
@@ -16,6 +15,8 @@ type Service interface {
 	UpdateStatus(ctx *shared.Context, status *core.Status, source, dest core.Record, filter map[string]interface{}, narrowInSyncSubset bool) (err error)
 
 	Fetch(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Record, err error)
+
+	FetchAll(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Records, err error)
 }
 
 //service finds source and dest difference status
@@ -51,9 +52,20 @@ func (d *service) Fetch(ctx *shared.Context, filter map[string]interface{}) (sou
 	return source, dest, err
 }
 
+
+//Fetch reads source and dest signature records for supplied filter
+func (d *service) FetchAll(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Records, err error) {
+	if source, err = d.dao.Signatures(ctx, contract.ResourceKindSource, filter); err != nil {
+		return nil, nil, err
+	}
+	dest, err = d.dao.Signatures(ctx, contract.ResourceKindDest, filter)
+	return source, dest, err
+}
+
+
 func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source, dest core.Record, filter map[string]interface{}, narrowInSyncSubset bool) (err error) {
 	defer func() {
-		ctx.Log(fmt.Sprintf("(%v): in sync: %v\n", filter, status.InSync))
+		ctx.Log(fmt.Sprintf("(%v): in sync: %v, %v\n", filter, status.InSync, status.Method))
 	}()
 	status.InSync = d.Comparator.IsInSync(ctx, source, dest)
 	if status.InSync {

@@ -90,7 +90,6 @@ func (s *service) onSyncDone(ctx *shared.Context, err error) {
 	s.partition.SetError(err)
 }
 
-
 func (s *service) Sync(ctx *shared.Context) (err error) {
 	defer func() {
 		s.onSyncDone(ctx, err)
@@ -127,6 +126,7 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 	if s.partition.Status != nil {
 		offset = s.partition.Status.Min()
 	}
+	maxID := s.partition.Status.Max()
 	limit := s.Chunk.Size
 	if limit == 0 {
 		limit = 1
@@ -145,7 +145,11 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 			destSignature, err = s.dao.ChunkSignature(ctx, contract.ResourceKindDest, offset, limit, s.partition.Filter)
 		} else {
 			filter := shared.CloneMap(s.partition.Filter)
-			filter[s.IDColumn()] = criteria.NewBetween(offset, offset+limit)
+			upperBound := offset + limit
+			if maxID > upperBound {
+				upperBound = maxID
+			}
+			filter[s.IDColumn()] = criteria.NewBetween(offset, upperBound)
 			destSignature, err = s.dao.CountSignature(ctx, contract.ResourceKindDest, filter)
 		}
 		if err != nil {
@@ -169,12 +173,13 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 			offset = status.Max() + 1
 			continue
 		}
-
+		if chunk.Status.InSyncWithID > 0 {
+			chunk.SetMinID(s.IDColumn(), chunk.Status.InSyncWithID+1)
+		}
 		ctx.Log(fmt.Sprintf("chunk [%v .. %v] is outOfSync: %v (%v)\n", status.Min(), status.Max(), chunk.Method, chunk.Filter))
 		s.partition.AddChunk(chunk)
 		offset = status.Max() + 1
 	}
-
 
 	s.partition.CloseOffer()
 	return nil

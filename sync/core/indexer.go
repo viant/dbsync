@@ -2,6 +2,7 @@ package core
 
 //Indexer represents an indexer
 type Indexer struct {
+	dateLayout string
 	keys []string
 }
 
@@ -16,14 +17,16 @@ func (i * Indexer) Index(source, dest Records) *Index {
 
 func (i * Indexer) index(records Records, target map[string]Record)  {
 	for j:= range records {
-		indexValue := records[j].Index(i.keys)
+		indexValue := records[j].NormIndex(i.dateLayout, i.keys)
 		target[indexValue] = records[j]
 	}
 }
 
+
 //NewIndexer creates a new indexer
-func NewIndexer(keys [] string) *Indexer {
+func NewIndexer(keys [] string, dateLayout string) *Indexer {
 	return &Indexer{
+		dateLayout:dateLayout,
 		keys:keys,
 	}
 }

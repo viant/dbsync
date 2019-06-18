@@ -38,8 +38,8 @@ func (c *Comparator) index() {
 
 //IsKeyInSync returns true if key of both Source and dest are in sync
 func (c *Comparator) IsKeyInSync(ctx *shared.Context, key string, record1, record2 Record) bool {
-	value1 := record1[key]
-	value2, ok := record2[key]
+	value1, _ := record1.Value(key)
+	value2, ok := record2.Value(key)
 	if ! ok {
 		return false
 	}

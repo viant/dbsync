@@ -12,6 +12,7 @@ type Status struct {
 	Errors map[string]string
 	Transferred map[string]int
 	LastSyncTime *time.Time
+	UpTime string
 }
 
 

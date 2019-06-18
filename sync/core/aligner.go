@@ -21,7 +21,8 @@ func AlignRecords(records1, records2 Records) {
 func AlignRecord(record1, record2 Record) {
 	for key := range record1 {
 		value1 := record1[key]
-		value2, ok := record2[key]
+		record2Key := record2.Key(key)
+		value2, ok := record2[record2Key]
 		if ! ok {
 			continue
 		}

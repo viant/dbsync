@@ -3,6 +3,8 @@ package history
 import (
 	"dbsync/sync/core"
 	"dbsync/sync/shared"
+	"fmt"
+	"time"
 )
 
 type Service interface {
@@ -12,6 +14,7 @@ type Service interface {
 }
 
 type service struct {
+	startTime  time.Time
 	registry *registry
 }
 
@@ -43,6 +46,7 @@ func (s *service) Status(request *StatusRequest) *StatusResponse {
 		}
 
 	}
+	response.UpTime = fmt.Sprintf("%s", time.Now().Sub(s.startTime))
 	return response
 }
 
@@ -59,6 +63,7 @@ func (s *service) Register(coreJob *core.Job) *Job {
 
 func New(config *shared.Config) *service {
 	return &service{
+		startTime:time.Now(),
 		registry: newRegistry(config.MaxHistory),
 	}
 }

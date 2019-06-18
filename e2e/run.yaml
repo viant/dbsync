@@ -14,7 +14,7 @@ init:
     ora: 127.0.0.1
     pg: 127.0.0.1
     mysql: 127.0.0.1
-    aero: 127.0.0.1
+    #aero: 127.0.0.1
 
 pipeline:
   init:

@@ -705,6 +705,7 @@ func NewBuilder(sync *contract.Sync, ddl string, destColumns []dsc.Column) (*Bui
 		transferSuffix: transferSuffix,
 	}
 	builder.init()
+
 	if isUpperCaseTable {
 		sync.UseUpperCaseSQL()
 	}

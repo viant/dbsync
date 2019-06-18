@@ -1,6 +1,8 @@
 package strategy
 
-import "strings"
+import (
+	"strings"
+)
 
 //Strategy represents a sync strategy
 type Strategy struct {
@@ -12,6 +14,7 @@ type Strategy struct {
 	Partition    Partition
 	AppendOnly   bool `description:"if set instead of merge, insert will be used"`
 	Force        bool `description:"if set skip checks if values in sync"`
+	adjustedCase uint32
 }
 
 //IDColumn returns IDColumn
@@ -40,6 +43,7 @@ func (s *Strategy) IsOptimized() bool {
 }
 
 
+
 //UseUpperCaseSQL update id, partition column to upper case
 func (r *Strategy) UseUpperCaseSQL() {
 	if len(r.IDColumns) > 0 {
@@ -50,6 +54,12 @@ func (r *Strategy) UseUpperCaseSQL() {
 	if len(r.Partition.Columns) > 0 {
 		for i, v := range r.Partition.Columns {
 			r.Partition.Columns[i] = strings.ToUpper(v)
+		}
+	}
+	if len(r.Diff.Columns) > 0 {
+		for i, _ := range r.Diff.Columns {
+			r.Diff.Columns[i].Name= strings.ToUpper(r.Diff.Columns[i].Name)
+			r.Diff.Columns[i].Alias= strings.ToUpper(r.Diff.Columns[i].Alias)
 		}
 	}
 }

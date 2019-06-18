@@ -5,6 +5,7 @@ import (
 	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"fmt"
+	"github.com/viant/toolbox"
 	"sync"
 )
 
@@ -25,6 +26,24 @@ func (p *Partitions) Get(key string) (*Partition) {
 	return p.index[key]
 }
 
+
+func (p *Partitions) FindDateLayout(record map[string]interface{}) string {
+	if len(p.Source) == 0 || len(record) == 0 {
+		return ""
+	}
+	filter := p.Source[0].Filter
+	if len(filter) == 0 {
+		return ""
+	}
+	for k, v := range record {
+		if val, ok := filter[k];ok {
+			if toolbox.IsTime(v) {
+				return p.Strategy.Diff.DateLayout[0:len(toolbox.AsString(val))]
+			}
+		}
+	}
+	return ""
+}
 
 //Get returns partition for supplied key
 func (p *Partitions) BatchTransferable() *Transferable {
