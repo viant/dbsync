@@ -1,7 +1,7 @@
 package core
 
 import (
-	"dbsync/sync/model/strategy"
+	"dbsync/sync/contract/strategy"
 )
 
 //Chunk represents a chunks

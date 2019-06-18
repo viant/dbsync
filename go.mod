@@ -17,7 +17,7 @@ require (
 	github.com/viant/assertly v0.4.8
 	github.com/viant/bgc v0.7.0
 	github.com/viant/dsc v0.10.1
-	github.com/viant/dsunit v0.8.1
+	github.com/viant/dsunit v0.9.2
 	github.com/viant/toolbox v0.23.7
 	github.com/yuin/gopher-lua v0.0.0-20190206043414-8bfc7677f583 // indirect
 	golang.org/x/crypto v0.0.0-20190506204251-e1dfcc566284 // indirect

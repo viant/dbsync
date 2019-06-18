@@ -2,6 +2,7 @@ package main
 
 import (
 	"dbsync/sync"
+	"dbsync/sync/shared"
 	"flag"
 	"fmt"
 	_ "github.com/alexbrainman/odbc"
@@ -15,7 +16,7 @@ import (
 	"os"
 )
 
-const Version = "0.8.7"
+const Version = "0.9.0"
 
 var port = flag.Int("port", 8080, "service port")
 var url = flag.String("url", "cron", "schedule URL")
@@ -32,7 +33,7 @@ func main() {
 		}
 	}()
 
-	config := &sync.Config{
+	config := &shared.Config{
 		Debug:                *debug,
 		ScheduleURL:          *url,
 		ScheduleURLRefreshMs: *scheduleURLRefreshMs,
@@ -45,5 +46,5 @@ func main() {
 	server := sync.NewServer(service, *port)
 	go server.StopOnSiginals(os.Interrupt)
 	fmt.Printf("dbsync %v listening on :%d\n", Version, *port)
-	server.ListenAndServe()
+	log.Fatal(server.ListenAndServe())
 }

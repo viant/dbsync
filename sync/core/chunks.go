@@ -1,18 +1,18 @@
 package core
 
 import (
-	"dbsync/sync/model/strategy"
+	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"sync"
-	"time"
+	"sync/atomic"
 )
 
 //Chunks represents chunksChan
 type Chunks struct {
 	strategy   *strategy.Chunk
 	chunks     []*Chunk
+	closed     uint32
 	chunksChan chan *Chunk
-	closeChan  chan bool
 	*sync.WaitGroup
 	*sync.Mutex
 }
@@ -28,33 +28,25 @@ func (c *Chunks) Range(handler func(chunk *Chunk) error) error {
 	return nil
 }
 
-
 func (c *Chunks) Take(ctx *shared.Context) *Chunk {
 	select {
 	case chunk := <-c.chunksChan:
 		return chunk
-	case <-c.closeChan:
-		return nil
-
 	}
 }
-
 
 func (c *Chunks) CloseOffer() {
+	if ! atomic.CompareAndSwapUint32(&c.closed, 0, 1) {
+		return
+	}
 	for i := 0; i < c.strategy.Threads; i++ {
-		select {
-		case c.closeChan <- true:
-		case <-time.After(500 * time.Millisecond):
-		}
+		c.chunksChan <- nil
 	}
 }
 
-
 func (c *Chunks) Close() {
-	close(c.closeChan)
 	close(c.chunksChan)
 }
-
 
 //ChunkSize returns chunks size
 func (c *Chunks) ChunkSize() int {
@@ -66,10 +58,10 @@ func (c *Chunks) ChunkSize() int {
 
 //add adds a chunks
 func (c *Chunks) Offer(chunk *Chunk) {
-	c.chunksChan <- chunk
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	c.chunks = append(c.chunks, chunk)
+	c.chunksChan <- chunk
 }
 
 //NewChunks creates a new chunksChan
@@ -80,9 +72,8 @@ func NewChunks(strategy *strategy.Chunk) *Chunks {
 	threads := strategy.Threads
 	return &Chunks{
 		strategy:   strategy,
-		Mutex:&sync.Mutex{},
+		Mutex:      &sync.Mutex{},
 		WaitGroup:  &sync.WaitGroup{},
 		chunksChan: make(chan *Chunk, (2*threads)+1),
-		closeChan:  make(chan bool, threads),
 	}
 }

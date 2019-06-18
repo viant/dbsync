@@ -3,7 +3,7 @@ package transfer
 import (
 	"dbsync/sync/dao"
 	"dbsync/sync/data"
-	"dbsync/sync/model"
+	
 	"dbsync/sync/shared"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -77,11 +77,11 @@ func TestService_NewRequest(t *testing.T) {
 
 	for _, useCase := range useCases {
 		ctx := &shared.Context{}
-		dbSync := &model.Sync{
-			Source: &model.Resource{
+		dbSync := &contract.Sync{
+			Source: &contract.Resource{
 				Config: testConfig,
 			},
-			Dest: &model.Resource{
+			Dest: &contract.Resource{
 				Config: testConfig,
 			},
 			Table: useCase.table,
@@ -194,11 +194,11 @@ func TestService_Post(t *testing.T) {
 
 	for _, useCase := range useCases {
 		ctx := &shared.Context{Debug: false}
-		dbSync := &model.Sync{
-			Source: &model.Resource{
+		dbSync := &contract.Sync{
+			Source: &contract.Resource{
 				Config: testConfig,
 			},
-			Dest: &model.Resource{
+			Dest: &contract.Resource{
 				Config: testConfig,
 			},
 			Table: useCase.table,

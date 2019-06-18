@@ -2,7 +2,7 @@ package dao
 
 import (
 	"dbsync/sync/criteria"
-	"dbsync/sync/model"
+	
 	"dbsync/sync/shared"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -28,11 +28,11 @@ func init() {
 
 
 func TestService_Builder(t *testing.T) {
-	sync := &model.Sync{
-		Source: &model.Resource{
+	sync := &contract.Sync{
+		Source: &contract.Resource{
 			Config: testConfig,
 		},
-		Dest: &model.Resource{
+		Dest: &contract.Resource{
 			Config: testConfig,
 		},
 		Table: "events",
@@ -49,11 +49,11 @@ func TestService_Builder(t *testing.T) {
 
 
 func TestService_Init(t *testing.T) {
-	sync := &model.Sync{
-		Source: &model.Resource{
+	sync := &contract.Sync{
+		Source: &contract.Resource{
 			Config: testConfig,
 		},
-		Dest: &model.Resource{
+		Dest: &contract.Resource{
 			Config: testConfig,
 		},
 		Table: "z z",
@@ -79,13 +79,13 @@ func TestService_Partitions(t *testing.T) {
 
 	var useCases = []struct {
 		description string
-		resource    *model.Resource
+		resource    *contract.Resource
 		expect      interface{}
 		hasError    bool
 	}{
 		{
 			description: "single key partition",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PartitionSQL: "SELECT event_type FROM events GROUP BY 1 ORDER BY 1",
 				Config:       testConfig,
 			},
@@ -103,7 +103,7 @@ func TestService_Partitions(t *testing.T) {
 		},
 		{
 			description: "multi key partition",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 
 				PartitionSQL: "SELECT DATE(timestamp) AS date , event_type FROM events WHERE event_type > 3 GROUP BY 1, 2 ORDER BY 1 DESC, 2",
 				Config:       testConfig,
@@ -125,7 +125,7 @@ func TestService_Partitions(t *testing.T) {
 		},
 		{
 			description: "error SQL",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PartitionSQL: "SELECT event_type FROM wrong_table GROUP BY 1 ORDER BY 1",
 				Config:       testConfig,
 			},
@@ -134,7 +134,7 @@ func TestService_Partitions(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		sync := &model.Sync{
+		sync := &contract.Sync{
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 		}
@@ -144,7 +144,7 @@ func TestService_Partitions(t *testing.T) {
 			continue
 		}
 		defer service.Close()
-		actual, err := service.Partitions(ctx, model.ResourceKindDest)
+		actual, err := service.Partitions(ctx, contract.ResourceKindDest)
 
 		if useCase.hasError {
 			assert.NotNil(t, err, useCase.description)
@@ -165,14 +165,14 @@ func TestService_Columns(t *testing.T) {
 	var useCases = []struct {
 		description string
 		table       string
-		resource    *model.Resource
+		resource    *contract.Resource
 		expect      interface{}
 		hasError    bool
 	}{
 		{
 			description: "events colums",
 			table:       "events",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `{
@@ -186,7 +186,7 @@ func TestService_Columns(t *testing.T) {
 		{
 			description: "invalid table name",
 			table:       "events '  _abc",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			hasError: true,
@@ -195,7 +195,7 @@ func TestService_Columns(t *testing.T) {
 	ctx := &shared.Context{}
 
 	for _, useCase := range useCases {
-		sync := &model.Sync{
+		sync := &contract.Sync{
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 		}
@@ -231,7 +231,7 @@ func TestService_Signatures(t *testing.T) {
 		description string
 		ID          []string
 		partitions  []string
-		resource    *model.Resource
+		resource    *contract.Resource
 		table       string
 		expect      interface{}
 		hasError    bool
@@ -239,7 +239,7 @@ func TestService_Signatures(t *testing.T) {
 		{
 			description: "single signature without id",
 			table:       "events",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `[
@@ -255,7 +255,7 @@ func TestService_Signatures(t *testing.T) {
 			description: "single signature with id",
 			ID:          []string{"id"},
 			table:       "events",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `[
@@ -277,7 +277,7 @@ func TestService_Signatures(t *testing.T) {
 			ID:          []string{"id"},
 			table:       "events",
 			partitions:  []string{"event_type"},
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `[
@@ -305,7 +305,7 @@ func TestService_Signatures(t *testing.T) {
 			ID:          []string{"id"},
 			table:       "events",
 			partitions:  []string{"event_worng_type"},
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			hasError: true,
@@ -314,7 +314,7 @@ func TestService_Signatures(t *testing.T) {
 
 	ctx := &shared.Context{}
 	for _, useCase := range useCases {
-		sync := &model.Sync{
+		sync := &contract.Sync{
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 			Table:  useCase.table,
@@ -328,7 +328,7 @@ func TestService_Signatures(t *testing.T) {
 		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		actual, err := service.Signatures(ctx, model.ResourceKindSource, nil)
+		actual, err := service.Signatures(ctx, contract.ResourceKindSource, nil)
 		if useCase.hasError {
 			assert.NotNil(t, err, useCase.description)
 			continue
@@ -356,7 +356,7 @@ func TestService_Signature(t *testing.T) {
 		description string
 		ID          []string
 		partitions  []string
-		resource    *model.Resource
+		resource    *contract.Resource
 		table       string
 		expect      interface{}
 		hasError    bool
@@ -364,7 +364,7 @@ func TestService_Signature(t *testing.T) {
 		{
 			description: "single signature without id",
 			table:       "events",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `{
@@ -378,7 +378,7 @@ func TestService_Signature(t *testing.T) {
 			description: "single signature with id",
 			ID:          []string{"id"},
 			table:       "events",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `
@@ -400,7 +400,7 @@ func TestService_Signature(t *testing.T) {
 			ID:          []string{"id"},
 			table:       "events",
 			partitions:  []string{"event_worng_type"},
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			hasError: true,
@@ -410,7 +410,7 @@ func TestService_Signature(t *testing.T) {
 			ID:          []string{"id"},
 			table:       "events",
 			partitions:  []string{"event_type"},
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			hasError:true,
@@ -419,7 +419,7 @@ func TestService_Signature(t *testing.T) {
 
 	ctx := &shared.Context{Debug:false,}
 	for _, useCase := range useCases {
-		sync := &model.Sync{
+		sync := &contract.Sync{
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 			Table:  useCase.table,
@@ -433,7 +433,7 @@ func TestService_Signature(t *testing.T) {
 		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		actual, err := service.Signature(ctx, model.ResourceKindSource, nil)
+		actual, err := service.Signature(ctx, contract.ResourceKindSource, nil)
 		if useCase.hasError {
 			assert.NotNil(t, err, useCase.description)
 			continue
@@ -463,7 +463,7 @@ func TestService_CountSignature(t *testing.T) {
 		description string
 		ID          []string
 		filter      map[string]interface{}
-		resource    *model.Resource
+		resource    *contract.Resource
 		table       string
 		expect      interface{}
 		hasError    bool
@@ -471,7 +471,7 @@ func TestService_CountSignature(t *testing.T) {
 		{
 			description: "single signature without id",
 			table:       "events",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `{
@@ -481,7 +481,7 @@ func TestService_CountSignature(t *testing.T) {
 			description: "single signature with id",
 			table:       "events",
 			ID:          []string{"id"},
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `{
@@ -493,7 +493,7 @@ func TestService_CountSignature(t *testing.T) {
 			description: "single signature with id",
 			table:       "events",
 			ID:          []string{"id"},
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			filter: map[string]interface{}{
@@ -509,7 +509,7 @@ func TestService_CountSignature(t *testing.T) {
 	ctx := &shared.Context{}
 
 	for _, useCase := range useCases {
-		sync := &model.Sync{
+		sync := &contract.Sync{
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 			Table:  useCase.table,
@@ -521,7 +521,7 @@ func TestService_CountSignature(t *testing.T) {
 		err = service.Init(ctx)
 		assert.Nil(t, err)
 
-		signature, err := service.CountSignature(ctx, model.ResourceKindDest, useCase.filter)
+		signature, err := service.CountSignature(ctx, contract.ResourceKindDest, useCase.filter)
 		if useCase.hasError {
 			assert.NotNil(t, err, useCase.description)
 			continue
@@ -553,7 +553,7 @@ func TestService_ChunkSignature(t *testing.T) {
 		description string
 		ID          []string
 		filter      map[string]interface{}
-		resource    *model.Resource
+		resource    *contract.Resource
 		table       string
 		offset      int
 		limit       int
@@ -567,7 +567,7 @@ func TestService_ChunkSignature(t *testing.T) {
 			ID:          []string{"id"},
 			offset:      5,
 			limit:       2,
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `{
@@ -584,7 +584,7 @@ func TestService_ChunkSignature(t *testing.T) {
 			filter: map[string]interface{}{
 				"event_type": "> 2",
 			},
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Config: testConfig,
 			},
 			expect: `{
@@ -596,7 +596,7 @@ func TestService_ChunkSignature(t *testing.T) {
 
 	ctx := &shared.Context{}
 	for _, useCase := range useCases {
-		sync := &model.Sync{
+		sync := &contract.Sync{
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 			Table:  useCase.table,
@@ -608,7 +608,7 @@ func TestService_ChunkSignature(t *testing.T) {
 		err = service.Init(ctx)
 		assert.Nil(t, err)
 
-		signature, err := service.ChunkSignature(ctx, model.ResourceKindDest, useCase.offset, useCase.limit, useCase.filter)
+		signature, err := service.ChunkSignature(ctx, contract.ResourceKindDest, useCase.offset, useCase.limit, useCase.filter)
 		if useCase.hasError {
 			assert.NotNil(t, err, useCase.description)
 			continue
@@ -663,11 +663,11 @@ func TestService_RecreateTransientTable(t *testing.T) {
 
 	ctx := &shared.Context{Debug:true}
 	for _, useCase := range useCases {
-		sync := &model.Sync{
-			Source: &model.Resource{
+		sync := &contract.Sync{
+			Source: &contract.Resource{
 				Config: testConfig,
 			},
-			Dest: &model.Resource{
+			Dest: &contract.Resource{
 				Config: testConfig,
 			},
 			Table: useCase.table,
@@ -748,11 +748,11 @@ func TestService_DropTransientTable(t *testing.T) {
 
 	ctx := &shared.Context{Debug:true}
 	for _, useCase := range useCases {
-		sync := &model.Sync{
-			Source: &model.Resource{
+		sync := &contract.Sync{
+			Source: &contract.Resource{
 				Config: testConfig,
 			},
-			Dest: &model.Resource{
+			Dest: &contract.Resource{
 				Config: testConfig,
 			},
 			Table: useCase.table,

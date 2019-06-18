@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"dbsync/sync/model"
+	"dbsync/sync/contract"
 	"fmt"
 	"github.com/viant/toolbox/url"
 	"sync/atomic"
@@ -17,8 +17,8 @@ const (
 type Schedulable struct {
 	URL string
 	ID  string
-	*model.Sync
-	*model.Schedule
+	*contract.Sync
+	Schedule *contract.Schedule
 	Status string
 	status uint32
 }
@@ -42,7 +42,8 @@ func (s *Schedulable) ScheduleNexRun(baseTime time.Time) {
 func NewSchedulableFromURL(URL string) (*Schedulable, error) {
 	result := &Schedulable{}
 	resource := url.NewResource(URL)
-	return result, resource.Decode(result)
+	err := resource.Decode(result)
+	return result, err
 }
 
 //Init initializes scheduleable
@@ -51,6 +52,9 @@ func (s *Schedulable) Init() error {
 		s.ID = uRLToID(s.URL)
 	}
 	now := time.Now()
+	if s.Schedule == nil {
+		return nil
+	}
 	if s.Schedule.Frequency != nil {
 		s.Schedule.NextRun = &now
 	} else {

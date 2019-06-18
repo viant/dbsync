@@ -15,6 +15,14 @@ func (s *Status) Clone() *Status {
 	return &status
 }
 
+
+func (s *Status) SetInSyncWithID(ID int) {
+	s.InSyncWithID = ID
+	skipCount := s.Dest.Count() - (s.Dest.Max() - s.InSyncWithID)
+	s.Source.CountValue = s.Source.Count() - skipCount
+	s.Dest.CountValue = s.Dest.Count() - skipCount
+}
+
 //Min returns min value
 func (s *Status) Min() int {
 	if s.Source == nil {

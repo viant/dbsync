@@ -18,6 +18,10 @@ type service struct {
 func (s *service) Status(request *StatusRequest) *StatusResponse {
 	jobs := s.registry.list(request.RunCount)
 	response := NewStatusResponse()
+	if len(jobs) == 0 {
+		return response
+	}
+
 	for k := range jobs {
 		history := jobs[k]
 		for _, item := range history {
@@ -27,10 +31,17 @@ func (s *service) Status(request *StatusRequest) *StatusResponse {
 				response.Errors[item.ID] = item.Error
 				continue
 			}
+			if response.LastSyncTime == nil {
+				response.LastSyncTime = &item.EndTime
+			}
+			if response.LastSyncTime.Before(item.EndTime) {
+				response.LastSyncTime = &item.EndTime
+			}
 		}
 		if history[0].Status == shared.StatusOk {
 			response.Transferred[k] = history[0].Transferred
 		}
+
 	}
 	return response
 }

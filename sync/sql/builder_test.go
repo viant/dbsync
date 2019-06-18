@@ -2,9 +2,9 @@ package sql
 
 import (
 	"dbsync/sync/criteria"
-	"dbsync/sync/model"
-	"dbsync/sync/model/strategy"
-	"dbsync/sync/model/strategy/diff"
+	
+	"dbsync/sync/contract/strategy"
+	"dbsync/sync/contract/strategy/diff"
 	"dbsync/sync/shared"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -35,7 +35,7 @@ func getTestColumns() []dsc.Column {
 func TestBuilder_DDL(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
 	baseRequestURL := path.Join(parent, "test/builder/dif/base_request.yaml")
-	request, err := model.NewSyncFromURL(baseRequestURL)
+	request, err := contract.NewSyncFromURL(baseRequestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestBuilder_DDL(t *testing.T) {
 func TestBuilder_DDLFromSelect(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
 	baseRequestURL := path.Join(parent, "test/builder/dif/base_request.yaml")
-	request, err := model.NewSyncFromURL(baseRequestURL)
+	request, err := contract.NewSyncFromURL(baseRequestURL)
 	if !assert.Nil(t, err) {
 		log.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestBuilder_ChunkDQL(t *testing.T) {
 		suffix       string
 		expectDifURI string
 		idColumns    []string
-		resource     *model.Resource
+		resource     *contract.Resource
 		partition    *strategy.Partition
 		max          int
 		limit        int
@@ -97,7 +97,7 @@ func TestBuilder_ChunkDQL(t *testing.T) {
 			description: "custom chunk dql",
 			idColumns:   []string{"id"},
 			suffix:      "_tmp",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Table: "events",
 				ChunkSQL: `SELECT
   MIN(ID) AS MIN_VALUE,
@@ -129,7 +129,7 @@ FROM (
 			description: "custom chunk with filter dql",
 			idColumns:   []string{"id"},
 			suffix:      "_tmp",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				Table: "events",
 				ChunkSQL: `SELECT
   MIN(ID) AS MIN_VALUE,
@@ -152,7 +152,7 @@ FROM (
 
 	for _, useCase := range useCases {
 
-		request, err := model.NewSyncFromURL(baseRequestURL)
+		request, err := contract.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -196,7 +196,7 @@ func TestBuilder_CountDQL(t *testing.T) {
 		expectDifURI string
 		idColumns    []string
 		partition    *strategy.Partition
-		resource     *model.Resource
+		resource     *contract.Resource
 		diff         *strategy.Diff
 		filter       map[string]interface{}
 
@@ -217,7 +217,7 @@ func TestBuilder_CountDQL(t *testing.T) {
 
 	for _, useCase := range useCases {
 
-		request, err := model.NewSyncFromURL(baseRequestURL)
+		request, err := contract.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -261,7 +261,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		expectDifURI string
 		idColumns    []string
 		partition    *strategy.Partition
-		resource     *model.Resource
+		resource     *contract.Resource
 		diff         *strategy.Diff
 		filter       map[string]interface{}
 
@@ -344,7 +344,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			description:  "single id based position partition dql",
 			idColumns:    []string{"id"},
 			expectDifURI: "partition/all_position.txt",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PositionReference: true,
 			},
 			partition: &strategy.Partition{
@@ -356,7 +356,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		{
 			description:  "non  id based position partition dql",
 			expectDifURI: "non_id/all.txt",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PositionReference: true,
 			},
 			partition: &strategy.Partition{
@@ -368,7 +368,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with resource filter dql",
 			expectDifURI: "non_id/resource_filter.txt",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
@@ -384,7 +384,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with global and resource filter dql",
 			expectDifURI: "non_id/mixed_filter.txt",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
@@ -403,7 +403,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 
 	for _, useCase := range useCases {
 
-		request, err := model.NewSyncFromURL(baseRequestURL)
+		request, err := contract.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -449,7 +449,7 @@ func TestBuilder_DQL(t *testing.T) {
 		suffix       string
 		idColumns    []string
 		partition    *strategy.Partition
-		resource     *model.Resource
+		resource     *contract.Resource
 		diff         *strategy.Diff
 		filter       map[string]interface{}
 
@@ -464,7 +464,7 @@ func TestBuilder_DQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with resource filter dql",
 			expectDifURI: "non_id/resource_filter.txt",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
@@ -480,7 +480,7 @@ func TestBuilder_DQL(t *testing.T) {
 		{
 			description:  "non  id based position partition with global and resource filter dql",
 			expectDifURI: "non_id/mixed_filter.txt",
-			resource: &model.Resource{
+			resource: &contract.Resource{
 				PositionReference: true,
 				Criteria: map[string]interface{}{
 					"id": " > 30",
@@ -498,7 +498,7 @@ func TestBuilder_DQL(t *testing.T) {
 	}
 	for _, useCase := range useCases {
 
-		request, err := model.NewSyncFromURL(baseRequestURL)
+		request, err := contract.NewSyncFromURL(baseRequestURL)
 		if !assert.Nil(t, err) {
 			log.Fatal(err)
 		}
@@ -767,7 +767,7 @@ func TestBuilder_DML(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		request, err := model.NewSyncFromURL(baseRequestURL)
+		request, err := contract.NewSyncFromURL(baseRequestURL)
 		assert.Nil(t, err)
 		assert.NotNil(t, request)
 		request.IDColumns = useCase.idColumns
@@ -829,7 +829,7 @@ func TestBuilder_AppendDML(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		request, err := model.NewSyncFromURL(baseRequestURL)
+		request, err := contract.NewSyncFromURL(baseRequestURL)
 		assert.Nil(t, err, useCase.description)
 		err = request.Init()
 		assert.Nil(t, err, useCase.description)

@@ -4,7 +4,7 @@ import (
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
 	"dbsync/sync/data"
-	"dbsync/sync/model"
+	
 	"dbsync/sync/shared"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -166,9 +166,9 @@ func TestService_Sync(t *testing.T) {
 		initDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/data/%v/prepare", useCase.caseDataURI)), "", "")
 		dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset))
 
-		sync := &model.Sync{
-			Source: &model.Resource{Table: "events1", Config: testConfig},
-			Dest:   &model.Resource{Table: "events2", Config: testConfig},
+		sync := &contract.Sync{
+			Source: &contract.Resource{Table: "events1", Config: testConfig},
+			Dest:   &contract.Resource{Table: "events2", Config: testConfig},
 			Table:  "events2",
 		}
 		sync.IDColumns = useCase.iDColumns

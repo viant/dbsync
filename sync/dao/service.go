@@ -1,9 +1,10 @@
 package dao
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/criteria"
-	"dbsync/sync/model"
+	
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
 	"errors"
@@ -16,21 +17,21 @@ import (
 var SuffixWasEmptyErr = errors.New("suffix was empty")
 
 type Service interface {
-	Partitions(ctx *shared.Context, kind model.ResourceKind) (core.Records, error)
+	Partitions(ctx *shared.Context, kind contract.ResourceKind) (core.Records, error)
 
-	Signatures(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (core.Records, error)
+	Signatures(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Records, error)
 
-	Signature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (core.Record, error)
+	Signature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Record, error)
 
-	CountSignature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (*core.Signature, error)
+	CountSignature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (*core.Signature, error)
 
-	ChunkSignature(ctx *shared.Context, kind model.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error)
+	ChunkSignature(ctx *shared.Context, kind contract.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error)
 
 	ExecSQL(ctx *shared.Context, SQL string) error
 
 	Columns(ctx *shared.Context, table string) ([]dsc.Column, error)
 
-	DbName(ctx *shared.Context, kind model.ResourceKind) (string, error)
+	DbName(ctx *shared.Context, kind contract.ResourceKind) (string, error)
 
 	CreateTransientTable(ctx *shared.Context, suffix string) error
 
@@ -46,19 +47,19 @@ type Service interface {
 }
 
 type dbResource struct {
-	*model.Resource
+	*contract.Resource
 	DB dsc.Manager
 }
 
 type service struct {
-	*model.Sync
+	*contract.Sync
 	source  *dbResource
 	dest    *dbResource
 	builder *sql.Builder
 }
 
-func (s *service) dbResource(kind model.ResourceKind) *dbResource {
-	if kind == model.ResourceKindDest {
+func (s *service) dbResource(kind contract.ResourceKind) *dbResource {
+	if kind == contract.ResourceKindDest {
 		return s.dest
 	}
 	return s.source
@@ -68,7 +69,7 @@ func (s *service) Builder() *sql.Builder {
 	return s.builder
 }
 
-func (s *service) Partitions(ctx *shared.Context, kind model.ResourceKind) (core.Records, error) {
+func (s *service) Partitions(ctx *shared.Context, kind contract.ResourceKind) (core.Records, error) {
 	dbResource := s.dbResource(kind)
 	return s.partitions(ctx, dbResource)
 
@@ -81,7 +82,7 @@ func (s *service) DropTransientTable(ctx *shared.Context,suffix string) (err err
 	table := s.builder.Table(suffix)
 	dbName := s.Transfer.TempDatabase
 	if dbName == "" {
-		if dbName, err = s.DbName(ctx, model.ResourceKindDest); err != nil {
+		if dbName, err = s.DbName(ctx, contract.ResourceKindDest); err != nil {
 			return err
 		}
 	}
@@ -102,7 +103,7 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 	}
 	dbName := s.Transfer.TempDatabase
 	if dbName == "" {
-		if dbName, err = s.DbName(ctx, model.ResourceKindDest); err != nil {
+		if dbName, err = s.DbName(ctx, contract.ResourceKindDest); err != nil {
 			return err
 		}
 	}
@@ -129,12 +130,12 @@ func (s *service) partitions(ctx *shared.Context, resource *dbResource) (core.Re
 	return result, err
 }
 
-func (s *service) Signatures(ctx *shared.Context,kind model.ResourceKind, filter map[string]interface{}) (core.Records, error) {
+func (s *service) Signatures(ctx *shared.Context,kind contract.ResourceKind, filter map[string]interface{}) (core.Records, error) {
 	dbResource := s.dbResource(kind)
 	return s.signatures(ctx, dbResource, filter)
 }
 
-func (s *service) Signature(ctx *shared.Context, kind model.ResourceKind, filter map[string]interface{}) (core.Record, error) {
+func (s *service) Signature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Record, error) {
 	result, err := s.Signatures(ctx, kind, filter)
 	if err != nil {
 		return nil, err
@@ -155,7 +156,7 @@ func (s *service) signatures(ctx *shared.Context, dbResource *dbResource, filter
 	return result, err
 }
 
-func (s *service) CountSignature(ctx *shared.Context,kind model.ResourceKind, filter map[string]interface{}) (*core.Signature, error) {
+func (s *service) CountSignature(ctx *shared.Context,kind contract.ResourceKind, filter map[string]interface{}) (*core.Signature, error) {
 	dbResource := s.dbResource(kind)
 	return s.countSignature(ctx, dbResource, filter)
 }
@@ -171,7 +172,7 @@ func (s *service) countSignature(ctx *shared.Context, dbResource *dbResource, fi
 	return result, err
 }
 
-func (s *service) ChunkSignature(ctx *shared.Context,kind model.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error) {
+func (s *service) ChunkSignature(ctx *shared.Context,kind contract.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error) {
 	dbResource := s.dbResource(kind)
 	return s.chunkSignature(ctx, dbResource, offset, limit, filter)
 }
@@ -197,7 +198,7 @@ func (s *service) ExecSQL(ctx *shared.Context,SQL string) error {
 	return err
 }
 
-func (s *service) DbName(ctx *shared.Context,kind model.ResourceKind) (string, error) {
+func (s *service) DbName(ctx *shared.Context,kind contract.ResourceKind) (string, error) {
 	dbResource := s.dbResource(kind)
 	dialect := dsc.GetDatastoreDialect(dbResource.DB.Config().DriverName)
 	return dialect.GetCurrentDatastore(dbResource.DB)
@@ -244,8 +245,7 @@ func (s *service) Init(ctx *shared.Context) error {
 }
 
 //New returns new service
-func New(sync *model.Sync) *service {
-
+func New(sync *contract.Sync) *service {
 	return &service{
 		Sync:   sync,
 		source: &dbResource{Resource: sync.Source},

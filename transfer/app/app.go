@@ -11,7 +11,6 @@ import (
 	_ "github.com/mattn/go-oci8"
 	_ "github.com/viant/asc"
 	_ "github.com/viant/bgc"
-	"github.com/viant/dsc"
 	"log"
 	"os"
 )
@@ -21,9 +20,6 @@ var debug = flag.Bool("debug", false, "debug flag")
 
 func main() {
 	flag.Parse()
-	if *debug {
-		dsc.Logf = dsc.StdoutLogger
-	}
 	go func() {
 		if err := agent.Listen(agent.Options{}); err != nil {
 			log.Fatal(err)

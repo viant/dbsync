@@ -63,45 +63,53 @@ func (s *service) sync(request *Request) (response *Response, err error) {
 		Status: shared.StatusRunning,
 	}
 	var job *core.Job
+	var ctx *shared.Context
+
+
 	if err = request.Init(); err == nil {
 		if err = request.Validate(); err == nil {
 			job, err = s.getJob(request.ID())
 		}
 	}
+	ctx = shared.NewContext(job.ID, request.Debug)
 	if err != nil {
 		return nil, err
 	}
+	syncRequest, _ := json.Marshal(request)
+	ctx.Log(fmt.Sprintf("sync: %s", syncRequest))
 	if request.Async {
 		go func() {
-			_ = s.runSyncJob(job, request, response)
+			_ = s.runSyncJob(ctx, job, request, response)
 		}()
 	} else {
-		err = s.runSyncJob(job, request, response)
+		err = s.runSyncJob(ctx, job, request, response)
 	}
 	return response, err
 }
 
 func (s *service) onJobDone(ctx *shared.Context, job *core.Job, response *Response, err error) {
-	job.Done(time.Now())
-	if err != nil {
+	if job == nil {
 		response.SetError(err)
-		if job.Status != shared.StatusError {
-			job.Status = shared.StatusError
-			job.Error = err.Error()
-		}
+		return
+	}
+
+	if response.SetError(err) {
+		job.Status = shared.StatusError
+		job.Error = err.Error()
 	}
 
 	data, _ := json.Marshal(job)
 	ctx.Log(fmt.Sprintf("completed: %s\n", data))
+	job.Done(time.Now())
 	historyJob := s.history.Register(job)
 	response.Transferred = historyJob.Transferred
 	response.SourceCount = historyJob.SourceCount
 	response.DestCount = historyJob.DestCount
+	response.Status = job.Status
 }
 
 
-func (s *service) runSyncJob(job *core.Job, request *Request, response *Response) (err error) {
-	ctx := shared.NewContext(job.ID, request.Debug)
+func (s *service) runSyncJob(ctx *shared.Context, job *core.Job, request *Request, response *Response) (err error) {
 	defer func() {
 		s.onJobDone(ctx, job, response, err)
 	}()
@@ -111,6 +119,9 @@ func (s *service) runSyncJob(job *core.Job, request *Request, response *Response
 		return err
 	}
 	partitionService := partition.New(dbSync, service, shared.NewMutex(), s.jobs, s.history)
+	defer func() {
+		_ = partitionService.Close()
+	}()
 	if err = partitionService.Init(ctx); err == nil {
 		if err = partitionService.Build(ctx); err == nil {
 			err = partitionService.Sync(ctx)
@@ -123,12 +134,14 @@ func (s *service) getJob(ID string) (*core.Job, error) {
 	s.mutex.Lock(ID)
 	defer s.mutex.Unlock(ID)
 	job := s.jobs.Get(ID)
-	if job.IsRunning() {
+	if job != nil && job.IsRunning() {
 		return nil, previousJobRunningErr
 	}
+	job = s.jobs.Create(ID)
 	job.Status = shared.StatusRunning
 	return job, nil
 }
+
 
 func (s *service) runScheduledJob(schedulable *scheduler.Schedulable) (err error) {
 	defer func() {

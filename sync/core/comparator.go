@@ -1,10 +1,9 @@
 package core
 
 import (
-	"dbsync/sync/model/strategy"
-	"dbsync/sync/model/strategy/diff"
+	"dbsync/sync/contract/strategy"
+	"dbsync/sync/contract/strategy/diff"
 	"dbsync/sync/shared"
-	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
 )
@@ -12,6 +11,7 @@ import (
 
 //Comparator represent record comparator
 type Comparator struct {
+	*strategy.Diff
 	columns map[string]*diff.Column
 }
 
@@ -23,6 +23,17 @@ func (c *Comparator) AreKeysInSync(ctx *shared.Context, keys []string, record1, 
 		}
 	}
 	return true
+}
+
+
+func (c *Comparator) index() {
+	for _, column := range c.Diff.Columns {
+		key := strings.ToLower(column.Alias)
+		if key == "" {
+			key = strings.ToLower(column.Name)
+		}
+		c.columns[key] = column
+	}
 }
 
 //IsKeyInSync returns true if key of both Source and dest are in sync
@@ -38,7 +49,6 @@ func (c *Comparator) IsKeyInSync(ctx *shared.Context, key string, record1, recor
 	if c.IsSimilar(key, value1, value2) {
 		return true
 	}
-	ctx.Log(fmt.Sprintf("difference at %v: %v != %v\n", key, value1, value2))
 	return false
 }
 
@@ -62,6 +72,7 @@ func (c *Comparator) IsInSync(ctx *shared.Context, record1, record2 Record) bool
 
 //IsSimilar returns true if truncated value1 and value2 are the same
 func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
+	c.index()
 	column, ok := c.columns[strings.ToLower(key)];
 	if ! ok {
 		return false
@@ -82,14 +93,12 @@ func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
 	return false
 }
 
-
 //NewComparator creates a new comparator
 func NewComparator(strategy *strategy.Diff) *Comparator{
 	result := &Comparator{
+		Diff:strategy,
 		columns:make(map[string]*diff.Column),
 	}
-	for _, column := range strategy.Columns {
-		result.columns[strings.ToLower(column.Name)] = column
-	}
+	result.index()
 	return result
 }

@@ -1,9 +1,10 @@
 package transfer
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
-	"dbsync/sync/model"
+	
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
 	"fmt"
@@ -29,7 +30,7 @@ type Service interface {
 
 
 type service struct {
-	*model.Sync
+	*contract.Sync
 	dao dao.Service
 	*sql.Builder
 }
@@ -40,7 +41,7 @@ func (s *service) destConfig(ctx *shared.Context) *dsc.Config {
 		return result
 	}
 	result.Parameters = make(map[string]interface{})
-	dbName, _ := s.dao.DbName(ctx, model.ResourceKindDest)
+	dbName, _ := s.dao.DbName(ctx, contract.ResourceKindDest)
 	for k, v := range s.Dest.Config.Parameters {
 		result.Parameters[k] = v
 		if textValue, ok := v.(string); ok {
@@ -151,7 +152,7 @@ func (s *service) post(ctx *shared.Context, request *Request, transferable *core
 	return s.waitForSync(response.TaskID, transferable)
 }
 
-func New(sync *model.Sync, dao dao.Service) *service {
+func New(sync *contract.Sync, dao dao.Service) *service {
 	return &service{
 		Sync:    sync,
 		dao:     dao,

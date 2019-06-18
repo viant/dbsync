@@ -1,7 +1,7 @@
 package core
 
 import (
-	"dbsync/sync/model/strategy/diff"
+	"dbsync/sync/contract/strategy/diff"
 	"fmt"
 	"github.com/viant/toolbox"
 )

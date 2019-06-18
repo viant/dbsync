@@ -1,7 +1,6 @@
 package jobs
 
 import (
-	"dbsync/sync/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/assertly"
 	"github.com/viant/toolbox"
@@ -67,9 +66,7 @@ func TestService_List(t *testing.T) {
 		for i := range useCase.ids {
 			job := srv.Create(useCase.ids[i])
 			if i < len(useCase.startTime) {
-				job.Status = shared.StatusDone
-				job.StartTime = useCase.startTime[i]
-				job.EndTime = &now
+				job.Done(now)
 			}
 			assert.EqualValues(t, useCase.ids[i], job.ID, useCase.description)
 			response := srv.List(&ListRequest{IDs: []string{useCase.ids[i]}})

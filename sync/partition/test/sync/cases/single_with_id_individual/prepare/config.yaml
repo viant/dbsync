@@ -1,0 +1,7 @@
+datastore: db1
+config:
+  driverName: sqlite3
+  descriptor: ./test/db/mydb
+recreate: true
+scripts:
+  - URL: test/sync/cases/single_with_id_individual/schema.sql

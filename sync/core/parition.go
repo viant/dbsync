@@ -2,7 +2,7 @@ package core
 
 import (
 	"dbsync/sync/criteria"
-	"dbsync/sync/model/strategy"
+	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"fmt"
 	"github.com/viant/toolbox"
@@ -23,30 +23,33 @@ type Partition struct {
 //Get returns partition for supplied key
 func (p *Partition) BatchTransferable() *Transferable {
 	result := &Transferable{
-		Suffix: p.Suffix,
+
+		Suffix:p.Suffix,
 		Status: &Status{
-			Method: shared.SyncMethodInsert,
-			Source: &Signature{},
-			Dest:   &Signature{},
+			Method:shared.SyncMethodInsert,
+			Source:&Signature{},
+			Dest:&Signature{},
 		},
 	}
+
 	chunks := p.chunks
-	//Chunks
-	for i := 0; i < len(chunks); i++ {
+	for i:=0;i<len(chunks);i++ {
 		transferable := chunks[i].Transferable
 		if transferable.ShouldDelete() {
 			continue
 		}
-		if transferable.Method != shared.SyncMethodMerge {
-			result.Method = transferable.Method
-		}
 		if transferable.Status == nil {
 			continue
+		}
+		if transferable.Method != shared.SyncMethodInsert {
+			result.Method = transferable.Method
 		}
 		result.Source.CountValue = result.Source.Count() + transferable.Source.Count()
 	}
 	return result
 }
+
+
 
 //SetError set errors
 func (p *Partition) SetError(err error) {
@@ -55,7 +58,6 @@ func (p *Partition) SetError(err error) {
 	}
 	p.err = err
 	p.CloseOffer()
-	p.Close()
 }
 
 //AddChunk add chunks

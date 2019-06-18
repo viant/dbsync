@@ -1,12 +1,14 @@
 package chunk
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
 	"dbsync/sync/jobs"
-	"dbsync/sync/model"
-	"dbsync/sync/model/strategy/pseudo"
+
+	"dbsync/sync/contract/strategy/pseudo"
 	"dbsync/sync/shared"
+	"dbsync/sync/transfer"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -114,9 +116,9 @@ func TestChunker_Build(t *testing.T) {
 		initDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/data/%v", useCase.caseDataURI)), "", "")
 		dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset))
 
-		dbSync := &model.Sync{
-			Source: &model.Resource{Table: "events1", Config: chunkerTestConfig},
-			Dest:   &model.Resource{Table: "events2", Config: chunkerTestConfig},
+		dbSync := &contract.Sync{
+			Source: &contract.Resource{Table: "events1", Config: chunkerTestConfig},
+			Dest:   &contract.Resource{Table: "events2", Config: chunkerTestConfig},
 			Table:  "events2",
 		}
 		dbSync.Source.PseudoColumns = useCase.pseudoColumns
@@ -128,15 +130,15 @@ func TestChunker_Build(t *testing.T) {
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		service := dao.New(dbSync)
-		err = service.Init(ctx)
+		daoService := dao.New(dbSync)
+		err = daoService.Init(ctx)
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
 
 		partition := core.NewPartition(&dbSync.Strategy, useCase.filter)
 		partition.Status = useCase.partitionStatus
-		chunker := New(dbSync, partition, service, shared.NewMutex(), jobService)
+		chunker := New(dbSync, partition, daoService, shared.NewMutex(), jobService, transfer.New(dbSync, daoService))
 		err = chunker.Build(ctx)
 		if ! assert.Nil(t, err, useCase.description) {
 			continue

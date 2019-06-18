@@ -143,10 +143,10 @@ func (s *service) run() {
 		now := time.Now()
 		for i := range dueToRun {
 			schedulalble := dueToRun[i]
-			schedulalble.Next(now)
+			schedulalble.Schedule.Next(now)
 
-			remaining := time.Second * time.Duration(schedulalble.NextRun.Unix()-time.Now().Unix())
-			log.Printf("[%v] next runner at: %v, remaining %s\n", schedulalble.ID, schedulalble.NextRun.Format(dateLayout), remaining)
+			remaining := time.Second * time.Duration(schedulalble.Schedule.NextRun.Unix()-time.Now().Unix())
+			log.Printf("[%v] next runner at: %v, remaining %s\n", schedulalble.ID, schedulalble.Schedule.NextRun.Format(dateLayout), remaining)
 
 			go func(schedulable *Schedulable) {
 				watGroup.Done()
@@ -207,20 +207,23 @@ func (s *service) loadFromURL(storageService storage.Service, URL string, ids ma
 			continue
 		}
 
-		schedulabe, err := NewSchedulableFromURL(object.URL())
+		schedulable, err := NewSchedulableFromURL(object.URL())
 		if err != nil {
 			return err
 		}
-		schedulabe.URL = object.URL()
-		if err = schedulabe.Init(); err == nil {
-			err = schedulabe.Validate()
+		if err = schedulable.Init(); err == nil {
+			err = schedulable.Validate()
 		}
-		ids[schedulabe.ID] = true
-
-		if !s.hasChanged(schedulabe.ID, fileInfo.ModTime()) {
+		if err != nil {
+			log.Printf("err: %v  %v\n", object.URL(), err)
 			continue
 		}
-		s.add(schedulabe, fileInfo.ModTime())
+		schedulable.URL = object.URL()
+		ids[schedulable.ID] = true
+		if !s.hasChanged(schedulable.ID, fileInfo.ModTime()) {
+			continue
+		}
+		s.add(schedulable, fileInfo.ModTime())
 	}
 	return nil
 }

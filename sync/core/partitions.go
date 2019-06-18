@@ -2,7 +2,7 @@ package core
 
 import (
 	"dbsync/sync/criteria"
-	"dbsync/sync/model/strategy"
+	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"fmt"
 	"sync"

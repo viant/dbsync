@@ -1,6 +1,9 @@
 package history
 
-import "dbsync/sync/shared"
+import (
+	"dbsync/sync/shared"
+	"time"
+)
 
 //Represents history status
 type Status struct {
@@ -8,6 +11,7 @@ type Status struct {
 	Error string
 	Errors map[string]string
 	Transferred map[string]int
+	LastSyncTime *time.Time
 }
 
 

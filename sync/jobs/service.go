@@ -16,10 +16,11 @@ func (s *service) Get(ID string) *core.Job {
 	jobs := s.registry.list()
 	for  i := range jobs {
 		if jobs[i].ID == ID {
+			jobs[i].Update()
 			return jobs[i]
 		}
 	}
-	return s.Create(ID)
+	return nil
 
 }
 
@@ -39,6 +40,7 @@ func (s *service) List(request *ListRequest) *ListResponse {
 		if _, has := requestedIDs[jobs[i].ID]; !has {
 			continue
 		}
+		jobs[i].Update()
 		filtered = append(filtered, jobs[i])
 	}
 	return &ListResponse{

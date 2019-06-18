@@ -1,6 +1,8 @@
 {
     "Id": "$index",
     "Table": "events",
+   	"Debug": true,
+
     "IDColumns": [
       "id"
     ],

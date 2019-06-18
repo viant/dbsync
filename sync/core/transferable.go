@@ -1,6 +1,7 @@
 package core
 
 import (
+	"dbsync/sync/criteria"
 	"dbsync/sync/shared"
 	"sync/atomic"
 )
@@ -16,6 +17,14 @@ type Transferable struct {
 	ID          string
 	DQL         string
 	DML         string
+}
+
+
+func (t *Transferable) SetMinID(key string, ID int) {
+	if len(t.Filter) == 0 {
+		t.Filter = make(map[string]interface{})
+	}
+	t.Filter[key] = criteria.NewGraterOrEqual(ID)
 }
 
 func (t *Transferable) SetTransferred(transferred int) {

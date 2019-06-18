@@ -28,8 +28,11 @@ func (r *registry) prune() {
 	r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 	jobs := r.Jobs
-
+	if len(jobs) == 0 {
+		return
+	}
 	var newJobs = make([]*core.Job, 0)
+
 	for i := range jobs {
 		if jobs[i].IsRunning() {
 			newJobs = append(newJobs, jobs[i])

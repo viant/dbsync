@@ -36,6 +36,9 @@ const (
 	//DMLDelete DELETE
 	DMLDelete = "delete"
 
+	//DMLFilteredDelete DELETE
+	DMLFilteredDelete = "filteredDelete"
+
 	//DMLDelete DELETE
 	TransientDMLDelete = "transientDelete"
 

@@ -1,14 +1,15 @@
 package chunk
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/criteria"
 	"dbsync/sync/dao"
 	"dbsync/sync/diff"
 	"dbsync/sync/jobs"
 	"dbsync/sync/merge"
-	"dbsync/sync/model"
-	"dbsync/sync/model/strategy"
+
+	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"dbsync/sync/transfer"
 	"fmt"
@@ -35,6 +36,7 @@ func (s *service) transferAndMerge(ctx *shared.Context, chunk *core.Chunk) error
 		chunk.Transferable.Suffix = ""
 		chunk.IsDirect = true
 	}
+
 	request := s.Transfer.NewRequest(ctx, &chunk.Transferable)
 	s.job.Get(ctx.ID).Add(&chunk.Transferable)
 	err := s.Transfer.Post(ctx, request, &chunk.Transferable)
@@ -54,7 +56,10 @@ func (s *service) transferAndMerge(ctx *shared.Context, chunk *core.Chunk) error
 }
 
 func (s *service) syncInBackground(ctx *shared.Context) {
-	s.partition.Chunks.Done()
+	defer func() {
+		s.partition.Chunks.Done()
+	}()
+
 	for {
 		chunk := s.partition.Chunks.Take(ctx)
 		if chunk == nil {
@@ -71,39 +76,43 @@ func (s *service) syncInBackground(ctx *shared.Context) {
 
 func (s *service) mergeBatch(ctx *shared.Context) (err error) {
 	transferable := s.partition.BatchTransferable()
-	if err = s.Merger.Merge(ctx, transferable); err == nil {
-		_ = s.dao.DropTransientTable(ctx, s.partition.Suffix)
-	}
-	return err
+	return s.Merger.Merge(ctx, transferable)
 }
 
-func (s *service) Sync(ctx *shared.Context) (err error) {
+func (s *service) onSyncDone(ctx *shared.Context, err error) {
+	defer s.partition.Close()
+	isBatchMode := s.Chunk.SyncMode == shared.SyncModeBatch
+	if isBatchMode {
+		if err == nil {
+			err = s.mergeBatch(ctx)
+		}
+	}
+	s.partition.SetError(err)
+}
 
+
+func (s *service) Sync(ctx *shared.Context) (err error) {
+	defer func() {
+		s.onSyncDone(ctx, err)
+	}()
 	isBatchMode := s.Chunk.SyncMode == shared.SyncModeBatch
 	if isBatchMode {
 		if err = s.dao.RecreateTransientTable(ctx, s.partition.Suffix); err != nil {
 			return err
 		}
-		defer func() {
-			if err == nil {
-				err = s.mergeBatch(ctx)
-			}
-			if err != nil {
-				s.partition.SetError(err)
-			}
-		}()
 	}
 
 	chunks := s.partition.Chunks
-	defer chunks.Close()
 	threads := s.Strategy.Chunk.Threads
 	if threads == 0 {
 		threads = 1
 	}
+
 	for i := 0; i < threads; i++ {
 		chunks.Add(1)
 		go s.syncInBackground(ctx)
 	}
+
 	if err = s.Build(ctx); err != nil {
 		return err
 	}
@@ -113,6 +122,7 @@ func (s *service) Sync(ctx *shared.Context) (err error) {
 
 //Build build partition chunks
 func (s *service) Build(ctx *shared.Context) (err error) {
+
 	offset := 0
 	if s.partition.Status != nil {
 		offset = s.partition.Status.Min()
@@ -125,18 +135,18 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 	isLast := false
 	for ; ! isLast; {
 		var sourceSignature, destSignature *core.Signature
-		sourceSignature, err = s.dao.ChunkSignature(ctx, model.ResourceKindSource, offset, limit, s.partition.Filter)
+		sourceSignature, err = s.dao.ChunkSignature(ctx, contract.ResourceKindSource, offset, limit, s.partition.Filter)
 		if err != nil {
 			return err
 		}
 		isLast = sourceSignature.Count() != limit || sourceSignature.Count() == 0
 
 		if ! isLast {
-			destSignature, err = s.dao.ChunkSignature(ctx, model.ResourceKindDest, offset, limit, s.partition.Filter)
+			destSignature, err = s.dao.ChunkSignature(ctx, contract.ResourceKindDest, offset, limit, s.partition.Filter)
 		} else {
 			filter := shared.CloneMap(s.partition.Filter)
 			filter[s.IDColumn()] = criteria.NewBetween(offset, offset+limit)
-			destSignature, err = s.dao.CountSignature(ctx, model.ResourceKindDest, filter)
+			destSignature, err = s.dao.CountSignature(ctx, contract.ResourceKindDest, filter)
 		}
 		if err != nil {
 			return err
@@ -145,6 +155,7 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 		status := core.NewStatus(sourceSignature, destSignature)
 		if s.AppendOnly && sourceSignature.IsEqual(destSignature) {
 			ctx.Log(fmt.Sprintf("chunk [%v .. %v] is inSyc", status.Min(), status.Max()))
+			offset = status.Max() + 1
 			continue
 		}
 
@@ -152,11 +163,20 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 		if err != nil {
 			return err
 		}
+
+		if chunk.InSync {
+			ctx.Log(fmt.Sprintf("chunk [%v .. %v] is inSyc", status.Min(), status.Max()))
+			offset = status.Max() + 1
+			continue
+		}
+
 		ctx.Log(fmt.Sprintf("chunk [%v .. %v] is outOfSync: %v (%v)\n", status.Min(), status.Max(), chunk.Method, chunk.Filter))
 		s.partition.AddChunk(chunk)
-
 		offset = status.Max() + 1
 	}
+
+
+	s.partition.CloseOffer()
 	return nil
 }
 
@@ -172,14 +192,14 @@ func (s *service) buildChunk(ctx *shared.Context, status *core.Status, filter ma
 }
 
 //New creates a nwe chunk service
-func New(sync *model.Sync, partition *core.Partition, dao dao.Service, mutex *shared.Mutex, jobService jobs.Service) *service {
+func New(sync *contract.Sync, partition *core.Partition, dao dao.Service, mutex *shared.Mutex, jobService jobs.Service, transferService transfer.Service) *service {
 	return &service{
 		partition: partition,
 		Service:   diff.New(sync, dao),
 		dao:       dao,
 		Strategy:  &sync.Strategy,
 		Merger:    merge.New(sync, dao, mutex),
-		Transfer:  transfer.New(sync, dao),
+		Transfer:  transferService,
 		job:       jobService,
 	}
 }

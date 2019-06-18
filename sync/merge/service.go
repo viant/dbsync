@@ -1,9 +1,10 @@
 package merge
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
-	"dbsync/sync/model"
+
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
 	"fmt"
@@ -11,14 +12,17 @@ import (
 
 type Service interface {
 	Merge(ctx *shared.Context, transferable *core.Transferable) error
+	Delete(ctx *shared.Context, filter map[string]interface{}) error
 }
 
 type service struct {
-	Sync *model.Sync
+	Sync *contract.Sync
 	dao  dao.Service
 	*sql.Builder
 	*shared.Mutex
 }
+
+
 
 func (s *service) delete(ctx *shared.Context, transferable *core.Transferable) error {
 	DML, err := s.Builder.DML(shared.DMLDelete, transferable.Suffix, shared.CloneMap(transferable.Filter))
@@ -66,6 +70,13 @@ func (s *service) merge(ctx *shared.Context, transferable *core.Transferable) er
 	return err
 }
 
+
+func (s *service) Delete(ctx *shared.Context, filter map[string]interface{}) error {
+	DML, _ := s.Builder.DML(shared.DMLFilteredDelete, "", filter)
+	return s.dao.ExecSQL(ctx, DML)
+}
+
+
 func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (err error) {
 	if transferable.IsDirect {
 		return fmt.Errorf("transferable was direct")
@@ -95,7 +106,7 @@ func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (e
 }
 
 //New creates a new
-func New(sync *model.Sync, dao dao.Service, mutex *shared.Mutex) *service {
+func New(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex) *service {
 	return &service{
 		Sync:    sync,
 		dao:     dao,

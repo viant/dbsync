@@ -1,16 +1,16 @@
 package diff
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/criteria"
 	"dbsync/sync/dao"
-	"dbsync/sync/model"
+
 	"dbsync/sync/shared"
 	"fmt"
 )
 
 type Service interface {
-	
 	Check(ctx *shared.Context, source, dest core.Record, filter map[string]interface{}) (*core.Status, error)
 
 	UpdateStatus(ctx *shared.Context, status *core.Status, source, dest core.Record, filter map[string]interface{}, narrowInSyncSubset bool) (err error)
@@ -21,7 +21,7 @@ type Service interface {
 //service finds source and dest difference status
 type service struct {
 	dao dao.Service
-	*model.Sync
+	*contract.Sync
 	*core.Comparator
 }
 
@@ -34,10 +34,20 @@ func (d *service) Check(ctx *shared.Context, source, dest core.Record, filter ma
 
 //Fetch reads source and dest signature records for supplied filter
 func (d *service) Fetch(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Record, err error) {
-	if source, err = d.dao.Signature(ctx, model.ResourceKindSource, filter); err != nil {
+	if d.Diff.NewIDOnly && d.IDColumn() != "" {
+		if dest, err = d.dao.Signature(ctx, contract.ResourceKindDest, filter); err == nil {
+			destSignature := core.NewSignatureFromRecord(d.IDColumn(), dest)
+			if len(filter) == 0 {
+				filter = make(map[string]interface{})
+			}
+			filter[d.IDColumn()] = criteria.NewGraterThan(destSignature.Max())
+		}
+	}
+
+	if source, err = d.dao.Signature(ctx, contract.ResourceKindSource, filter); err != nil {
 		return nil, nil, err
 	}
-	dest, err = d.dao.Signature(ctx, model.ResourceKindDest, filter)
+	dest, err = d.dao.Signature(ctx, contract.ResourceKindDest, filter)
 	return source, dest, err
 }
 
@@ -64,7 +74,7 @@ func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source,
 	}
 
 	if status.Dest.Max() > status.Source.Max() || status.Dest.Count() > status.Source.Count() ||
-			(status.Dest.Min() > 0 && status.Dest.Min() < status.Source.Min()) {
+		(status.Dest.Min() > 0 && status.Dest.Min() < status.Source.Min()) {
 		status.Method = shared.SyncMethodDeleteMerge
 		return nil
 	}
@@ -75,13 +85,18 @@ func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source,
 	narrowFilter := shared.CloneMap(filter)
 	narrowFilter[idColumn] = criteria.NewLessOrEqual(status.Dest.Max())
 	if d.isInSync(ctx, narrowFilter) {
-		status.InSyncWithID = status.Dest.Max()
 		status.Method = shared.SyncMethodInsert
+		status.SetInSyncWithID(status.Dest.Max())
 		return nil
 	}
+	inSyncWithID := 0
+
 	status.Method = shared.SyncMethodMerge
 	idRange := core.NewIDRange(status.Source.Min(), status.Dest.Max())
-	status.InSyncWithID, err = d.findMaxIDInSync(ctx, idRange, filter)
+	inSyncWithID, err = d.findMaxIDInSync(ctx, idRange, filter)
+	if inSyncWithID > 0 {
+		status.SetInSyncWithID(inSyncWithID)
+	}
 	return err
 }
 
@@ -106,15 +121,16 @@ func (d *service) findMaxIDInSync(ctx *shared.Context, idRange *core.IDRange, fi
 			break
 		}
 		filter[d.Sync.IDColumn()] = criteria.NewLessOrEqual(candidateID)
-		if d.isInSync(ctx, filter) {
+		inSync := d.isInSync(ctx, filter)
+		if inSync {
 			inSyncDestMaxID = candidateID
 		}
-		candidateID = idRange.Next(false)
+		candidateID = idRange.Next(inSync)
 	}
 	return inSyncDestMaxID, nil
 }
 
 //NewService creates a new differ
-func New(sync *model.Sync, dao dao.Service) *service {
+func New(sync *contract.Sync, dao dao.Service) *service {
 	return &service{Sync: sync, dao: dao, Comparator: core.NewComparator(&sync.Diff)}
 }

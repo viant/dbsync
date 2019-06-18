@@ -1,7 +1,7 @@
 package core
 
 import (
-	"dbsync/sync/model/strategy"
+	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"fmt"
 	"github.com/stretchr/testify/assert"

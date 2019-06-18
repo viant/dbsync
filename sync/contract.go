@@ -1,7 +1,7 @@
 package sync
 
 import (
-	"dbsync/sync/model"
+	"dbsync/sync/contract"
 	"dbsync/sync/shared"
 	"github.com/viant/toolbox/url"
 )
@@ -9,8 +9,8 @@ import (
 //Request represnet sync1 request
 type Request struct {
 	Id string
-	*model.Sync
-	Schedule *model.Schedule
+	*contract.Sync
+	Schedule *contract.Schedule
 }
 
 

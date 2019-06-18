@@ -1,8 +1,9 @@
 package diff
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/dao"
-	"dbsync/sync/model"
+
 	"dbsync/sync/shared"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -15,7 +16,6 @@ import (
 )
 
 var testConfig *dsc.Config
-
 
 func init() {
 	parent := toolbox.CallerDirectory(3)
@@ -30,7 +30,7 @@ func init() {
 func TestService_Check(t *testing.T) {
 
 	parent := toolbox.CallerDirectory(3)
-	if !dsunit.InitFromURL(t, path.Join(parent, "test",  "config.yaml")) {
+	if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
 		return
 	}
 
@@ -39,13 +39,21 @@ func TestService_Check(t *testing.T) {
 		caseDataURI        string
 		iDColumns          []string
 		partitions         []string
-		filter map[string]interface{}
+		filter             map[string]interface{}
 		depth              int
 		expectInSyncWithID int
 		expectMethod       string
 		expectInSync       bool
+		newIDOnly          bool
 	}{
 
+		{
+			description:  "new_id",
+			caseDataURI:  "newid",
+			iDColumns:    []string{"id"},
+			newIDOnly:    true,
+			expectMethod: shared.SyncMethodInsert,
+		},
 
 
 		{
@@ -80,7 +88,7 @@ func TestService_Check(t *testing.T) {
 			caseDataURI:  "merge",
 			depth:2,
 			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodMerge,
+			expectMethod:shared.SyncMethodInsert,
 			expectInSyncWithID:2,
 		},
 		{
@@ -111,31 +119,31 @@ func TestService_Check(t *testing.T) {
 
 	}
 
-
-	ctx := &shared.Context{}
+	ctx := &shared.Context{Debug: false}
 	for _, useCase := range useCases {
 		initDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/data/%v", useCase.caseDataURI)), "", "")
 		dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset))
 
-		sync := &model.Sync{
-			Source: &model.Resource{Table: "events1", Config: testConfig},
-			Dest:   &model.Resource{Table: "events2", Config: testConfig},
+		dbSync := &contract.Sync{
+			Source: &contract.Resource{Table: "events1", Config: testConfig},
+			Dest:   &contract.Resource{Table: "events2", Config: testConfig},
 			Table:  "events2",
 		}
-		sync.IDColumns = useCase.iDColumns
-		sync.Partition.Columns = useCase.partitions
-		sync.Diff.Depth = useCase.depth
-		err := sync.Init()
+		dbSync.Diff.NewIDOnly = useCase.newIDOnly
+		dbSync.IDColumns = useCase.iDColumns
+		dbSync.Partition.Columns = useCase.partitions
+		dbSync.Diff.Depth = useCase.depth
+		err := dbSync.Init()
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		service := dao.New(sync)
+		service := dao.New(dbSync)
 		err = service.Init(ctx)
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
 
-		differ := New(sync, service)
+		differ := New(dbSync, service)
 
 		if !assert.Nil(t, err, useCase.description) {
 			continue
@@ -156,4 +164,3 @@ func TestService_Check(t *testing.T) {
 	}
 
 }
-
