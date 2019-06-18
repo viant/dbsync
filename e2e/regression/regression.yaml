@@ -70,7 +70,7 @@ pipeline:
         when: $HasResource($path/schedule.yaml)
         action: storage:copy
         expand: true
-        sleepTimeMs: 5000
+        sleepTimeMs: 10000
         source:
           URL: $path/schedule.yaml
         dest:
