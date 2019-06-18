@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-//Represents history status
+//Status represents a service status
 type Status struct {
 	Status string
 	Error string
@@ -16,6 +16,7 @@ type Status struct {
 }
 
 
+//NewStatus creates a new status
 func NewStatus() * Status{
 	return &Status{
 		Status:shared.StatusOk,

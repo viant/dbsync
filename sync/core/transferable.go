@@ -19,6 +19,7 @@ type Transferable struct {
 	DML         string
 }
 
+//SetMinID sets min allowed ID filter
 func (t *Transferable) SetMinID(key string, ID int) {
 	if len(t.Filter) == 0 {
 		t.Filter = make(map[string]interface{})
@@ -26,10 +27,13 @@ func (t *Transferable) SetMinID(key string, ID int) {
 	t.Filter[key+" "] = criteria.NewGraterOrEqual(ID)
 }
 
+
+//SetTransferred set transferred value
 func (t *Transferable) SetTransferred(transferred int) {
 	atomic.StoreUint32(&t.Transferred, uint32(transferred))
 }
 
+//Clone clones this transferable
 func (t Transferable) Clone() *Transferable {
 	return &Transferable{
 		OwnerSuffix: t.OwnerSuffix,
@@ -44,6 +48,7 @@ func (t Transferable) Clone() *Transferable {
 	}
 }
 
+//Kind returns transferable kind
 func (t Transferable) Kind() string {
 	if t.IsDirect {
 		return shared.SyncKindDirect
@@ -56,6 +61,7 @@ func (t Transferable) Kind() string {
 	}
 }
 
+//ShouldDelete returns true if deletion is part of merging strategy
 func (t Transferable) ShouldDelete() bool {
 	return t.Method == shared.DMLDelete || t.Method == shared.SyncMethodDeleteInsert || t.Method == shared.SyncMethodDeleteMerge
 }

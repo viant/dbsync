@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-var previousJobRunningErr = errors.New("previous sync is running")
+var errPreviousJobRunning = errors.New("previous sync is running")
 
 //Service represents a sync1 service
 type Service interface {
@@ -135,7 +135,7 @@ func (s *service) getJob(ID string) (*core.Job, error) {
 	defer s.mutex.Unlock(ID)
 	job := s.jobs.Get(ID)
 	if job != nil && job.IsRunning() {
-		return nil, previousJobRunningErr
+		return nil, errPreviousJobRunning
 	}
 	job = s.jobs.Create(ID)
 	job.Status = shared.StatusRunning

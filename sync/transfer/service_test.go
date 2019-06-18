@@ -1,9 +1,9 @@
 package transfer
 
 import (
+	"dbsync/sync/contract"
+	"dbsync/sync/core"
 	"dbsync/sync/dao"
-	"dbsync/sync/data"
-	
 	"dbsync/sync/shared"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -99,7 +99,7 @@ func TestService_NewRequest(t *testing.T) {
 		if ! assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		srv := New(dbSync, daoService)
+		srv := newService(dbSync, daoService)
 		err = srv.Init()
 		assert.Nil(t, err, useCase.description)
 
@@ -224,7 +224,7 @@ func TestService_Post(t *testing.T) {
 			continue
 		}
 
-		srv := New(dbSync, daoService)
+		srv := newService(dbSync, daoService)
 		err = srv.Init()
 		assert.Nil(t, err, useCase.description)
 

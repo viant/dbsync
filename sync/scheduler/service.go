@@ -16,7 +16,7 @@ import (
 var defaultSchedulerLoadFrequencyMs = 5000
 var dateLayout = "2006-03-01 03:10:11"
 
-
+//Service represents a scheduler
 type Service interface {
 	List(request *ListRequest) *ListResponse
 	Get(ID string) *Schedulable
@@ -238,8 +238,8 @@ func (s *service) removeUnknown(known map[string]bool) {
 	}
 }
 
-//New creates a new scheduler
-func New(config *shared.Config, runner Runner) (*service, error) {
+//New creates a scheduler
+func New(config *shared.Config, runner Runner) (Service, error) {
 	result := &service{
 		runner:    runner,
 		Config:    config,

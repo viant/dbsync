@@ -88,8 +88,8 @@ func TestService_Check(t *testing.T) {
 			caseDataURI:  "merge",
 			depth:2,
 			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodInsert,
-			expectInSyncWithID:2,
+			expectMethod:shared.SyncMethodMerge,
+			expectInSyncWithID:3,
 		},
 		{
 			description:  "delete with based on min id",

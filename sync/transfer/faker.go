@@ -22,7 +22,7 @@ func (f *faker) Post(ctx *shared.Context, request *Request, transferable *core.T
 
 
 //NewFaker returns new post faker
-func NewFaker(service Service, transferred int, err error ) *faker {
+func NewFaker(service Service, transferred int, err error ) Service {
 	return &faker{
 		Service:service,
 		transferred:transferred,

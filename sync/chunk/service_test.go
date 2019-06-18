@@ -102,10 +102,10 @@ func TestChunker_Build(t *testing.T) {
 			partitionColumns: []string{"event_type"},
 			caseDataURI:      "in_sync",
 			iDColumns:        []string{"id"},
-			expectInSync:     2,
+			expectInSync:     0,
 			expectCount:      1,
 
-			expect:           `{"_chunk_00002": "insert"}`,
+			expect:           `{"_chunk_00000": "insert"}`,
 		},
 	}
 

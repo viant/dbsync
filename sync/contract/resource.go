@@ -8,7 +8,9 @@ import (
 )
 
 const (
+	//ResourceKindSource represents source resource
 	ResourceKindSource = "source"
+	//ResourceKindDest represents dest resource
 	ResourceKindDest   = "dest"
 )
 
@@ -52,7 +54,7 @@ func (r *Resource) GetPseudoColumn(column string) *pseudo.Column {
 	return r.columnExpression[column]
 }
 
-
+//Init initializes resource
 func (r *Resource) Init() error {
 	r.indexPseudoColumns()
 	if r.Config == nil {
@@ -71,6 +73,7 @@ func (r *Resource) indexPseudoColumns() {
 	}
 }
 
+//ColumnExpr returns column expresion
 func (r *Resource) ColumnExpr(column string) string {
 	if pseudoColumn, ok := r.columnExpression[column]; ok {
 		return pseudoColumn.Expression

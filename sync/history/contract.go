@@ -1,20 +1,21 @@
 package history
 
-//Request represent history request
+//ShowRequest represent show request
 type ShowRequest struct {
 	ID string
 }
 
-//Response represent history response
+//ShowResponse represent history response
 type ShowResponse struct {
 	Items []*Job
 }
 
+//StatusRequest represent past job status request
 type StatusRequest struct {
 	RunCount int
 }
 
-
+//StatusResponse represents past job status response
 type StatusResponse struct {
 	*Status
 }

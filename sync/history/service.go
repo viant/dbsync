@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+//Service reprsents history service
 type Service interface {
 	Register(job *core.Job) *Job
 	Show(request *ShowRequest) *ShowResponse
@@ -18,6 +19,7 @@ type service struct {
 	registry *registry
 }
 
+//Status returns status
 func (s *service) Status(request *StatusRequest) *StatusResponse {
 	jobs := s.registry.list(request.RunCount)
 	response := NewStatusResponse()
@@ -50,18 +52,21 @@ func (s *service) Status(request *StatusRequest) *StatusResponse {
 	return response
 }
 
+//Show show status
 func (s *service) Show(request *ShowRequest) *ShowResponse {
 	return &ShowResponse{Items: s.registry.get(request.ID)}
 }
 
+
+//Register register a job
 func (s *service) Register(coreJob *core.Job) *Job {
 	job := NewJob(coreJob)
 	s.registry.register(job)
 	return job
 }
 
-
-func New(config *shared.Config) *service {
+//New creates a new history service
+func New(config *shared.Config) Service {
 	return &service{
 		startTime:time.Now(),
 		registry: newRegistry(config.MaxHistory),

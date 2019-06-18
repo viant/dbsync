@@ -26,7 +26,7 @@ func (p *Partitions) Get(key string) (*Partition) {
 	return p.index[key]
 }
 
-
+//FindDateLayout finds date layout used in supplied record with one of the partition keys
 func (p *Partitions) FindDateLayout(record map[string]interface{}) string {
 	if len(p.Source) == 0 || len(record) == 0 {
 		return ""
@@ -45,7 +45,7 @@ func (p *Partitions) FindDateLayout(record map[string]interface{}) string {
 	return ""
 }
 
-//Get returns partition for supplied key
+//BatchTransferable returns batched transferable
 func (p *Partitions) BatchTransferable() *Transferable {
 	result := &Transferable{
 		Suffix:shared.TransientTableSuffix,
@@ -75,6 +75,7 @@ func (p *Partitions) BatchTransferable() *Transferable {
 }
 
 
+//Criteria returns partitions criteria
 func (p *Partitions) Criteria() []map[string]interface{} {
 	batch := criteria.NewBatch(p.Strategy.Diff.BatchSize)
 	_ = p.Range(func(partition *Partition) error {

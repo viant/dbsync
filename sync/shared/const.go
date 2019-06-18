@@ -1,6 +1,5 @@
 package shared
 
-
 const (
 	//StatusOk ok status
 	StatusOk = "ok"
@@ -15,7 +14,7 @@ const (
 	SyncModeBatch = "batch"
 	//SyncModeIndividual individual - each chunk/partition merged with dest table,
 	SyncModeIndividual = "individual"
-	//Transient table suffix
+	//TransientTableSuffix represents transient table suffix
 	TransientTableSuffix = "_tmp"
 
 	//DMLMerge regular MERGE DML
@@ -27,21 +26,16 @@ const (
 	//DMLInsertOnDuplicateUpddate INSERT ON DUPLICATE UPDATE DML style
 	DMLInsertOnDuplicateUpddate = "insertOnDuplicateUpdate"
 
-
-
 	//DMLInsertOnConflictUpddate INSERT ON CONFLICT DO UPDATE DML style
 	DMLInsertOnConflictUpddate = "insertOnConflictUpdate"
 	//DMLInsert INSERT
 	DMLInsert = "insert"
 	//DMLDelete DELETE
 	DMLDelete = "delete"
-
 	//DMLFilteredDelete DELETE
 	DMLFilteredDelete = "filteredDelete"
-
-	//DMLDelete DELETE
+	//TransientDMLDelete transient DELETE DML type
 	TransientDMLDelete = "transientDelete"
-
 
 	//SyncKindDirect direct king
 	SyncKindDirect = "direct"
@@ -57,6 +51,4 @@ const (
 	SyncMethodMerge = "merge"
 	//SyncMethodDeleteInsert merge delete sync1 method
 	SyncMethodDeleteInsert = "deleteInsert"
-
-
 )

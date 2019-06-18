@@ -41,7 +41,7 @@ func (s *Schedule) Validate() error {
 	return nil
 }
 
-//Schedule schedules next run
+//Next schedules next run
 func (s *Schedule) Next(baseTime time.Time) {
 	var nextTime = baseTime
 	if s.Frequency != nil {

@@ -18,7 +18,7 @@ type Dest struct {
 }
 
 
-//TransferRequest represents transfer service request
+//Request represents transfer service request
 type Request struct {
 	Source      *Source
 	Dest        *Dest
@@ -29,7 +29,7 @@ type Request struct {
 	OmitEmpty   bool
 }
 
-//TransferResponse represents transfer service response
+//Response represents transfer service response
 type Response struct {
 	TaskID     int
 	Status     string
@@ -38,7 +38,7 @@ type Response struct {
 }
 
 
-//TransferError represents transfer error
+//Error represents transfer error
 type Error struct {
 	*Response
 }

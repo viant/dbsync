@@ -20,7 +20,7 @@ type Partition struct {
 	err error
 }
 
-//Get returns partition for supplied key
+//BatchTransferable returns batched transferable
 func (p *Partition) BatchTransferable() *Transferable {
 	result := &Transferable{
 
@@ -105,6 +105,7 @@ func (p *Partition) buildSuffix() string {
 	return suffix
 }
 
+//Init initializes partition
 func (p *Partition) Init() {
 	if p.Strategy == nil {
 		p.Strategy = &strategy.Strategy{}
@@ -115,6 +116,7 @@ func (p *Partition) Init() {
 	p.Suffix = p.buildSuffix()
 }
 
+//InitWithMethod initializes with supplied method and suffix
 func (p *Partition) InitWithMethod(method, suffix string) {
 	p.IDColumn = p.IDColumns[0]
 	p.Suffix = p.buildSuffix() + suffix

@@ -28,7 +28,7 @@ func (b *BatchMap) Range(handler func(key string, batch *Batch) error) (err erro
 	return err
 }
 
-//add adds key, value to the bathc
+//Add adds key, value to the bathc
 func (b *BatchMap) Add(key string, values map[string]interface{}) {
 	b.mutex.Lock()
 	batchMap, ok := b.items[key]
@@ -40,7 +40,7 @@ func (b *BatchMap) Add(key string, values map[string]interface{}) {
 	batchMap.Add(values)
 }
 
-//NewBatchSet creates a new batch set
+//NewBatchMap creates a new batch map
 func NewBatchMap(batchSize int) *BatchMap {
 	return &BatchMap{
 		batchSize: batchSize,

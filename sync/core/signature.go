@@ -6,6 +6,7 @@ import (
 	"github.com/viant/toolbox"
 )
 
+//Signature represents dataset signature
 type Signature struct {
 	id                        string
 	CountValue                interface{}
@@ -39,7 +40,7 @@ func (c *Signature) Count() int {
 	return toolbox.AsInt(c.CountValue)
 }
 
-//Count returns count value
+//UniqueIDCount returns unique count value
 func (c *Signature) UniqueIDCount() int {
 	if c.UniqueIDCountValue == nil {
 		return 0
@@ -47,7 +48,7 @@ func (c *Signature) UniqueIDCount() int {
 	return toolbox.AsInt(c.UniqueIDCountValue)
 }
 
-//Count returns count value
+//NotNullUniqueIDCount returns non unique count value
 func (c *Signature) NotNullUniqueIDCount() int {
 	if c.NotNullUniqueIDCountValue == nil {
 		return 0

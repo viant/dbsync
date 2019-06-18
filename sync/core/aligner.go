@@ -17,7 +17,7 @@ func AlignRecords(records1, records2 Records) {
 }
 
 
-//AlignTypes align record value data types
+//AlignRecord align record value data types
 func AlignRecord(record1, record2 Record) {
 	for key := range record1 {
 		value1 := record1[key]

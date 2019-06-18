@@ -57,7 +57,7 @@ func (b *Builder) QueryTable(suffix string, resource *contract.Resource) string 
 	return resource.Table + b.transferSuffix + suffix
 }
 
-//DDLAsSelect returns transient table DDL for supplied suffix
+//DDLFromSelect returns transient table DDL for supplied suffix
 func (b *Builder) DDLFromSelect(suffix string) string {
 	suffix = normalizeTableName(suffix)
 	return fmt.Sprintf("CREATE TABLE %v AS SELECT * FROM %v WHERE 1 = 0", b.Table(suffix), b.Table(""))

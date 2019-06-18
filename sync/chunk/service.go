@@ -15,6 +15,7 @@ import (
 	"fmt"
 )
 
+//Service represents a chunk service
 type Service interface {
 	Build(tx *shared.Context) error
 	Sync(tx *shared.Context) error
@@ -197,7 +198,7 @@ func (s *service) buildChunk(ctx *shared.Context, status *core.Status, filter ma
 }
 
 //New creates a nwe chunk service
-func New(sync *contract.Sync, partition *core.Partition, dao dao.Service, mutex *shared.Mutex, jobService jobs.Service, transferService transfer.Service) *service {
+func New(sync *contract.Sync, partition *core.Partition, dao dao.Service, mutex *shared.Mutex, jobService jobs.Service, transferService transfer.Service) Service {
 	return &service{
 		partition: partition,
 		Service:   diff.New(sync, dao),

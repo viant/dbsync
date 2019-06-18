@@ -23,7 +23,7 @@ type Schedulable struct {
 	status uint32
 }
 
-//IsRunning return true if schedulable is not running
+//Done return true if schedulable is not running
 func (s *Schedulable) Done() {
 	atomic.StoreUint32(&s.status, statusScheduled)
 }

@@ -4,7 +4,6 @@
      "IDColumns": [
         "id"
     ],
-    "Debug":true,
     "Diff": {
 	"BatchSize":12
     },

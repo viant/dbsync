@@ -52,6 +52,7 @@ func (s *service) destConfig(ctx *shared.Context) *dsc.Config {
 	return result
 }
 
+//NewRequest returns new transfer request
 func (s *service) NewRequest(ctx *shared.Context, transferable *core.Transferable) *Request {
 	DQL := s.Builder.DQL("", s.Source, transferable.Filter, false)
 	suffix := transferable.Suffix
@@ -103,6 +104,7 @@ func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) (
 	return nil
 }
 
+//Post post transfer job
 func (s *service) Post(ctx *shared.Context, request *Request, transferable *core.Transferable) (err error) {
 	transferable.DQL = request.Source.Query
 	if ! transferable.IsDirect {
@@ -152,10 +154,16 @@ func (s *service) post(ctx *shared.Context, request *Request, transferable *core
 	return s.waitForSync(response.TaskID, transferable)
 }
 
-func New(sync *contract.Sync, dao dao.Service) *service {
+
+func newService(sync *contract.Sync, dao dao.Service) *service {
 	return &service{
 		Sync:    sync,
 		dao:     dao,
 		Builder: dao.Builder(),
 	}
+}
+
+//New creates a transfer service
+func New(sync *contract.Sync, dao dao.Service) Service {
+	return newService(sync, dao)
 }

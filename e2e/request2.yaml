@@ -8,7 +8,7 @@ IDColumns:
 
 
 Chunk:
-  Size: 4096
+  Size: 409600
 
 Source:
   Credentials: mysql-ci_ads

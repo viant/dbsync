@@ -15,6 +15,7 @@ type Batch struct {
 	counter      uint32
 }
 
+//Add add value to a batch
 func (b *Batch) Add(values map[string]interface{}) {
 	for key, value := range values {
 		if b.hasValue(key, value) {
@@ -60,11 +61,14 @@ func (b *Batch) hasValue(key string, value interface{}) bool {
 	 return ok
 }
 
+//Get returns batched criteria
 func (b *Batch) Get() []map[string]interface{} {
 	b.flush()
 	return b.criteria
 }
 
+
+//NewBatch creates a criteria batch
 func NewBatch(batchSize int) *Batch {
 	return &Batch{
 		mutex: &sync.RWMutex{},

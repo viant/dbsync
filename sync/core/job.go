@@ -20,6 +20,7 @@ type Job struct {
 	EndTime   *time.Time
 }
 
+//Update updates job progress
 func (j *Job) Update() {
 	if len(j.Items) == 0 {
 		return
@@ -44,6 +45,7 @@ func (j *Job) Update() {
 	}
 }
 
+//Done flag job as done
 func (j *Job) Done(now time.Time) {
 	if j.Status != shared.StatusError {
 		j.Status = shared.StatusDone
@@ -51,6 +53,8 @@ func (j *Job) Done(now time.Time) {
 	j.EndTime = &now
 }
 
+
+//Add add transferable
 func (j *Job) Add(transferable *Transferable) {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()

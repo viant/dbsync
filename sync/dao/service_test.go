@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/criteria"
 	
 	"dbsync/sync/shared"
@@ -138,7 +139,11 @@ func TestService_Partitions(t *testing.T) {
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 		}
-		service := New(sync)
+		service :=  &service{
+			Sync:   sync,
+			source: &dbResource{Resource: sync.Source},
+			dest:   &dbResource{Resource: sync.Dest},
+		}
 		err := service.initDB(ctx)
 		if !assert.Nil(t, err, useCase.description) {
 			continue
@@ -199,7 +204,11 @@ func TestService_Columns(t *testing.T) {
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 		}
-		service := New(sync)
+		service := &service{
+			Sync:   sync,
+			source: &dbResource{Resource: sync.Source},
+			dest:   &dbResource{Resource: sync.Dest},
+		}
 		err := service.initDB(ctx)
 		assert.Nil(t, err)
 		columns, err := service.Columns(ctx, useCase.table)
@@ -661,7 +670,7 @@ func TestService_RecreateTransientTable(t *testing.T) {
 
 	}
 
-	ctx := &shared.Context{Debug:true}
+	ctx := &shared.Context{Debug:false}
 	for _, useCase := range useCases {
 		sync := &contract.Sync{
 			Source: &contract.Resource{
@@ -746,7 +755,7 @@ func TestService_DropTransientTable(t *testing.T) {
 
 	}
 
-	ctx := &shared.Context{Debug:true}
+	ctx := &shared.Context{Debug:false}
 	for _, useCase := range useCases {
 		sync := &contract.Sync{
 			Source: &contract.Resource{

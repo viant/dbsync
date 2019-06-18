@@ -17,7 +17,7 @@ type Chunks struct {
 	*sync.Mutex
 }
 
-//ChunkSize returns chunks size
+//Range repeats handler call for each chunk
 func (c *Chunks) Range(handler func(chunk *Chunk) error) error {
 	for i := range c.chunks {
 		chunk := c.chunks[i]
@@ -28,6 +28,7 @@ func (c *Chunks) Range(handler func(chunk *Chunk) error) error {
 	return nil
 }
 
+//Take returns a chunk from queue
 func (c *Chunks) Take(ctx *shared.Context) *Chunk {
 	select {
 	case chunk := <-c.chunksChan:
@@ -35,6 +36,7 @@ func (c *Chunks) Take(ctx *shared.Context) *Chunk {
 	}
 }
 
+//CloseOffer closes chunk offering
 func (c *Chunks) CloseOffer() {
 	if ! atomic.CompareAndSwapUint32(&c.closed, 0, 1) {
 		return
@@ -44,6 +46,7 @@ func (c *Chunks) CloseOffer() {
 	}
 }
 
+//Close closes chunks
 func (c *Chunks) Close() {
 	close(c.chunksChan)
 }
@@ -56,7 +59,7 @@ func (c *Chunks) ChunkSize() int {
 	return result
 }
 
-//add adds a chunks
+//Offer adds a chunks
 func (c *Chunks) Offer(chunk *Chunk) {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()

@@ -7,6 +7,7 @@ type Index struct {
 	Dest   map[string]Record
 }
 
+//NewIndex creates a new index
 func NewIndex() *Index{
 	return &Index{
 		Source:make(map[string]Record),

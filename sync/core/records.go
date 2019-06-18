@@ -44,7 +44,7 @@ func (r Records) Signature(key string) *Signature {
 }
 
 
-//Max returns min value for supplied key
+//Min returns min value for supplied key
 func (r Records) Min(key string) int {
 	if len(r) == 0 {
 		return 0

@@ -16,6 +16,7 @@ import (
 	"os"
 )
 
+//Version app version
 const Version = "0.9.0"
 
 var port = flag.Int("port", 8080, "service port")

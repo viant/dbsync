@@ -10,6 +10,7 @@ import (
 	"fmt"
 )
 
+//Service represents a merge service
 type Service interface {
 	Merge(ctx *shared.Context, transferable *core.Transferable) error
 	Delete(ctx *shared.Context, filter map[string]interface{}) error
@@ -71,12 +72,14 @@ func (s *service) merge(ctx *shared.Context, transferable *core.Transferable) er
 }
 
 
+//Delete delete data from dest table for supplied filter
 func (s *service) Delete(ctx *shared.Context, filter map[string]interface{}) error {
 	DML, _ := s.Builder.DML(shared.DMLFilteredDelete, "", filter)
 	return s.dao.ExecSQL(ctx, DML)
 }
 
 
+//Merge merges data for supplied transferable
 func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (err error) {
 	if transferable.IsDirect {
 		return fmt.Errorf("transferable was direct")
@@ -106,7 +109,7 @@ func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (e
 }
 
 //New creates a new
-func New(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex) *service {
+func New(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex) Service {
 	return &service{
 		Sync:    sync,
 		dao:     dao,

@@ -10,12 +10,13 @@ type Status struct {
 	Method       string
 }
 
+//Clone closes status
 func (s *Status) Clone() *Status {
 	status := *s
 	return &status
 }
 
-
+//SetInSyncWithID set filter with min allowed ID
 func (s *Status) SetInSyncWithID(ID int) {
 	s.InSyncWithID = ID
 	skipCount := s.Dest.Count() - (s.Dest.Max() - s.InSyncWithID)
@@ -41,7 +42,7 @@ func (s *Status) Min() int {
 	return result
 }
 
-//Min returns max value
+//Max returns max value
 func (s *Status) Max() int {
 	if s.Source == nil {
 		if s.Dest != nil {
@@ -59,6 +60,8 @@ func (s *Status) Max() int {
 	return result
 }
 
+
+//NewStatus creates a status
 func NewStatus(source, dest *Signature) *Status {
 	isEqual := source == dest
 	if source != nil {

@@ -12,7 +12,7 @@ type Chunk struct {
 }
 
 
-//NewChunk returns new chunks
+//NewChunk returns new chunk
 func NewChunk(status *Status, filter map[string]interface{}) *Chunk{
 	return &Chunk{Transferable: Transferable{Status:status, Filter:filter}}
 }

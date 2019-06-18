@@ -9,6 +9,7 @@ import (
 	"fmt"
 )
 
+//Service represents a diff service
 type Service interface {
 	Check(ctx *shared.Context, source, dest core.Record, filter map[string]interface{}) (*core.Status, error)
 
@@ -142,7 +143,7 @@ func (d *service) findMaxIDInSync(ctx *shared.Context, idRange *core.IDRange, fi
 	return inSyncDestMaxID, nil
 }
 
-//NewService creates a new differ
-func New(sync *contract.Sync, dao dao.Service) *service {
+//New creates a new service computing signature difference
+func New(sync *contract.Sync, dao dao.Service) Service {
 	return &service{Sync: sync, dao: dao, Comparator: core.NewComparator(&sync.Diff)}
 }

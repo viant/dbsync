@@ -237,7 +237,7 @@ func TestPartitioner_Sync(t *testing.T) {
 			continue
 		}
 
-		partitioner := New(dbSync, service, shared.NewMutex(), jobService, historyService)
+		partitioner := newService(dbSync, service, shared.NewMutex(), jobService, historyService)
 		defer partitioner.Close()
 		//Mock transfer service
 		partitioner.Transfer = transfer.NewFaker(partitioner.Transfer, useCase.transferred, useCase.transferError)
@@ -427,7 +427,7 @@ func TestPartitioner_Build(t *testing.T) {
 			continue
 		}
 
-		partitioner := New(dbSync, service, shared.NewMutex(), jobService, historyService)
+		partitioner := newService(dbSync, service, shared.NewMutex(), jobService, historyService)
 		defer partitioner.Close()
 		err = partitioner.Init(ctx)
 		if err == nil {

@@ -16,6 +16,7 @@ import (
 	"fmt"
 )
 
+//Service represents partitin service
 type Service interface {
 	Build(ctx *shared.Context) error
 
@@ -379,8 +380,8 @@ func (s *service) removePartitions(ctx *shared.Context) error {
 	return nil
 }
 
-//New creates new partition service
-func New(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex, jobbService jobs.Service, historyService history.Service) *service {
+
+func newService(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex, jobbService jobs.Service, historyService history.Service) *service {
 	return &service{
 		dao:        dao,
 		Service:    diff.New(sync, dao),
@@ -393,4 +394,9 @@ func New(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex, jobbService 
 		job:        jobbService,
 		history:    historyService,
 	}
+}
+
+//New creates new partition service
+func New(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex, jobService jobs.Service, historyService history.Service) Service {
+	return newService(sync, dao, mutex, jobService, historyService)
 }

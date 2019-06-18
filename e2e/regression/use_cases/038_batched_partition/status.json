@@ -1,6 +1,5 @@
 {
   "Method": "get",
-  "Debug": true,
   "URL": "http://localhost:8081/v1/api/job/$index",
   "Expect": {
     "Jobs": [

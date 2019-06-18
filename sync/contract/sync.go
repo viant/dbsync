@@ -9,6 +9,7 @@ import (
 
 const defaultPartitionBatchSize = 16
 
+//Sync represents sync instruction
 type Sync struct {
 	strategy.Strategy `yaml:",inline" json:",inline"`
 	Transfer          Transfer

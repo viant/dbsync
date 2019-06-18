@@ -21,12 +21,12 @@ func (b between) String() string {
 }
 
 //NewBetween creates new betwee criterion
-func NewBetween(from, to int) *between {
+func NewBetween(from, to int) Criterion {
 	return &between{from:from, to:to}
 }
 
 //NewLessOrEqual creates less of equal criterion
-func NewLessOrEqual(value int) *lessOrEqual{
+func NewLessOrEqual(value int) Criterion{
 	return &lessOrEqual{value}
 }
 
@@ -49,7 +49,7 @@ func (c greaterThan) String() string {
 
 
 //NewGraterThan creates grater than criterion
-func NewGraterThan(value int) *greaterThan{
+func NewGraterThan(value int) Criterion{
 	return &greaterThan{value}
 }
 
@@ -65,11 +65,11 @@ func (c greaterOrEqual) String() string {
 
 
 //NewGraterOrEqual creates grater or equal criterion
-func NewGraterOrEqual(value int) *greaterOrEqual{
+func NewGraterOrEqual(value int) Criterion {
 	return &greaterOrEqual{value}
 }
 
-
+//ToCriterion converts a kv pair to a criterion
 func ToCriterion(k string, v interface{}) string {
 	if greaterOrEqual, ok := v.(*greaterOrEqual); ok {
 		return fmt.Sprintf("%v >= %v", k, greaterOrEqual.value)
