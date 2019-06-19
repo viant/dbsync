@@ -2,6 +2,7 @@ tasks: $tasks
 init:
   db1Secrets: ${secrets.$mysqlCredentials}
   pgdbSecrets:  ${secrets.$pgCredentials}
+
 pipeline:
   destroy:
     stop-images:

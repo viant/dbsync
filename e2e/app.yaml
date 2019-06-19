@@ -20,7 +20,7 @@ pipeline:
     action: sdk:set
     sdk: $sdk
 
-  clean:
+  cleanup:
     action: exec:run
     systemPaths:
       - /usr/local/bin
