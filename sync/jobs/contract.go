@@ -13,4 +13,3 @@ type ListRequest struct {
 type ListResponse struct {
 	Jobs []*core.Job
 }
-

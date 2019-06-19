@@ -23,4 +23,3 @@ func (r *IDRange) Next(inSync bool) int {
 func NewIDRange(min, max int) *IDRange {
 	return &IDRange{Min: min, Max: max, value: max, delta: int(float64(max-min) * 0.5)}
 }
-

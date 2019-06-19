@@ -27,7 +27,7 @@ func (r *registry) list(max int) map[string][]*Job {
 	}
 	result := make(map[string][]*Job)
 	for k := range r.registry {
-		if len(r.registry[k]) >max {
+		if len(r.registry[k]) > max {
 			result[k] = r.registry[k][:max]
 			continue
 		}
@@ -41,12 +41,12 @@ func (r *registry) register(job *Job) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	_, ok := r.registry[job.ID]
-	if ! ok {
+	if !ok {
 		r.registry[job.ID] = make([]*Job, 0)
 	}
 
 	length := len(r.registry[job.ID])
-	 if length+1 >= r.maxHistory {
+	if length+1 >= r.maxHistory {
 		r.registry[job.ID] = r.registry[job.ID][:r.maxHistory-1]
 	}
 	r.registry[job.ID] = append([]*Job{job}, r.registry[job.ID]...)

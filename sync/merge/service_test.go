@@ -4,7 +4,7 @@ import (
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
 	"dbsync/sync/data"
-	
+
 	"dbsync/sync/shared"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -52,7 +52,6 @@ func TestService_Sync(t *testing.T) {
 			},
 		},
 
-
 		{
 			description: "append only new data, remove duplicated",
 			caseDataURI: "append",
@@ -63,7 +62,6 @@ func TestService_Sync(t *testing.T) {
 				Method: shared.SyncMethodInsert,
 			},
 		},
-
 
 		{
 			description: "merge data",
@@ -131,7 +129,7 @@ func TestService_Sync(t *testing.T) {
 				Suffix: "",
 				Method: shared.SyncMethodDeleteMerge,
 			},
-			hasError:true,
+			hasError: true,
 		},
 		{
 			description: "error - direct",
@@ -139,11 +137,11 @@ func TestService_Sync(t *testing.T) {
 			appendOnly:  true,
 			iDColumns:   []string{"id"},
 			transferable: &core.Transferable{
-				IsDirect:true,
-				Suffix: "",
-				Method: shared.SyncMethodDeleteMerge,
+				IsDirect: true,
+				Suffix:   "",
+				Method:   shared.SyncMethodDeleteMerge,
 			},
-			hasError:true,
+			hasError: true,
 		},
 		{
 			description: "error - unknown method",
@@ -153,9 +151,8 @@ func TestService_Sync(t *testing.T) {
 				Suffix: "",
 				Method: "blah blah",
 			},
-			hasError:true,
+			hasError: true,
 		},
-
 	}
 
 	ctx := &shared.Context{Debug: true}
@@ -175,12 +172,12 @@ func TestService_Sync(t *testing.T) {
 		sync.AppendOnly = useCase.appendOnly
 
 		err := sync.Init()
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		service := dao.New(sync)
 		err = service.Init(ctx)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 

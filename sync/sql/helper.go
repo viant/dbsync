@@ -20,4 +20,3 @@ func removeTableAliases(expression, alias string) string {
 	}
 	return strings.Replace(expression, alias+".", "", count)
 }
-

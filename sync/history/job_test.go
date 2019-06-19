@@ -8,34 +8,32 @@ import (
 	"time"
 )
 
-
 func TestNewJob(t *testing.T) {
 	var inAMinute = time.Now().Add(time.Minute)
 
-	var useCases = []struct{
+	var useCases = []struct {
 		description string
-		job *core.Job
-		expect interface{}
-
-	} {
+		job         *core.Job
+		expect      interface{}
+	}{
 		{
-			description:"non chunked job",
-			job:&core.Job{
-					ID:     "1",
-					Status: "ok",
-					Items: []*core.Transferable{
-						{
-							Transferred: 10,
-							Status: &core.Status{
-								Source:&core.Signature{CountValue:10},
-								Dest:&core.Signature{CountValue:5},
-							},
+			description: "non chunked job",
+			job: &core.Job{
+				ID:     "1",
+				Status: "ok",
+				Items: []*core.Transferable{
+					{
+						Transferred: 10,
+						Status: &core.Status{
+							Source: &core.Signature{CountValue: 10},
+							Dest:   &core.Signature{CountValue: 5},
 						},
 					},
-					StartTime: time.Now(),
-					EndTime:   &inAMinute,
 				},
-				expect:`{
+				StartTime: time.Now(),
+				EndTime:   &inAMinute,
+			},
+			expect: `{
 	"DestCount": 5,
 	"ID": "1",
 	"Partitions": {
@@ -49,24 +47,24 @@ func TestNewJob(t *testing.T) {
 `,
 		},
 		{
-			description:"chunked job",
-			job:&core.Job{
-				ID:     "1",
-				Chunked:true,
-				Status: "ok",
+			description: "chunked job",
+			job: &core.Job{
+				ID:      "1",
+				Chunked: true,
+				Status:  "ok",
 				Items: []*core.Transferable{
 					{
 						Transferred: 10,
 						Status: &core.Status{
-							Source:&core.Signature{CountValue:10},
-							Dest:&core.Signature{CountValue:5},
+							Source: &core.Signature{CountValue: 10},
+							Dest:   &core.Signature{CountValue: 5},
 						},
 					},
 				},
 				StartTime: time.Now(),
 				EndTime:   &inAMinute,
 			},
-			expect:`{
+			expect: `{
 	"DestCount": 5,
 	"ID": "1",
 	"Chunks": {
@@ -79,12 +77,11 @@ func TestNewJob(t *testing.T) {
 }
 `,
 		},
-
 	}
 
 	for _, useCase := range useCases {
 		job := NewJob(useCase.job)
-		if ! assertly.AssertValues(t, useCase.expect, job, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, job, useCase.description) {
 			_ = toolbox.DumpIndent(job, true)
 		}
 	}

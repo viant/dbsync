@@ -15,7 +15,7 @@ func TestService_List(t *testing.T) {
 		ids         []string
 		startTime   []time.Time
 
-		expect      interface{}
+		expect interface{}
 	}{
 		{
 			description: "running job",
@@ -36,10 +36,10 @@ func TestService_List(t *testing.T) {
 		{
 			description: "done job",
 			ids:         []string{"1", "3", "2"},
-			startTime:[]time.Time{
+			startTime: []time.Time{
 				time.Now().Add(-2 * time.Hour),
-				time.Now().Add(-time.Hour)	,
-				time.Now().Add(-time.Minute)	,
+				time.Now().Add(-time.Hour),
+				time.Now().Add(-time.Minute),
 			},
 			expect: `{
 	"Jobs": [
@@ -73,7 +73,7 @@ func TestService_List(t *testing.T) {
 			assert.Equal(t, 1, len(response.Jobs))
 		}
 		actual := srv.List(&ListRequest{})
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}

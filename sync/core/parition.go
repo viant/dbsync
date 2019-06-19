@@ -1,8 +1,8 @@
 package core
 
 import (
-	"dbsync/sync/criteria"
 	"dbsync/sync/contract/strategy"
+	"dbsync/sync/criteria"
 	"dbsync/sync/shared"
 	"fmt"
 	"github.com/viant/toolbox"
@@ -24,16 +24,16 @@ type Partition struct {
 func (p *Partition) BatchTransferable() *Transferable {
 	result := &Transferable{
 
-		Suffix:p.Suffix,
+		Suffix: p.Suffix,
 		Status: &Status{
-			Method:shared.SyncMethodInsert,
-			Source:&Signature{},
-			Dest:&Signature{},
+			Method: shared.SyncMethodInsert,
+			Source: &Signature{},
+			Dest:   &Signature{},
 		},
 	}
 
 	chunks := p.chunks
-	for i:=0;i<len(chunks);i++ {
+	for i := 0; i < len(chunks); i++ {
 		transferable := chunks[i].Transferable
 		if transferable.ShouldDelete() {
 			continue
@@ -48,8 +48,6 @@ func (p *Partition) BatchTransferable() *Transferable {
 	}
 	return result
 }
-
-
 
 //SetError set errors
 func (p *Partition) SetError(err error) {
@@ -81,7 +79,7 @@ func (p *Partition) buildSuffix() string {
 	if len(columns) > 0 {
 		for _, column := range columns {
 			value, ok := p.Filter.Value(column)
-			if ! ok {
+			if !ok {
 				continue
 			}
 			if toolbox.IsTime(value) {

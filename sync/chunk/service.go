@@ -17,9 +17,11 @@ import (
 
 //Service represents a chunk service
 type Service interface {
+	//Build chunks that needs to be transferred and synchronized
 	Build(tx *shared.Context) error
-	Sync(tx *shared.Context) error
 
+	//Sync builds and synchronizes data chunks
+	Sync(tx *shared.Context) error
 }
 
 type service struct {
@@ -50,7 +52,7 @@ func (s *service) transferAndMerge(ctx *shared.Context, chunk *core.Chunk) error
 	}
 	transferable := chunk.Transferable.Clone()
 	//Only merge/append can be batched
-	if isBatchMode && ! transferable.ShouldDelete() {
+	if isBatchMode && !transferable.ShouldDelete() {
 		transferable.OwnerSuffix = s.partition.Suffix
 		transferable.Method = shared.SyncMethodInsert
 	}
@@ -135,7 +137,7 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 	}
 
 	isLast := false
-	for ; ! isLast; {
+	for !isLast {
 		var sourceSignature, destSignature *core.Signature
 		sourceSignature, err = s.dao.ChunkSignature(ctx, contract.ResourceKindSource, offset, limit, s.partition.Filter)
 		if err != nil {
@@ -143,7 +145,7 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 		}
 		isLast = sourceSignature.Count() != limit || sourceSignature.Count() == 0
 
-		if ! isLast {
+		if !isLast {
 			destSignature, err = s.dao.ChunkSignature(ctx, contract.ResourceKindDest, offset, limit, s.partition.Filter)
 		} else {
 			filter := shared.CloneMap(s.partition.Filter)

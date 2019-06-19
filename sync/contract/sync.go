@@ -89,7 +89,7 @@ func (r *Sync) Init() error {
 			return r.Schedule.At.Init()
 		}
 	}
-	if err = r.Partition.Init();err == nil {
+	if err = r.Partition.Init(); err == nil {
 		err = r.Diff.Init()
 	}
 	return err

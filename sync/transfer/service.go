@@ -4,7 +4,7 @@ import (
 	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
-	
+
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
 	"fmt"
@@ -23,11 +23,11 @@ const (
 
 //Service represents transfer service
 type Service interface {
+	//NewRequest creates a new transfer request
 	NewRequest(ctx *shared.Context, transferable *core.Transferable) *Request
+	//Post submit transfer request
 	Post(ctx *shared.Context, request *Request, transferable *core.Transferable) error
 }
-
-
 
 type service struct {
 	*contract.Sync
@@ -60,7 +60,7 @@ func (s *service) NewRequest(ctx *shared.Context, transferable *core.Transferabl
 		suffix = ""
 	}
 	destTable := s.Builder.Table(suffix)
-	if ! transferable.IsDirect && s.Transfer.TempDatabase != "" {
+	if !transferable.IsDirect && s.Transfer.TempDatabase != "" {
 		destTable = strings.Replace(destTable, s.Transfer.TempDatabase+".", "", 1)
 	}
 	return &Request{
@@ -79,7 +79,7 @@ func (s *service) NewRequest(ctx *shared.Context, transferable *core.Transferabl
 	}
 }
 
-func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) (error) {
+func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) error {
 	statusURL := fmt.Sprintf(transferStatusURL, s.Transfer.EndpointIP)
 	URL := statusURL + fmt.Sprintf("%d", syncTaskID)
 	response := &Response{}
@@ -107,7 +107,7 @@ func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) (
 //Post post transfer job
 func (s *service) Post(ctx *shared.Context, request *Request, transferable *core.Transferable) (err error) {
 	transferable.DQL = request.Source.Query
-	if ! transferable.IsDirect {
+	if !transferable.IsDirect {
 		if err = s.dao.RecreateTransientTable(ctx, transferable.Suffix); err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func (s *service) Post(ctx *shared.Context, request *Request, transferable *core
 	atomic.StoreUint32(&transferable.Transferred, 0)
 	attempt := 0
 	for i := 0; attempt < maxRetries; i++ {
-		if err = s.post(ctx, request, transferable);err == nil {
+		if err = s.post(ctx, request, transferable); err == nil {
 			break
 		}
 		if IsTransferError(err) {
@@ -153,7 +153,6 @@ func (s *service) post(ctx *shared.Context, request *Request, transferable *core
 	}
 	return s.waitForSync(response.TaskID, transferable)
 }
-
 
 func newService(sync *contract.Sync, dao dao.Service) *service {
 	return &service{

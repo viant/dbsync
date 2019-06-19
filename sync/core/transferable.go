@@ -27,7 +27,6 @@ func (t *Transferable) SetMinID(key string, ID int) {
 	t.Filter[key+" "] = criteria.NewGraterOrEqual(ID)
 }
 
-
 //SetTransferred set transferred value
 func (t *Transferable) SetTransferred(transferred int) {
 	atomic.StoreUint32(&t.Transferred, uint32(transferred))

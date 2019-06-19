@@ -26,7 +26,7 @@ func init() {
 		DriverName: "sqlite3",
 		Descriptor: path.Join(parent, "test/db/mydb"),
 		Parameters: map[string]interface{}{
-			"dbname":"mydb",
+			"dbname": "mydb",
 		},
 	}
 	_ = testConfig.Init()
@@ -96,7 +96,7 @@ func TestService_NewRequest(t *testing.T) {
 			assert.NotNil(t, err, useCase.description)
 			continue
 		}
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		srv := newService(dbSync, daoService)
@@ -129,23 +129,23 @@ func TestService_Post(t *testing.T) {
 	}
 
 	var useCases = []struct {
-		description string
-		table       string
-		retries     int
-		tempDB string
-		suffix      string
-		expect      interface{}
-		hasError    bool
+		description       string
+		table             string
+		retries           int
+		tempDB            string
+		suffix            string
+		expect            interface{}
+		hasError          bool
 		expectTransferred int
-		responses   []string
+		responses         []string
 	}{
 		{
 			description: "request with done status",
 			table:       "events",
 			suffix:      "_tmp",
 
-			retries:     3,
-			expectTransferred:10,
+			retries:           3,
+			expectTransferred: 10,
 			responses: []string{
 				`{"status":"running"}`,
 				`{"status":"error", "error":"test"}`,
@@ -166,11 +166,11 @@ func TestService_Post(t *testing.T) {
 			},
 		},
 		{
-			description: "request with wait",
-			table:       "events",
-			suffix:      "_tmp",
-			retries:     2,
-			expectTransferred:5,
+			description:       "request with wait",
+			table:             "events",
+			suffix:            "_tmp",
+			retries:           2,
+			expectTransferred: 5,
 			responses: []string{
 				`{"status":"running", "WriteCount":3}`,
 				`{"status":"running", "WriteCount":4}`,
@@ -178,12 +178,12 @@ func TestService_Post(t *testing.T) {
 			},
 		},
 		{
-			description: "request with tempdb",
-			table:       "events",
-			suffix:      "_tmp",
-			retries:     2,
-			tempDB:"temp",
-			expectTransferred:6,
+			description:       "request with tempdb",
+			table:             "events",
+			suffix:            "_tmp",
+			retries:           2,
+			tempDB:            "temp",
+			expectTransferred: 6,
 			responses: []string{
 				`{"status":"running", "WriteCount":3}`,
 				`{"status":"running", "WriteCount":4}`,
@@ -209,7 +209,6 @@ func TestService_Post(t *testing.T) {
 		err := dbSync.Init()
 		assert.Nil(t, err, useCase.description)
 
-
 		if len(useCase.responses) > 0 {
 			for _, resp := range useCase.responses {
 				responses <- resp
@@ -219,8 +218,7 @@ func TestService_Post(t *testing.T) {
 		daoService := dao.New(dbSync)
 		err = daoService.Init(ctx)
 
-
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 
@@ -232,7 +230,6 @@ func TestService_Post(t *testing.T) {
 			Suffix: useCase.suffix,
 		}
 		request := srv.NewRequest(ctx, transferable)
-
 
 		err = srv.Post(ctx, request, transferable)
 		if useCase.hasError {

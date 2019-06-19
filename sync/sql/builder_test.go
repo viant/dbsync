@@ -2,7 +2,7 @@ package sql
 
 import (
 	"dbsync/sync/criteria"
-	
+
 	"dbsync/sync/contract/strategy"
 	"dbsync/sync/contract/strategy/diff"
 	"dbsync/sync/shared"
@@ -60,7 +60,7 @@ func TestBuilder_DDLFromSelect(t *testing.T) {
 		log.Fatal(err)
 	}
 	_ = request.Init()
-	builder, err := NewBuilder(request, "",  getTestColumns())
+	builder, err := NewBuilder(request, "", getTestColumns())
 
 	{ //basic DDL with suffix
 		actualDDL := builder.DDLFromSelect("_tmp")
@@ -169,7 +169,7 @@ FROM (
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request, "", getTestColumns())
 		{
 			actualDQL := builder.ChunkDQL(request.Source, useCase.max, useCase.limit, useCase.filter)
 			assert.Nil(t, err, useCase.description)
@@ -237,7 +237,7 @@ func TestBuilder_CountDQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request, "", getTestColumns())
 		{
 			actualDQL := builder.CountDQL(useCase.suffix, request.Source, useCase.filter)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/count/expect/%v", useCase.expectDifURI))
@@ -423,7 +423,7 @@ func TestBuilder_DiffDQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request, "", getTestColumns())
 		assert.Nil(t, err)
 		{
 			actualDQL := builder.SignatureDQL(request.Source, useCase.filter)
@@ -512,7 +512,7 @@ func TestBuilder_DQL(t *testing.T) {
 			continue
 		}
 
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request, "", getTestColumns())
 		{
 			actualDQL := builder.DQL(useCase.suffix, request.Source, useCase.filter, len(request.IDColumns) > 0)
 			expectURL := path.Join(parent, fmt.Sprintf("test/builder/dql/expect/%v", useCase.expectDifURI))
@@ -547,49 +547,49 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id based insert",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsert,
+			dmlType:     shared.DMLInsert,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based insert or replace",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsertOrReplace,
+			dmlType:     shared.DMLInsertOrReplace,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based insert on duplicate update",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsertOnDuplicateUpddate,
+			dmlType:     shared.DMLInsertOnDuplicateUpddate,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based insert on conflict update",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsertOnConflictUpddate,
+			dmlType:     shared.DMLInsertOnConflictUpddate,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based merge",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLMerge,
+			dmlType:     shared.DMLMerge,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based merge into",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLMergeInto,
+			dmlType:     shared.DMLMergeInto,
 			idColumns:   []string{"id"},
 		},
 		{
 			description: "single id based dml delete",
 			group:       "id_based",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLDelete,
+			dmlType:     shared.DMLDelete,
 			idColumns:   []string{"id"},
 		},
 
@@ -605,7 +605,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based insert or replace",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsertOrReplace,
+			dmlType:     shared.DMLInsertOrReplace,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": 4,
@@ -615,7 +615,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based  insert on duplicate update",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsertOnDuplicateUpddate,
+			dmlType:     shared.DMLInsertOnDuplicateUpddate,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": " > 4",
@@ -625,7 +625,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based  insert on conflict update",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsertOnConflictUpddate,
+			dmlType:     shared.DMLInsertOnConflictUpddate,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": " < 4",
@@ -635,7 +635,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based merge",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLMerge,
+			dmlType:     shared.DMLMerge,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewBetween(1, 10),
@@ -645,7 +645,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based merge into",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLMergeInto,
+			dmlType:     shared.DMLMergeInto,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewLessOrEqual(1),
@@ -655,7 +655,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single id and filter based dml delete",
 			group:       "filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLDelete,
+			dmlType:     shared.DMLDelete,
 			idColumns:   []string{"id"},
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
@@ -678,7 +678,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:       shared.DMLInsertOrReplace,
+			dmlType:      shared.DMLInsertOrReplace,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -686,7 +686,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:       shared.DMLInsertOnDuplicateUpddate,
+			dmlType:      shared.DMLInsertOnDuplicateUpddate,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -694,7 +694,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:       shared.DMLInsertOnConflictUpddate,
+			dmlType:      shared.DMLInsertOnConflictUpddate,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -702,7 +702,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:       shared.DMLMerge,
+			dmlType:      shared.DMLMerge,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -710,7 +710,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:       shared.DMLMergeInto,
+			dmlType:      shared.DMLMergeInto,
 			idColumns:    []string{"id"},
 		},
 		{
@@ -718,7 +718,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:        "tempdb",
 			suffix:       "_tmp",
 			tempDatabase: "transfer",
-			dmlType:       shared.DMLDelete,
+			dmlType:      shared.DMLDelete,
 			idColumns:    []string{"id"},
 		},
 
@@ -726,20 +726,20 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single non id based insert",
 			group:       "non_id",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsert,
+			dmlType:     shared.DMLInsert,
 		},
 		{
 			description: "single non id based dml delete",
 			group:       "non_id",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLDelete,
+			dmlType:     shared.DMLDelete,
 		},
 
 		{
 			description: "single non id based with filter insert",
 			group:       "non_id_filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLInsert,
+			dmlType:     shared.DMLInsert,
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
 			},
@@ -748,7 +748,7 @@ func TestBuilder_DML(t *testing.T) {
 			description: "single non id based with filter dml delete",
 			group:       "non_id_filter",
 			suffix:      "_tmp",
-			dmlType:      shared.DMLDelete,
+			dmlType:     shared.DMLDelete,
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
 			},
@@ -759,7 +759,7 @@ func TestBuilder_DML(t *testing.T) {
 			group:       "error",
 			suffix:      "",
 			hasError:    true,
-			dmlType:      shared.DMLDelete,
+			dmlType:     shared.DMLDelete,
 			filter: map[string]interface{}{
 				"event_type": criteria.NewGraterOrEqual(13),
 			},
@@ -779,7 +779,7 @@ func TestBuilder_DML(t *testing.T) {
 		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		builder, err := NewBuilder(request, "",  getTestColumns())
+		builder, err := NewBuilder(request, "", getTestColumns())
 		assert.Nil(t, err)
 		assert.NotNil(t, builder)
 		actualSQL, err := builder.DML(useCase.dmlType, useCase.suffix, useCase.filter)

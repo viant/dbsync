@@ -36,7 +36,7 @@ func (s *Status) Min() int {
 	if s.Dest == nil {
 		return result
 	}
-	if s.Dest.Min() > 0 &&  s.Dest.Min() < result || result == 0 {
+	if s.Dest.Min() > 0 && s.Dest.Min() < result || result == 0 {
 		result = s.Dest.Min()
 	}
 	return result
@@ -59,7 +59,6 @@ func (s *Status) Max() int {
 	}
 	return result
 }
-
 
 //NewStatus creates a status
 func NewStatus(source, dest *Signature) *Status {

@@ -65,7 +65,6 @@ func (s *service) sync(request *Request) (response *Response, err error) {
 	var job *core.Job
 	var ctx *shared.Context
 
-
 	if err = request.Init(); err == nil {
 		if err = request.Validate(); err == nil {
 			job, err = s.getJob(request.ID())
@@ -108,7 +107,6 @@ func (s *service) onJobDone(ctx *shared.Context, job *core.Job, response *Respon
 	response.Status = job.Status
 }
 
-
 func (s *service) runSyncJob(ctx *shared.Context, job *core.Job, request *Request, response *Response) (err error) {
 	defer func() {
 		s.onJobDone(ctx, job, response, err)
@@ -118,7 +116,7 @@ func (s *service) runSyncJob(ctx *shared.Context, job *core.Job, request *Reques
 	if err = service.Init(ctx); err != nil {
 		return err
 	}
-		partitionService := partition.New(dbSync, service, shared.NewMutex(), s.jobs, s.history)
+	partitionService := partition.New(dbSync, service, shared.NewMutex(), s.jobs, s.history)
 	defer func() {
 		_ = partitionService.Close()
 	}()
@@ -141,7 +139,6 @@ func (s *service) getJob(ID string) (*core.Job, error) {
 	job.Status = shared.StatusRunning
 	return job, nil
 }
-
 
 func (s *service) runScheduledJob(schedulable *scheduler.Schedulable) (err error) {
 	defer func() {

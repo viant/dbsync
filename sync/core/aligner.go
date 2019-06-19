@@ -11,11 +11,10 @@ func AlignRecords(records1, records2 Records) {
 	if len(records2) < length {
 		length = len(records2)
 	}
-	for i := 0;i<length;i++{
+	for i := 0; i < length; i++ {
 		AlignRecord(records1[i], records2[i])
 	}
 }
-
 
 //AlignRecord align record value data types
 func AlignRecord(record1, record2 Record) {
@@ -23,7 +22,7 @@ func AlignRecord(record1, record2 Record) {
 		value1 := record1[key]
 		record2Key := record2.Key(key)
 		value2, ok := record2[record2Key]
-		if ! ok {
+		if !ok {
 			continue
 		}
 		if reflect.TypeOf(value1) == reflect.TypeOf(value2) {
@@ -37,7 +36,7 @@ func AlignRecord(record1, record2 Record) {
 		if toolbox.IsTime(value1) || toolbox.IsTime(value2) {
 			timeValue1, err := toolbox.ToTime(value1, timeLayout)
 			if err == nil {
-				timeValue2, err := toolbox.ToTime(value2, timeLayout);
+				timeValue2, err := toolbox.ToTime(value2, timeLayout)
 				if err == nil {
 					record1[key] = timeValue1.UTC()
 					record2[key] = timeValue2.UTC()
@@ -56,4 +55,3 @@ func AlignRecord(record1, record2 Record) {
 		}
 	}
 }
-

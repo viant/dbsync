@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-
-
 func TestComparator_IsInSync(t *testing.T) {
 
 	var ctx = &shared.Context{}
@@ -115,7 +113,7 @@ func TestComparator_IsInSync(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		comparator := NewComparator(&strategy.Diff{Columns:useCase.columns})
+		comparator := NewComparator(&strategy.Diff{Columns: useCase.columns})
 		actual := comparator.IsInSync(ctx, useCase.record1, useCase.record2)
 		assert.EqualValues(t, useCase.expect, actual, useCase.description)
 	}
@@ -176,7 +174,7 @@ func TestComparator_IsSimilar(t *testing.T) {
 	}
 
 	for _, useCase := range useCases {
-		comparator := NewComparator(&strategy.Diff{Columns:[]*diff.Column{useCase.column}})
+		comparator := NewComparator(&strategy.Diff{Columns: []*diff.Column{useCase.column}})
 		actual := comparator.IsSimilar(useCase.key, useCase.value1, useCase.value2)
 		assert.EqualValues(t, useCase.expect, actual, useCase.description)
 	}

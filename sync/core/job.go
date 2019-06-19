@@ -13,7 +13,7 @@ type Job struct {
 	Error     string
 	Status    string
 	Progress  Progress
-	Items     [] *Transferable
+	Items     []*Transferable
 	Chunked   bool
 	mutex     *sync.Mutex
 	StartTime time.Time
@@ -52,7 +52,6 @@ func (j *Job) Done(now time.Time) {
 	}
 	j.EndTime = &now
 }
-
 
 //Add add transferable
 func (j *Job) Add(transferable *Transferable) {

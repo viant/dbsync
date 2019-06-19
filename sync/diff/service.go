@@ -11,12 +11,17 @@ import (
 
 //Service represents a diff service
 type Service interface {
+
+	//Check compares source and dest record and returns sync status
 	Check(ctx *shared.Context, source, dest core.Record, filter map[string]interface{}) (*core.Status, error)
 
+	//UpdateStatus updates sync status for supplied source and dest, it uses narrowInSyncSubset to find MAX ID in dest that is in sync with the source
 	UpdateStatus(ctx *shared.Context, status *core.Status, source, dest core.Record, filter map[string]interface{}, narrowInSyncSubset bool) (err error)
 
+	//Fetch returns source and dest raw signature data or error
 	Fetch(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Record, err error)
 
+	//FetchAll returns source and dest raw signature data or error
 	FetchAll(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Records, err error)
 }
 
@@ -53,7 +58,6 @@ func (d *service) Fetch(ctx *shared.Context, filter map[string]interface{}) (sou
 	return source, dest, err
 }
 
-
 //Fetch reads source and dest signature records for supplied filter
 func (d *service) FetchAll(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Records, err error) {
 	if source, err = d.dao.Signatures(ctx, contract.ResourceKindSource, filter); err != nil {
@@ -62,7 +66,6 @@ func (d *service) FetchAll(ctx *shared.Context, filter map[string]interface{}) (
 	dest, err = d.dao.Signatures(ctx, contract.ResourceKindDest, filter)
 	return source, dest, err
 }
-
 
 func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source, dest core.Record, filter map[string]interface{}, narrowInSyncSubset bool) (err error) {
 	defer func() {
@@ -81,7 +84,7 @@ func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source,
 		return nil
 	}
 
-	if ! hasID {
+	if !hasID {
 		status.Method = shared.SyncMethodDeleteInsert
 		return nil
 	}

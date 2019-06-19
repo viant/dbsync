@@ -38,7 +38,7 @@ func (c *Chunks) Take(ctx *shared.Context) *Chunk {
 
 //CloseOffer closes chunk offering
 func (c *Chunks) CloseOffer() {
-	if ! atomic.CompareAndSwapUint32(&c.closed, 0, 1) {
+	if !atomic.CompareAndSwapUint32(&c.closed, 0, 1) {
 		return
 	}
 	for i := 0; i < c.strategy.Threads; i++ {

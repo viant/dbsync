@@ -49,9 +49,8 @@ func TestRegistry_Register(t *testing.T) {
 					Status:      "ok",
 					Transferred: 5,
 				},
-
 			},
-			expect:`{
+			expect: `{
 	"1": [
 		{
 			"ID": "1",
@@ -97,7 +96,7 @@ func TestRegistry_Register(t *testing.T) {
 		}
 		actual := registry.list(2)
 
-		if ! assertly.AssertValues(t, useCase.expect, actual,useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 

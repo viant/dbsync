@@ -17,7 +17,7 @@ func TestRecord_Index(t *testing.T) {
 			record: Record{
 				"k1": 1,
 				"k2": 2,
-				"k6":1,
+				"k6": 1,
 			},
 			keys:   []string{"k1"},
 			expect: "1",
@@ -28,7 +28,7 @@ func TestRecord_Index(t *testing.T) {
 				"k1": 1,
 				"k2": 2,
 				"k3": 3,
-				"k6":22,
+				"k6": 22,
 			},
 			keys:   []string{"k1", "k2"},
 			expect: "1_2",
@@ -38,7 +38,7 @@ func TestRecord_Index(t *testing.T) {
 			record: Record{
 				"k1": 1,
 				"k3": 3,
-				"k6":22,
+				"k6": 22,
 			},
 			keys:   []string{"k1", "k2", "k3"},
 			expect: "1_3",
@@ -88,12 +88,10 @@ func TestRecord_Value(t *testing.T) {
 
 	for _, useCase := range useCases {
 		actual, has := useCase.record.Value(useCase.key)
-		if ! useCase.has {
+		if !useCase.has {
 			assert.False(t, has, useCase.description)
 			continue
 		}
 		assert.EqualValues(t, useCase.expect, actual, useCase.description)
 	}
 }
-
-

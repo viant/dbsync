@@ -47,13 +47,9 @@ func TestPartitions_Validate(t *testing.T) {
 				},
 				IDColumns: []string{"id"},
 			},
-			source: Record{
-
-			},
-			dest: Record{
-
-			},
-			valid: true,
+			source: Record{},
+			dest:   Record{},
+			valid:  true,
 		},
 		{
 			description: "invalid partition Source",
@@ -293,57 +289,52 @@ func TestPartitions_BatchCriteria(t *testing.T) {
 		partitions := NewPartitions(args, useCase.strategy)
 		partitions.Init()
 		criteria := partitions.Criteria()
-		if ! assertly.AssertValues(t, useCase.expect, criteria, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, criteria, useCase.description) {
 			_ = toolbox.DumpIndent(criteria, true)
 		}
 	}
 }
-
-
 
 func TestPartitions_BatchTransferable(t *testing.T) {
 
 	var useCases = []struct {
 		description string
 		partitions  []*Partition
-		expect interface{}
+		expect      interface{}
 	}{
 		{
-			description:"inert transferable",
-			partitions:[]*Partition{
+			description: "inert transferable",
+			partitions: []*Partition{
 				{
-					IDColumn:"id",
+					IDColumn: "id",
 					Transferable: Transferable{
-						Suffix:"_tmp1",
-						Filter:map[string]interface{}{
-							"event_type":1,
+						Suffix: "_tmp1",
+						Filter: map[string]interface{}{
+							"event_type": 1,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodInsert,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
-
+							Method: shared.SyncMethodInsert,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 				{
-					IDColumn:"id",
+					IDColumn: "id",
 					Transferable: Transferable{
-						Suffix:"_tmp2",
-						Filter:map[string]interface{}{
-							"event_type":2,
+						Suffix: "_tmp2",
+						Filter: map[string]interface{}{
+							"event_type": 2,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodInsert,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
+							Method: shared.SyncMethodInsert,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 			},
-			expect:`{
+			expect: `{
 	"Method": "insert",
 	"Source": {
 		"CountValue": 2
@@ -351,44 +342,40 @@ func TestPartitions_BatchTransferable(t *testing.T) {
 	"Suffix": "_tmp"
 }
 `,
-
 		},
 		{
-			description:"merge transferable",
-			partitions:[]*Partition{
+			description: "merge transferable",
+			partitions: []*Partition{
 				{
-					IDColumn:"id",
+					IDColumn: "id",
 					Transferable: Transferable{
-						Suffix:"_tmp1",
-						Filter:map[string]interface{}{
-							"event_type":1,
+						Suffix: "_tmp1",
+						Filter: map[string]interface{}{
+							"event_type": 1,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodMerge,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
-
+							Method: shared.SyncMethodMerge,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 				{
-					IDColumn:"id",
+					IDColumn: "id",
 					Transferable: Transferable{
-						Suffix:"_tmp2",
-						Filter:map[string]interface{}{
-							"event_type":2,
+						Suffix: "_tmp2",
+						Filter: map[string]interface{}{
+							"event_type": 2,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodInsert,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
+							Method: shared.SyncMethodInsert,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 			},
-			expect:`{
+			expect: `{
 	"Method": "merge",
 	"Source": {
 		"CountValue": 2
@@ -401,16 +388,15 @@ func TestPartitions_BatchTransferable(t *testing.T) {
 
 	for _, useCase := range useCases {
 		partitions := NewPartitions(useCase.partitions, &strategy.Strategy{
-			Partition:strategy.Partition{
-				BatchSize:10,
+			Partition: strategy.Partition{
+				BatchSize: 10,
 			},
 		})
 		partitions.Init()
 		transferable := partitions.BatchTransferable()
-		if ! assertly.AssertValues(t, useCase.expect, transferable, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, transferable, useCase.description) {
 			_ = toolbox.DumpIndent(transferable, true)
 		}
 	}
 
 }
-

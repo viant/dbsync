@@ -4,8 +4,11 @@ import "dbsync/sync/core"
 
 //Service represents a job service
 type Service interface {
+	//List lists all active or recently active jobs
 	List(request *ListRequest) *ListResponse
+	//Create creates a new job
 	Create(ID string) *core.Job
+	//Get returns a job for supplied ID or nil
 	Get(ID string) *core.Job
 }
 
@@ -16,7 +19,7 @@ type service struct {
 //Get returns job by ID or nil
 func (s *service) Get(ID string) *core.Job {
 	jobs := s.registry.list()
-	for  i := range jobs {
+	for i := range jobs {
 		if jobs[i].ID == ID {
 			jobs[i].Update()
 			return jobs[i]
@@ -57,7 +60,6 @@ func (s *service) Create(ID string) *core.Job {
 	s.registry.add(job)
 	return job
 }
-
 
 //New create a job service
 func New() Service {

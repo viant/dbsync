@@ -22,7 +22,6 @@ func (r *registry) list() []*core.Job {
 	return jobs
 }
 
-
 func (r *registry) prune() {
 	r.Mutex.Lock()
 	defer r.Mutex.Unlock()
@@ -44,7 +43,6 @@ func (r *registry) prune() {
 	r.Jobs = newJobs
 }
 
-
 //add adds transfer job
 func (r *registry) add(job *core.Job) {
 	r.prune()
@@ -60,7 +58,6 @@ func (r *registry) add(job *core.Job) {
 	}
 	r.Jobs = newJobs
 }
-
 
 //newRegistry returns new transfers
 func newRegistry() *registry {

@@ -7,29 +7,28 @@ import (
 
 //Job represents job history
 type Job struct {
-	ID string `json:",omitempty"`
+	ID            string `json:",omitempty"`
 	TimeTakenInMs int
-	EndTime time.Time
-	SourceCount int
-	DestCount int
-	Transferred int
-	Partitions map[string]int
-	Chunks map[string]int
-	Status string
-	Error string
+	EndTime       time.Time
+	SourceCount   int
+	DestCount     int
+	Transferred   int
+	Partitions    map[string]int
+	Chunks        map[string]int
+	Status        string
+	Error         string
 }
-
 
 //NewJob returns a new job
 func NewJob(job *core.Job) *Job {
 	result := &Job{
-		ID:job.ID,
-		TimeTakenInMs:int(job.EndTime.Sub(job.StartTime))/int(time.Millisecond),
-		Partitions:make(map[string]int),
-		Chunks:make(map[string]int),
-		Status:job.Status,
-		Error:job.Error,
-		EndTime:*job.EndTime,
+		ID:            job.ID,
+		TimeTakenInMs: int(job.EndTime.Sub(job.StartTime)) / int(time.Millisecond),
+		Partitions:    make(map[string]int),
+		Chunks:        make(map[string]int),
+		Status:        job.Status,
+		Error:         job.Error,
+		EndTime:       *job.EndTime,
 	}
 	methods := result.Partitions
 	if job.Chunked {

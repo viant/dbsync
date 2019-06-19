@@ -17,4 +17,3 @@ func (t *Transfer) Init() error {
 	}
 	return nil
 }
-

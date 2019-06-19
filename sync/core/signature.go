@@ -81,17 +81,16 @@ func (c *Signature) ValidateIDConsistency() error {
 	return fmt.Errorf(" data has unique ID duplicates, rowCount: %v, unique ID count: %v ", c.Count(), c.UniqueIDCount())
 }
 
-
 //NewSignatureFromRecord creates a new signature from a record
 func NewSignatureFromRecord(idKey string, record Record) *Signature {
 	if idKey == "" {
 		return &Signature{
-			id:idKey,
+			id:         idKey,
 			CountValue: record.Get(diff.AliasCount),
 		}
 	}
 	return &Signature{
-		id:idKey,
+		id:                        idKey,
 		CountValue:                record.Get(diff.AliasCount),
 		MinValue:                  record.Get(fmt.Sprintf(diff.AliasMinIdTemplate, idKey)),
 		MaxValue:                  record.Get(fmt.Sprintf(diff.AliasMaxIdTemplate, idKey)),

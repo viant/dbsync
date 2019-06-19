@@ -6,10 +6,8 @@ import (
 	"strings"
 )
 
-
 //Criterion represents criterion
 type Criterion fmt.Stringer
-
 
 type between struct {
 	from int
@@ -22,11 +20,11 @@ func (b between) String() string {
 
 //NewBetween creates new betwee criterion
 func NewBetween(from, to int) Criterion {
-	return &between{from:from, to:to}
+	return &between{from: from, to: to}
 }
 
 //NewLessOrEqual creates less of equal criterion
-func NewLessOrEqual(value int) Criterion{
+func NewLessOrEqual(value int) Criterion {
 	return &lessOrEqual{value}
 }
 
@@ -38,7 +36,6 @@ func (c lessOrEqual) String() string {
 	return fmt.Sprintf(" <= %v", c.value)
 }
 
-
 type greaterThan struct {
 	value int
 }
@@ -47,13 +44,10 @@ func (c greaterThan) String() string {
 	return fmt.Sprintf(" > %v", c.value)
 }
 
-
 //NewGraterThan creates grater than criterion
-func NewGraterThan(value int) Criterion{
+func NewGraterThan(value int) Criterion {
 	return &greaterThan{value}
 }
-
-
 
 type greaterOrEqual struct {
 	value int
@@ -62,7 +56,6 @@ type greaterOrEqual struct {
 func (c greaterOrEqual) String() string {
 	return fmt.Sprintf(" => %v", c.value)
 }
-
 
 //NewGraterOrEqual creates grater or equal criterion
 func NewGraterOrEqual(value int) Criterion {

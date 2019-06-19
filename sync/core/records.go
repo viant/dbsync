@@ -43,7 +43,6 @@ func (r Records) Signature(key string) *Signature {
 	return result
 }
 
-
 //Min returns min value for supplied key
 func (r Records) Min(key string) int {
 	if len(r) == 0 {
@@ -65,7 +64,7 @@ func (r Records) ReduceInt(key string, reducer func(prev, next int) int, initial
 	result := initial
 	for _, sourceRecord := range r {
 		value, ok := sourceRecord.Value(key)
-		if ! ok {
+		if !ok {
 			continue
 		}
 		result = reducer(result, toolbox.AsInt(value))

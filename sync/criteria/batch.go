@@ -7,7 +7,7 @@ import (
 
 //Batch represents criteria batch
 type Batch struct {
-	mutex *sync.RWMutex
+	mutex        *sync.RWMutex
 	batchSize    int
 	criteria     []map[string]interface{}
 	values       map[string][]interface{}
@@ -26,11 +26,11 @@ func (b *Batch) Add(values map[string]interface{}) {
 			b.values[key] = make([]interface{}, 0)
 		}
 		valueForKey := b.uniqueValues[key]
-		valueForKey[key] =true
+		valueForKey[key] = true
 		b.values[key] = append(b.values[key], value)
 		b.mutex.Unlock()
 	}
-	
+
 	if int(atomic.AddUint32(&b.counter, 1)) >= b.batchSize {
 		b.flush()
 	}
@@ -57,8 +57,8 @@ func (b *Batch) hasValue(key string, value interface{}) bool {
 		b.uniqueValues[key] = make(map[interface{}]bool)
 	}
 	valueForKey := b.uniqueValues[key]
-	 _, ok := valueForKey[value]
-	 return ok
+	_, ok := valueForKey[value]
+	return ok
 }
 
 //Get returns batched criteria
@@ -67,11 +67,10 @@ func (b *Batch) Get() []map[string]interface{} {
 	return b.criteria
 }
 
-
 //NewBatch creates a criteria batch
 func NewBatch(batchSize int) *Batch {
 	return &Batch{
-		mutex: &sync.RWMutex{},
+		mutex:        &sync.RWMutex{},
 		batchSize:    batchSize,
 		criteria:     make([]map[string]interface{}, 0),
 		values:       make(map[string][]interface{}),

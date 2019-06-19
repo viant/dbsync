@@ -8,7 +8,6 @@ import (
 
 func TestBatch_Add(t *testing.T) {
 
-
 	var useCases = []struct {
 		description string
 		batchSize   int
@@ -20,22 +19,22 @@ func TestBatch_Add(t *testing.T) {
 			batchSize:   2,
 			pairs: []map[string]interface{}{
 				{
-					"k1":1,
+					"k1": 1,
 				},
 				{
-					"k1":2,
+					"k1": 2,
 				},
 				{
-					"k1":3,
+					"k1": 3,
 				},
 				{
-					"k1":4,
+					"k1": 4,
 				},
 				{
-					"k1":5,
+					"k1": 5,
 				},
 			},
-			expect:`[
+			expect: `[
 	{
 		"k1": [1,2]
 	},
@@ -53,28 +52,27 @@ func TestBatch_Add(t *testing.T) {
 			batchSize:   3,
 			pairs: []map[string]interface{}{
 				{
-					"k1":1,
-					"k2":10,
+					"k1": 1,
+					"k2": 10,
 				},
 				{
-					"k1":2,
-					"k2":11,
-
+					"k1": 2,
+					"k2": 11,
 				},
 				{
-					"k1":1,
-					"k2":12,
+					"k1": 1,
+					"k2": 12,
 				},
 				{
-					"k1":2,
-					"k2":12,
+					"k1": 2,
+					"k2": 12,
 				},
 				{
-					"k1":2,
-					"k2":13,
+					"k1": 2,
+					"k2": 13,
 				},
 			},
-			expect:`[
+			expect: `[
 	{
 		"k1": [1,2],
 		"k2": [10,11,12]
@@ -94,7 +92,7 @@ func TestBatch_Add(t *testing.T) {
 			batch.Add(pair)
 		}
 		actual := batch.Get()
-		if ! assertly.AssertValues(t, useCase.expect, actual) {
+		if !assertly.AssertValues(t, useCase.expect, actual) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}

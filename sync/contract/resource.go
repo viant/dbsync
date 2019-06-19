@@ -11,12 +11,11 @@ const (
 	//ResourceKindSource represents source resource
 	ResourceKindSource = "source"
 	//ResourceKindDest represents dest resource
-	ResourceKindDest   = "dest"
+	ResourceKindDest = "dest"
 )
 
 //ResourceKind represents source or dest
 type ResourceKind string
-
 
 //Resource represents sync resource
 type Resource struct {
@@ -31,7 +30,6 @@ type Resource struct {
 	ChunkSQL          string
 	PartitionSQL      string
 }
-
 
 //Validate checks if resource is valid
 func (r *Resource) Validate() error {

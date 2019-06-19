@@ -12,7 +12,9 @@ import (
 
 //Service represents a merge service
 type Service interface {
+	//Merge merges transferred transferable into dest table
 	Merge(ctx *shared.Context, transferable *core.Transferable) error
+	//Delete removes data from dest table for supplied filter, filter can not be emtpty or error
 	Delete(ctx *shared.Context, filter map[string]interface{}) error
 }
 
@@ -22,8 +24,6 @@ type service struct {
 	*sql.Builder
 	*shared.Mutex
 }
-
-
 
 func (s *service) delete(ctx *shared.Context, transferable *core.Transferable) error {
 	DML, err := s.Builder.DML(shared.DMLDelete, transferable.Suffix, shared.CloneMap(transferable.Filter))
@@ -71,13 +71,11 @@ func (s *service) merge(ctx *shared.Context, transferable *core.Transferable) er
 	return err
 }
 
-
 //Delete delete data from dest table for supplied filter
 func (s *service) Delete(ctx *shared.Context, filter map[string]interface{}) error {
 	DML, _ := s.Builder.DML(shared.DMLFilteredDelete, "", filter)
 	return s.dao.ExecSQL(ctx, DML)
 }
-
 
 //Merge merges data for supplied transferable
 func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (err error) {

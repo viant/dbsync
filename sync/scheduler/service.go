@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-
 var defaultSchedulerLoadFrequencyMs = 5000
 var dateLayout = "2006-03-01 03:10:11"
 
@@ -25,12 +24,8 @@ type Service interface {
 	Get(ID string) *Schedulable
 }
 
-
 //Runner represents runner function
 type Runner func(schedulable *Schedulable) error
-
-
-
 
 //service represents basic scheduler
 type service struct {
@@ -57,15 +52,12 @@ func (s *service) add(schedulable *Schedulable, modTime time.Time) {
 	s.modified[schedulable.ID] = modTime
 }
 
-
 func (s *service) List(request *ListRequest) *ListResponse {
 	response := &ListResponse{
-		Items:s.getSchedulables(),
+		Items: s.getSchedulables(),
 	}
 	return response
 }
-
-
 
 //listIDs lists runnable IDs
 func (s *service) listIDs() []string {
@@ -167,7 +159,6 @@ func (s *service) run() {
 		time.Sleep(time.Second)
 	}
 }
-
 
 func (s *service) load() error {
 	isDueToLoad := time.Now().After(s.nextCheck)

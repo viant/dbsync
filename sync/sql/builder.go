@@ -18,16 +18,16 @@ import (
 //Builder represents SQL builder
 type Builder struct {
 	*strategy.Strategy //request sync meta
-	ddl            string
-	transferSuffix string
-	tempDatabase   string
-	uniques        map[string]bool
-	source         *contract.Resource
-	dest           *contract.Resource
-	table          string
-	columns        []dsc.Column
-	columnsByName  map[string]dsc.Column
-	isUpperCase    bool
+	ddl                string
+	transferSuffix     string
+	tempDatabase       string
+	uniques            map[string]bool
+	source             *contract.Resource
+	dest               *contract.Resource
+	table              string
+	columns            []dsc.Column
+	columnsByName      map[string]dsc.Column
+	isUpperCase        bool
 }
 
 //Table returns table name
@@ -255,7 +255,7 @@ func (b *Builder) init() {
 }
 
 //SignatureDQL returns sync difference DQL
-func (b *Builder) SignatureDQL(resource *contract.Resource, criteria map[string]interface{}) (string) {
+func (b *Builder) SignatureDQL(resource *contract.Resource, criteria map[string]interface{}) string {
 	return b.partitionDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
 		for _, column := range b.Diff.Columns {
 			if _, has := dimension[column.Name]; has {
@@ -266,7 +266,7 @@ func (b *Builder) SignatureDQL(resource *contract.Resource, criteria map[string]
 	})
 }
 
-func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *contract.Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) (string) {
+func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *contract.Resource, projectionGenerator func(projection *[]string, dimension map[string]bool)) string {
 	var projection = make([]string, 0)
 	var groupBy = make([]string, 0)
 	var i = 1
@@ -509,7 +509,7 @@ func (b *Builder) getInsertWhere(filter map[string]interface{}, dedupe bool) str
 		if len(innerCriteria) > 0 {
 			innerWhere = "\nWHERE  " + strings.Join(innerCriteria, " AND ")
 		}
-		if ! dedupe {
+		if !dedupe {
 			return innerWhere
 		}
 		inCriteria := fmt.Sprintf("(%v) NOT IN (SELECT %v FROM %v t %v)", strings.Join(b.IDColumns, ","), strings.Join(b.IDColumns, ","), b.Table(""), innerWhere)

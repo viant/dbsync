@@ -1,8 +1,8 @@
 package core
 
 import (
-	"dbsync/sync/criteria"
 	"dbsync/sync/contract/strategy"
+	"dbsync/sync/criteria"
 	"dbsync/sync/shared"
 	"fmt"
 	"github.com/viant/toolbox"
@@ -22,7 +22,7 @@ type Partitions struct {
 }
 
 //Get returns partition for supplied key
-func (p *Partitions) Get(key string) (*Partition) {
+func (p *Partitions) Get(key string) *Partition {
 	return p.index[key]
 }
 
@@ -36,7 +36,7 @@ func (p *Partitions) FindDateLayout(record map[string]interface{}) string {
 		return ""
 	}
 	for k, v := range record {
-		if val, ok := filter[k];ok {
+		if val, ok := filter[k]; ok {
 			if toolbox.IsTime(v) {
 				return p.Strategy.Diff.DateLayout[0:len(toolbox.AsString(val))]
 			}
@@ -48,17 +48,16 @@ func (p *Partitions) FindDateLayout(record map[string]interface{}) string {
 //BatchTransferable returns batched transferable
 func (p *Partitions) BatchTransferable() *Transferable {
 	result := &Transferable{
-		Suffix:shared.TransientTableSuffix,
+		Suffix: shared.TransientTableSuffix,
 		Status: &Status{
-			Method:shared.SyncMethodInsert,
-			Source:&Signature{},
-			Dest:&Signature{},
+			Method: shared.SyncMethodInsert,
+			Source: &Signature{},
+			Dest:   &Signature{},
 		},
 	}
 
-
 	partitions := p.Source
-	for i:=0;i<len(partitions);i++ {
+	for i := 0; i < len(partitions); i++ {
 		transferable := partitions[i].Transferable
 		if transferable.ShouldDelete() {
 			continue
@@ -73,7 +72,6 @@ func (p *Partitions) BatchTransferable() *Transferable {
 	}
 	return result
 }
-
 
 //Criteria returns partitions criteria
 func (p *Partitions) Criteria() []map[string]interface{} {
@@ -120,7 +118,7 @@ func (p *Partitions) Validate(ctx *shared.Context, comparator *Comparator, sourc
 	if len(dest) == 0 {
 		return nil
 	}
-	if ! comparator.AreKeysInSync(ctx, keys, source, dest) {
+	if !comparator.AreKeysInSync(ctx, keys, source, dest) {
 		return fmt.Errorf("inconsistent partition value: %v, src: %v, dest:%v", keys, source.Index(keys), dest.Index(keys))
 	}
 	return nil
@@ -153,8 +151,6 @@ func (p *Partitions) Init() {
 		p.index[key] = partition
 	}
 }
-
-
 
 //NewPartitions creates a new partitions
 func NewPartitions(source []*Partition, strategy *strategy.Strategy) *Partitions {

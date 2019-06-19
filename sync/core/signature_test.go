@@ -26,7 +26,6 @@ func TestSignature_ValidateIDConsistency(t *testing.T) {
 			},
 		},
 
-
 		{
 			description: "record consistent - no id",
 			id:          "",
@@ -40,7 +39,7 @@ func TestSignature_ValidateIDConsistency(t *testing.T) {
 		{
 			description: "record consistent - no data",
 			id:          "id",
-			record: Record{},
+			record:      Record{},
 		},
 
 		{
@@ -48,11 +47,10 @@ func TestSignature_ValidateIDConsistency(t *testing.T) {
 			id:          "id",
 			record: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasUniqueIDCountTemplate, "id"):    8,
+				fmt.Sprintf(diff.AliasUniqueIDCountTemplate, "id"): 8,
 			},
 			error: "unique column has NULL Source",
 		},
-
 
 		{
 			description: "record ID inconsistent -  null IDs valuues",
@@ -96,93 +94,86 @@ func TestSignature_IsEqual(t *testing.T) {
 	var useCases = []struct {
 		description string
 		id          string
-		record1      Record
-		record2      Record
+		record1     Record
+		record2     Record
 		expect      bool
 	}{
 
 		{
-			description:"equal",
-			id:"id",
+			description: "equal",
+			id:          "id",
 
 			record1: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    10,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 10,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 1,
 			},
 			record2: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    10,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 10,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 1,
 			},
-			expect:true,
-
+			expect: true,
 		},
 
 		{
-			description:"equal - no data",
-			id:"id",
+			description: "equal - no data",
+			id:          "id",
 
 			record1: Record{},
 			record2: Record{},
-			expect:true,
-
+			expect:  true,
 		},
 		{
-			description:"not equal count diff",
-			id:"id",
+			description: "not equal count diff",
+			id:          "id",
 
 			record1: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    10,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 10,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 1,
 			},
 			record2: Record{
 				"cnt": 15,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    10,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 10,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 1,
 			},
-			expect:false,
-
+			expect: false,
 		},
 
 		{
-			description:"not equal min diff",
-			id:"id",
+			description: "not equal min diff",
+			id:          "id",
 
 			record1: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    10,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 10,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 2,
 			},
 			record2: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    10,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 10,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 1,
 			},
-			expect:false,
-
+			expect: false,
 		},
 
-
 		{
-			description:"not equal max diff",
-			id:"id",
+			description: "not equal max diff",
+			id:          "id",
 
 			record1: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    10,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 10,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 1,
 			},
 			record2: Record{
 				"cnt": 10,
-				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"):    15,
+				fmt.Sprintf(diff.AliasMaxIdTemplate, "id"): 15,
 				fmt.Sprintf(diff.AliasMinIdTemplate, "id"): 1,
 			},
-			expect:false,
-
+			expect: false,
 		},
-
 	}
 
 	for _, useCase := range useCases {

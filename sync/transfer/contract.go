@@ -17,7 +17,6 @@ type Dest struct {
 	Table string
 }
 
-
 //Request represents transfer service request
 type Request struct {
 	Source      *Source
@@ -37,7 +36,6 @@ type Response struct {
 	WriteCount int
 }
 
-
 //Error represents transfer error
 type Error struct {
 	*Response
@@ -54,7 +52,6 @@ func NewError(response *Response) *Error {
 		Response: response,
 	}
 }
-
 
 //IsTransferError returns true if error is TransferError type
 func IsTransferError(err error) bool {

@@ -82,7 +82,7 @@ func TestIndexer_Index(t *testing.T) {
 		},
 
 		{
-			description: "single key Index, records count diff 2" ,
+			description: "single key Index, records count diff 2",
 			keys:        []string{"k1"},
 			source: Records{
 				Record{
@@ -128,7 +128,6 @@ func TestIndexer_Index(t *testing.T) {
 
 		indexer := NewIndexer(useCase.keys)
 		index := indexer.Index(useCase.source, useCase.dest)
-
 
 		assert.Equal(t, len(useCase.expectSource), len(index.Source), useCase.description)
 		for _, indexVal := range useCase.expectSource {

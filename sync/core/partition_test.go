@@ -87,55 +87,48 @@ func TestPartition_Init(t *testing.T) {
 
 }
 
-
-
 func TestPartition_BatchCriteria(t *testing.T) {
 
-
-	partitionStretagy :=&strategy.Strategy{
+	partitionStretagy := &strategy.Strategy{
 		Partition: strategy.Partition{},
-		Chunk:strategy.Chunk{Threads:10,},
+		Chunk:     strategy.Chunk{Threads: 10},
 	}
 	var useCases = []struct {
-		description     string
-		chunks []*Chunk
-		expect          interface{}
+		description string
+		chunks      []*Chunk
+		expect      interface{}
 	}{
 		{
 			description: "batch merge criteria",
-			chunks:[]*Chunk{
+			chunks: []*Chunk{
 				{
 					Transferable: Transferable{
-						Suffix:"_tmp1_001",
-						Filter:map[string]interface{}{
-							"event_type":1,
+						Suffix: "_tmp1_001",
+						Filter: map[string]interface{}{
+							"event_type": 1,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodInsert,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
-
+							Method: shared.SyncMethodInsert,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 				{
 					Transferable: Transferable{
-						Suffix:"_tmp1_002",
-						Filter:map[string]interface{}{
-							"event_type":1,
+						Suffix: "_tmp1_002",
+						Filter: map[string]interface{}{
+							"event_type": 1,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodMerge,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
-
+							Method: shared.SyncMethodMerge,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 			},
-			expect:`{
+			expect: `{
 	"Method": "merge",
 	"Source": {
 		"CountValue": 2
@@ -146,39 +139,35 @@ func TestPartition_BatchCriteria(t *testing.T) {
 
 		{
 			description: "batch insert criteria",
-			chunks:[]*Chunk{
+			chunks: []*Chunk{
 				{
 					Transferable: Transferable{
-						Suffix:"_tmp1_001",
-						Filter:map[string]interface{}{
-							"event_type":1,
+						Suffix: "_tmp1_001",
+						Filter: map[string]interface{}{
+							"event_type": 1,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodInsert,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
-
+							Method: shared.SyncMethodInsert,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 				{
 					Transferable: Transferable{
-						Suffix:"_tmp1_002",
-						Filter:map[string]interface{}{
-							"event_type":1,
+						Suffix: "_tmp1_002",
+						Filter: map[string]interface{}{
+							"event_type": 1,
 						},
 						Status: &Status{
-							Method:shared.SyncMethodInsert,
-							Source:&Signature{CountValue:1},
-							Dest:&Signature{CountValue:1},
-
+							Method: shared.SyncMethodInsert,
+							Source: &Signature{CountValue: 1},
+							Dest:   &Signature{CountValue: 1},
 						},
 					},
-
 				},
 			},
-			expect:`{
+			expect: `{
 	"Method": "insert",
 	"Source": {
 		"CountValue": 2
@@ -190,7 +179,6 @@ func TestPartition_BatchCriteria(t *testing.T) {
 
 	for _, useCase := range useCases {
 
-
 		partitions := NewPartition(partitionStretagy, map[string]interface{}{})
 		partitions.Init()
 		for i := range useCase.chunks {
@@ -198,7 +186,7 @@ func TestPartition_BatchCriteria(t *testing.T) {
 		}
 
 		actual := partitions.BatchTransferable()
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}

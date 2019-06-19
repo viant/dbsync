@@ -9,14 +9,17 @@ import (
 
 //Service reprsents history service
 type Service interface {
+	//Register add job to history
 	Register(job *core.Job) *Job
+	//Show shows history
 	Show(request *ShowRequest) *ShowResponse
+	//Status returns status for past job
 	Status(request *StatusRequest) *StatusResponse
 }
 
 type service struct {
-	startTime  time.Time
-	registry *registry
+	startTime time.Time
+	registry  *registry
 }
 
 //Status returns status
@@ -57,7 +60,6 @@ func (s *service) Show(request *ShowRequest) *ShowResponse {
 	return &ShowResponse{Items: s.registry.get(request.ID)}
 }
 
-
 //Register register a job
 func (s *service) Register(coreJob *core.Job) *Job {
 	job := NewJob(coreJob)
@@ -68,7 +70,7 @@ func (s *service) Register(coreJob *core.Job) *Job {
 //New creates a new history service
 func New(config *shared.Config) Service {
 	return &service{
-		startTime:time.Now(),
-		registry: newRegistry(config.MaxHistory),
+		startTime: time.Now(),
+		registry:  newRegistry(config.MaxHistory),
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"dbsync/sync/dao"
 	"dbsync/sync/history"
 	"dbsync/sync/jobs"
-	
+
 	"dbsync/sync/contract/strategy/pseudo"
 	"dbsync/sync/shared"
 	"dbsync/sync/transfer"
@@ -55,11 +55,10 @@ func TestPartitioner_Sync(t *testing.T) {
 		filter        map[string]interface{}
 		transferred   int
 		sourceSQL     string
-		destSQL string
+		destSQL       string
 		expect        interface{}
 		hasError      bool
 	}{
-
 
 		{
 			/*
@@ -78,9 +77,8 @@ func TestPartitioner_Sync(t *testing.T) {
 			partitions:  []string{"event_type"},
 			iDColumns:   []string{"id"},
 			sourceSQL:   "SELECT event_type FROM events1 GROUP BY 1",
-			destSQL:   "SELECT event_type FROM events2 GROUP BY 1",
+			destSQL:     "SELECT event_type FROM events2 GROUP BY 1",
 		},
-
 
 		{
 
@@ -114,7 +112,6 @@ func TestPartitioner_Sync(t *testing.T) {
 			sourceSQL:   "SELECT event_type FROM events1 GROUP BY 1",
 		},
 
-
 		{
 			/*
 				The following partitions needs to be sync
@@ -132,9 +129,6 @@ func TestPartitioner_Sync(t *testing.T) {
 			iDColumns:   []string{"id"},
 			sourceSQL:   "SELECT event_type FROM events1 GROUP BY 1",
 		},
-
-
-
 
 		{
 			description:  "partition with id based - batched - direct append",
@@ -175,7 +169,6 @@ func TestPartitioner_Sync(t *testing.T) {
 			hasError:    true,
 		},
 
-
 		{
 			description:   "chunk error - transfer error",
 			caseURI:       "chunked_err",
@@ -205,7 +198,7 @@ func TestPartitioner_Sync(t *testing.T) {
 			return
 		}
 		initDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/sync/cases/%v/prepare", useCase.caseURI)), "", "")
-		if ! dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset)) {
+		if !dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset)) {
 			return
 		}
 
@@ -228,12 +221,12 @@ func TestPartitioner_Sync(t *testing.T) {
 		dbSync.Criteria = useCase.filter
 
 		err := dbSync.Init()
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		service := dao.New(dbSync)
 		err = service.Init(ctx)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 
@@ -246,7 +239,7 @@ func TestPartitioner_Sync(t *testing.T) {
 			continue
 		}
 		err = partitioner.Build(ctx)
-		if ! assert.Nil(t, err, useCase) {
+		if !assert.Nil(t, err, useCase) {
 			continue
 		}
 		err = partitioner.Sync(ctx)
@@ -259,7 +252,7 @@ func TestPartitioner_Sync(t *testing.T) {
 		}
 
 		expectDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/sync/cases/%v/expect", useCase.caseURI)), "", "")
-		if ! dsunit.Expect(t, dsunit.NewExpectRequest(dsunit.FullTableDatasetCheckPolicy, expectDataset)) {
+		if !dsunit.Expect(t, dsunit.NewExpectRequest(dsunit.FullTableDatasetCheckPolicy, expectDataset)) {
 			t.Logf("failed : %v", useCase.description)
 		}
 
@@ -280,12 +273,12 @@ func TestPartitioner_Build(t *testing.T) {
 		iDColumns     []string
 		partitions    []string
 		pseudoColumns []*pseudo.Column
-		sourceFilter        map[string]interface{}
-		destFilter        map[string]interface{}
+		sourceFilter  map[string]interface{}
+		destFilter    map[string]interface{}
 		partitionSQL  string
 		expectCount   int
 		inSyncCount   int
-		force bool
+		force         bool
 		hasError      bool
 		expect        interface{}
 	}{
@@ -310,8 +303,6 @@ func TestPartitioner_Build(t *testing.T) {
 			},
 			hasError: true,
 		},
-
-
 
 		{
 			description:  "single key partition with id",
@@ -370,7 +361,6 @@ func TestPartitioner_Build(t *testing.T) {
 }`,
 		},
 
-
 		{
 			description: "invalid partition SQL",
 			caseDataURI: "single_with_id",
@@ -383,22 +373,21 @@ func TestPartitioner_Build(t *testing.T) {
 				},
 			},
 			partitionSQL: "SELECT abc, DATE(timestamp) AS date FROM events1 GROUP BY 1, 2",
-			hasError:true,
+			hasError:     true,
 		},
 		{
 			description: "non optimized",
 			caseDataURI: "single_with_id",
 			iDColumns:   []string{"id"},
-			expectCount:1,
-			force:true,
-			expect:`{
+			expectCount: 1,
+			force:       true,
+			expect: `{
 	"": "deleteMerge"
 }`,
-
 		},
 	}
 
-	ctx := &shared.Context{Debug:false}
+	ctx := &shared.Context{Debug: false}
 	for _, useCase := range useCases {
 		initDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/build/cases/%v", useCase.caseDataURI)), "", "")
 		dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset))
@@ -418,12 +407,12 @@ func TestPartitioner_Build(t *testing.T) {
 		dbSync.Source.Criteria = useCase.sourceFilter
 		dbSync.Dest.Criteria = useCase.destFilter
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		service := dao.New(dbSync)
 		err = service.Init(ctx)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 

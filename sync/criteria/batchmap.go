@@ -32,7 +32,7 @@ func (b *BatchMap) Range(handler func(key string, batch *Batch) error) (err erro
 func (b *BatchMap) Add(key string, values map[string]interface{}) {
 	b.mutex.Lock()
 	batchMap, ok := b.items[key]
-	if ! ok {
+	if !ok {
 		b.items[key] = NewBatch(b.batchSize)
 		batchMap = b.items[key]
 	}

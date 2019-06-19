@@ -13,7 +13,7 @@ type Context struct {
 }
 
 //Log logs
-func (c *Context) Log(v ... interface{}) {
+func (c *Context) Log(v ...interface{}) {
 	if c.Debug {
 		if len(v) > 0 {
 			v[0] = fmt.Sprintf("[%v] %v", c.ID, v[0])
@@ -22,11 +22,10 @@ func (c *Context) Log(v ... interface{}) {
 	}
 }
 
-
 //NewContext returns new context
-func NewContext(ID string, debug bool) *Context{
+func NewContext(ID string, debug bool) *Context {
 	return &Context{
-		ID:ID,
-		Debug:debug,
+		ID:    ID,
+		Debug: debug,
 	}
 }

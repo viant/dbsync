@@ -20,12 +20,9 @@ type StatusResponse struct {
 	*Status
 }
 
-
 //NewStatusResponse return status response
 func NewStatusResponse() *StatusResponse {
 	return &StatusResponse{
-		Status:NewStatus(),
+		Status: NewStatus(),
 	}
 }
-
-

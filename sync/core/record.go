@@ -16,7 +16,6 @@ func (r Record) Get(key string) interface{} {
 	return result
 }
 
-
 //Key returns key for case insensitive key
 func (r Record) Key(key string) string {
 	if _, has := r[key]; has {
@@ -67,7 +66,7 @@ func (r Record) NormIndex(dateLayout string, keys []string) string {
 	var result = make([]string, 0)
 	for i := range keys {
 		value, ok := r.Value(keys[i])
-		if ! ok {
+		if !ok {
 			continue
 		}
 		if toolbox.IsTime(value) && dateLayout != "" {

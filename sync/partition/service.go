@@ -18,12 +18,17 @@ import (
 
 //Service represents partitin service
 type Service interface {
+
+	//Build build sync partitions
 	Build(ctx *shared.Context) error
 
+	//Sync transfer and merges build sync partitions
 	Sync(ctx *shared.Context) error
 
+	//Init initializes service
 	Init(ctx *shared.Context) error
 
+	//Closes sync resource (db connections)
 	Close() error
 }
 
@@ -50,7 +55,7 @@ func (s *service) Close() error {
 
 //Build build partition sync status
 func (s *service) Build(ctx *shared.Context) (err error) {
-	if ! s.IsOptimized() {
+	if !s.IsOptimized() {
 		return nil
 	}
 	if err = s.buildBatched(ctx); err == nil {
@@ -92,7 +97,6 @@ func (s *service) syncInBatches(ctx *shared.Context) error {
 			partition.InitWithMethod(key, fmt.Sprintf("_%s%05d", key[0:1], i+1))
 			partitionData = append(partitionData, partition)
 
-
 			source, dest, err := s.FetchAll(ctx, items[i])
 			if err == nil {
 				partition.Source = source.Signature(s.IDColumn())
@@ -110,7 +114,7 @@ func (s *service) syncInBatches(ctx *shared.Context) error {
 
 func (s *service) mergeBatch(ctx *shared.Context, partitions *core.Partitions) (err error) {
 	transferable := partitions.BatchTransferable()
-	return s.Merger.Merge(ctx, transferable);
+	return s.Merger.Merge(ctx, transferable)
 }
 
 func (s *service) onSyncDone(ctx *shared.Context, partitions *core.Partitions) (err error) {
@@ -184,7 +188,7 @@ func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) 
 	}
 	transferable := partition.Transferable.Clone()
 	//Only merge/append can be batched
-	if isBatchMode && ! transferable.ShouldDelete() {
+	if isBatchMode && !transferable.ShouldDelete() {
 		transferable.OwnerSuffix = shared.TransientTableSuffix
 		transferable.Method = shared.SyncMethodInsert
 	}
@@ -360,7 +364,7 @@ func (s *service) buildRemoved(source []*core.Partition, dest []*core.Partition)
 
 	for i := range dest {
 		dest[i].Init()
-		_, has := index[dest[i].Suffix];
+		_, has := index[dest[i].Suffix]
 		if !has {
 			s.toRemove = append(s.toRemove, dest[i])
 		}
@@ -381,7 +385,6 @@ func (s *service) removePartitions(ctx *shared.Context) error {
 	}
 	return nil
 }
-
 
 func newService(sync *contract.Sync, dao dao.Service, mutex *shared.Mutex, jobbService jobs.Service, historyService history.Service) *service {
 	return &service{

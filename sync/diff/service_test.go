@@ -55,7 +55,6 @@ func TestService_Check(t *testing.T) {
 			expectMethod: shared.SyncMethodInsert,
 		},
 
-
 		{
 			description:  "source and dest the same",
 			caseDataURI:  "insync",
@@ -66,57 +65,55 @@ func TestService_Check(t *testing.T) {
 			description:  "dest empty",
 			caseDataURI:  "insert",
 			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodInsert,
+			expectMethod: shared.SyncMethodInsert,
 		},
 		{
-			description:  "append data",
-			caseDataURI:  "append",
-			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodInsert,
-			expectInSyncWithID:5,
+			description:        "append data",
+			caseDataURI:        "append",
+			iDColumns:          []string{"id"},
+			expectMethod:       shared.SyncMethodInsert,
+			expectInSyncWithID: 5,
 		},
-
 
 		{
 			description:  "merge data",
 			caseDataURI:  "merge",
 			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodMerge,
+			expectMethod: shared.SyncMethodMerge,
 		},
 		{
-			description:  "merge data with sync subset",
-			caseDataURI:  "merge",
-			depth:2,
-			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodMerge,
-			expectInSyncWithID:3,
+			description:        "merge data with sync subset",
+			caseDataURI:        "merge",
+			depth:              2,
+			iDColumns:          []string{"id"},
+			expectMethod:       shared.SyncMethodMerge,
+			expectInSyncWithID: 3,
 		},
 		{
 			description:  "delete with based on min id",
 			caseDataURI:  "delete_min",
 			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodDeleteMerge,
+			expectMethod: shared.SyncMethodDeleteMerge,
 		},
 		{
 			description:  "delete with based on max id",
 			caseDataURI:  "delete_max",
 			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodDeleteMerge,
+			expectMethod: shared.SyncMethodDeleteMerge,
 		},
 		{
 			description:  "delete with based on count",
 			caseDataURI:  "delete_count",
 			iDColumns:    []string{"id"},
-			expectMethod:shared.SyncMethodDeleteMerge,
+			expectMethod: shared.SyncMethodDeleteMerge,
 		},
 
 		{
 			description:  "delete without id",
 			caseDataURI:  "delete_insert",
 			iDColumns:    []string{},
-			expectMethod:shared.SyncMethodDeleteInsert,
+			expectMethod: shared.SyncMethodDeleteInsert,
 		},
-
 	}
 
 	ctx := &shared.Context{Debug: false}
@@ -134,12 +131,12 @@ func TestService_Check(t *testing.T) {
 		dbSync.Partition.Columns = useCase.partitions
 		dbSync.Diff.Depth = useCase.depth
 		err := dbSync.Init()
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		service := dao.New(dbSync)
 		err = service.Init(ctx)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 

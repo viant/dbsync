@@ -51,15 +51,15 @@ func TestChunker_Build(t *testing.T) {
 		expectCount      int
 		expectInSync     int
 		expect           interface{}
-		partitionStatus *core.Status
+		partitionStatus  *core.Status
 	}{
 
 		{
-			description:      "insert",
-			chunkSize:        5,
+			description: "insert",
+			chunkSize:   5,
 			partitionStatus: &core.Status{
-				Source:&core.Signature{MinValue: 1, MaxValue:11, CountValue:11},
-				Dest:&core.Signature{MinValue: 0, MaxValue:0, CountValue:0},
+				Source: &core.Signature{MinValue: 1, MaxValue: 11, CountValue: 11},
+				Dest:   &core.Signature{MinValue: 0, MaxValue: 0, CountValue: 0},
 			},
 			partitionColumns: []string{"event_type"},
 			caseDataURI:      "insert",
@@ -67,18 +67,18 @@ func TestChunker_Build(t *testing.T) {
 			expectInSync:     0,
 			expectCount:      3,
 
-			expect:           `{
+			expect: `{
 	"_chunk_00000": "insert",
 	"_chunk_00001": "insert",
 	"_chunk_00002": "insert"
 }`,
 		},
 		{
-			description:      "various strategies",
-			chunkSize:        5,
+			description: "various strategies",
+			chunkSize:   5,
 			partitionStatus: &core.Status{
-				Source:&core.Signature{MinValue: 1, MaxValue:11, CountValue:11},
-				Dest:&core.Signature{MinValue: 0, MaxValue:0, CountValue:0},
+				Source: &core.Signature{MinValue: 1, MaxValue: 11, CountValue: 11},
+				Dest:   &core.Signature{MinValue: 0, MaxValue: 0, CountValue: 0},
 			},
 			partitionColumns: []string{"event_type"},
 			caseDataURI:      "merge",
@@ -86,18 +86,18 @@ func TestChunker_Build(t *testing.T) {
 			expectInSync:     0,
 			expectCount:      3,
 
-			expect:           `{
+			expect: `{
 	"_chunk_00000": "deleteMerge",
 	"_chunk_00001": "merge",
 	"_chunk_00002": "insert"
 }`,
 		},
 		{
-			description:      "in sync /append ",
-			chunkSize:        5,
+			description: "in sync /append ",
+			chunkSize:   5,
 			partitionStatus: &core.Status{
-				Source:&core.Signature{MinValue: 1, MaxValue:11, CountValue:11},
-				Dest:&core.Signature{MinValue: 0, MaxValue:0, CountValue:0},
+				Source: &core.Signature{MinValue: 1, MaxValue: 11, CountValue: 11},
+				Dest:   &core.Signature{MinValue: 0, MaxValue: 0, CountValue: 0},
 			},
 			partitionColumns: []string{"event_type"},
 			caseDataURI:      "in_sync",
@@ -105,13 +105,12 @@ func TestChunker_Build(t *testing.T) {
 			expectInSync:     0,
 			expectCount:      1,
 
-			expect:           `{"_chunk_00000": "insert"}`,
+			expect: `{"_chunk_00000": "insert"}`,
 		},
 	}
 
-
 	ctx := &shared.Context{}
-	
+
 	for _, useCase := range useCases {
 		initDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/data/%v", useCase.caseDataURI)), "", "")
 		dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset))
@@ -127,12 +126,12 @@ func TestChunker_Build(t *testing.T) {
 		dbSync.Chunk.Size = useCase.chunkSize
 
 		err := dbSync.Init()
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		daoService := dao.New(dbSync)
 		err = daoService.Init(ctx)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 
@@ -140,12 +139,12 @@ func TestChunker_Build(t *testing.T) {
 		partition.Status = useCase.partitionStatus
 		chunker := New(dbSync, partition, daoService, shared.NewMutex(), jobService, transfer.New(dbSync, daoService))
 		err = chunker.Build(ctx)
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
 		actualInSync := 0
 		actual := make(map[string]interface{})
-		_ =  partition.Chunks.Range(func(chunk *core.Chunk) error {
+		_ = partition.Chunks.Range(func(chunk *core.Chunk) error {
 			if chunk.InSync {
 				actualInSync++
 				return nil
@@ -154,11 +153,10 @@ func TestChunker_Build(t *testing.T) {
 			return nil
 		})
 		assert.EqualValues(t, useCase.expectCount, len(actual), useCase.description)
-		assert.EqualValues(t, useCase.expectInSync, actualInSync , useCase.description)
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		assert.EqualValues(t, useCase.expectInSync, actualInSync, useCase.description)
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}
 
 }
-

@@ -5,5 +5,5 @@ type Progress struct {
 	DestCount   int
 	SourceCount int
 	Transferred int
-	Pct int
+	Pct         int
 }

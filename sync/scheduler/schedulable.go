@@ -19,8 +19,8 @@ type Schedulable struct {
 	ID  string
 	*contract.Sync
 	Schedule *contract.Schedule
-	Status string
-	status uint32
+	Status   string
+	status   uint32
 }
 
 //Done return true if schedulable is not running
@@ -69,7 +69,7 @@ func (s *Schedulable) Validate() error {
 	if s.Schedule == nil {
 		return fmt.Errorf("schedule was emtpy")
 	}
-	if s.Schedule.Frequency == nil && s.Schedule.At == nil{
+	if s.Schedule.Frequency == nil && s.Schedule.At == nil {
 		return fmt.Errorf("schedule.Frequency and schedule.At were emtpy")
 	}
 	return nil

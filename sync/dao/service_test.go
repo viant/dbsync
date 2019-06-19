@@ -3,7 +3,7 @@ package dao
 import (
 	"dbsync/sync/contract"
 	"dbsync/sync/criteria"
-	
+
 	"dbsync/sync/shared"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +27,6 @@ func init() {
 
 }
 
-
 func TestService_Builder(t *testing.T) {
 	sync := &contract.Sync{
 		Source: &contract.Resource{
@@ -46,8 +45,6 @@ func TestService_Builder(t *testing.T) {
 	assert.NotNil(t, service.Builder())
 
 }
-
-
 
 func TestService_Init(t *testing.T) {
 	sync := &contract.Sync{
@@ -139,7 +136,7 @@ func TestService_Partitions(t *testing.T) {
 			Source: useCase.resource,
 			Dest:   useCase.resource,
 		}
-		service :=  &service{
+		service := &service{
 			Sync:   sync,
 			source: &dbResource{Resource: sync.Source},
 			dest:   &dbResource{Resource: sync.Dest},
@@ -156,10 +153,10 @@ func TestService_Partitions(t *testing.T) {
 			continue
 		}
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}
@@ -222,7 +219,7 @@ func TestService_Columns(t *testing.T) {
 			actual[column.Name()] = column.DatabaseTypeName()
 		}
 
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}
@@ -279,7 +276,6 @@ func TestService_Signatures(t *testing.T) {
 		"unique_cnt_id": 11
 	}
 ]`},
-
 
 		{
 			description: "single signature with id and partition",
@@ -343,15 +339,14 @@ func TestService_Signatures(t *testing.T) {
 			continue
 		}
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}
 }
-
 
 func TestService_Signature(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
@@ -403,7 +398,6 @@ func TestService_Signature(t *testing.T) {
 	}
 `},
 
-
 		{
 			description: "invalid partition column",
 			ID:          []string{"id"},
@@ -422,11 +416,11 @@ func TestService_Signature(t *testing.T) {
 			resource: &contract.Resource{
 				Config: testConfig,
 			},
-			hasError:true,
+			hasError: true,
 		},
 	}
 
-	ctx := &shared.Context{Debug:false,}
+	ctx := &shared.Context{Debug: false}
 	for _, useCase := range useCases {
 		sync := &contract.Sync{
 			Source: useCase.resource,
@@ -448,17 +442,15 @@ func TestService_Signature(t *testing.T) {
 			continue
 		}
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 	}
 
 }
-
-
 
 func TestService_CountSignature(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
@@ -536,19 +528,15 @@ func TestService_CountSignature(t *testing.T) {
 			continue
 		}
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		if ! assertly.AssertValues(t, useCase.expect, signature, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, signature, useCase.description) {
 			_ = toolbox.DumpIndent(signature, true)
 		}
 	}
 
 }
-
-
-
-
 
 func TestService_ChunkSignature(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
@@ -623,10 +611,10 @@ func TestService_ChunkSignature(t *testing.T) {
 			continue
 		}
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-		if ! assertly.AssertValues(t, useCase.expect, signature, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, signature, useCase.description) {
 			_ = toolbox.DumpIndent(signature, true)
 		}
 	}
@@ -649,28 +637,27 @@ func TestService_RecreateTransientTable(t *testing.T) {
 	}{
 
 		{
-			description:"create as select",
-			table:"events",
-			suffix:"_tmp",
+			description: "create as select",
+			table:       "events",
+			suffix:      "_tmp",
 		},
 
 		{
-			description:"error - empty suffix",
-			table:"events",
-			suffix:"",
-			hasError:true,
+			description: "error - empty suffix",
+			table:       "events",
+			suffix:      "",
+			hasError:    true,
 		},
 		{
-			description:"create as select",
-			table:"events",
-			tempdb:"tmp",
-			suffix:"_tmp1",
-			hasError:true,
+			description: "create as select",
+			table:       "events",
+			tempdb:      "tmp",
+			suffix:      "_tmp1",
+			hasError:    true,
 		},
-
 	}
 
-	ctx := &shared.Context{Debug:false}
+	ctx := &shared.Context{Debug: false}
 	for _, useCase := range useCases {
 		sync := &contract.Sync{
 			Source: &contract.Resource{
@@ -694,16 +681,13 @@ func TestService_RecreateTransientTable(t *testing.T) {
 			continue
 		}
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-
 
 	}
 
 }
-
-
 
 func TestService_DropTransientTable(t *testing.T) {
 	parent := toolbox.CallerDirectory(3)
@@ -713,49 +697,47 @@ func TestService_DropTransientTable(t *testing.T) {
 	}
 
 	var useCases = []struct {
-		description string
-		table       string
+		description  string
+		table        string
 		createSuffix string
-		removeSuffix      string
-		tempdb      string
-		hasError    bool
+		removeSuffix string
+		tempdb       string
+		hasError     bool
 	}{
 
 		{
-			description:"create as select",
-			table:"events",
-			createSuffix:"_tmp",
-			removeSuffix:"_tmp",
+			description:  "create as select",
+			table:        "events",
+			createSuffix: "_tmp",
+			removeSuffix: "_tmp",
 		},
 
 		{
-			description:"error - empty suffix",
-			table:"events",
-			createSuffix:"_tmp",
-			removeSuffix:"",
-			hasError:true,
+			description:  "error - empty suffix",
+			table:        "events",
+			createSuffix: "_tmp",
+			removeSuffix: "",
+			hasError:     true,
 		},
 
 		{
-			description:"error - invalid suffix",
-			table:"events",
-			createSuffix:"_tmp",
-			removeSuffix:"_abc",
-			hasError:true,
+			description:  "error - invalid suffix",
+			table:        "events",
+			createSuffix: "_tmp",
+			removeSuffix: "_abc",
+			hasError:     true,
 		},
 		{
-			description:"error - invalid suffix with tempdb",
-			table:"events",
-			tempdb:"abc",
-			createSuffix:"_tmp",
-			removeSuffix:"_abc",
-			hasError:true,
+			description:  "error - invalid suffix with tempdb",
+			table:        "events",
+			tempdb:       "abc",
+			createSuffix: "_tmp",
+			removeSuffix: "_abc",
+			hasError:     true,
 		},
-
-
 	}
 
-	ctx := &shared.Context{Debug:false}
+	ctx := &shared.Context{Debug: false}
 	for _, useCase := range useCases {
 		sync := &contract.Sync{
 			Source: &contract.Resource{
@@ -765,7 +747,6 @@ func TestService_DropTransientTable(t *testing.T) {
 				Config: testConfig,
 			},
 			Table: useCase.table,
-
 		}
 		sync.Transfer.TempDatabase = useCase.tempdb
 		err := sync.Init()
@@ -782,10 +763,9 @@ func TestService_DropTransientTable(t *testing.T) {
 			continue
 		}
 
-		if ! assert.Nil(t, err, useCase.description) {
+		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
-
 
 	}
 

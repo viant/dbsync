@@ -7,12 +7,11 @@ import (
 //Chunk represents a chunks
 type Chunk struct {
 	*strategy.Chunk
-	Index    int
+	Index int
 	Transferable
 }
 
-
 //NewChunk returns new chunk
-func NewChunk(status *Status, filter map[string]interface{}) *Chunk{
-	return &Chunk{Transferable: Transferable{Status:status, Filter:filter}}
+func NewChunk(status *Status, filter map[string]interface{}) *Chunk {
+	return &Chunk{Transferable: Transferable{Status: status, Filter: filter}}
 }

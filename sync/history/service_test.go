@@ -187,7 +187,7 @@ func TestService_Show(t *testing.T) {
 			ID: useCase.ID,
 		})
 
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 
@@ -200,7 +200,7 @@ func TestService_Status(t *testing.T) {
 	var useCases = []struct {
 		description string
 		maxHistroy  int
-		runCount int
+		runCount    int
 		ID          string
 		jobs        []*core.Job
 		expect      interface{}
@@ -208,7 +208,7 @@ func TestService_Status(t *testing.T) {
 		{
 			description: "status ok",
 			maxHistroy:  3,
-			runCount:0,
+			runCount:    0,
 			ID:          "1",
 			jobs: []*core.Job{
 				{
@@ -292,7 +292,7 @@ func TestService_Status(t *testing.T) {
 		{
 			description: "status error",
 			maxHistroy:  3,
-			runCount:2,
+			runCount:    2,
 			ID:          "1",
 			jobs: []*core.Job{
 				{
@@ -379,7 +379,7 @@ func TestService_Status(t *testing.T) {
 			RunCount: useCase.runCount,
 		})
 
-		if ! assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expect, actual, useCase.description) {
 			_ = toolbox.DumpIndent(actual, true)
 		}
 

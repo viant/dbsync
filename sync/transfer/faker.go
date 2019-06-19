@@ -5,11 +5,10 @@ import (
 	"dbsync/sync/shared"
 )
 
-
 type faker struct {
 	Service
 	transferred int
-	err error
+	err         error
 }
 
 func (f *faker) Post(ctx *shared.Context, request *Request, transferable *core.Transferable) error {
@@ -20,12 +19,11 @@ func (f *faker) Post(ctx *shared.Context, request *Request, transferable *core.T
 	return nil
 }
 
-
 //NewFaker returns new post faker
-func NewFaker(service Service, transferred int, err error ) Service {
+func NewFaker(service Service, transferred int, err error) Service {
 	return &faker{
-		Service:service,
-		transferred:transferred,
-		err:err,
+		Service:     service,
+		transferred: transferred,
+		err:         err,
 	}
 }
