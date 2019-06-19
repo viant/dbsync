@@ -67,12 +67,10 @@ func (r Router) api() http.Handler {
 
 	return http.HandlerFunc(func(writer http.ResponseWriter, reader *http.Request) {
 		defer func() {
-			//if r := recover(); r != nil {
-			//
-			//	var err = fmt.Errorf("%v", r)
-			//
-			//	http.Error(writer, err.Error(), 500)
-			//}
+			if r := recover(); r != nil {
+				var err = fmt.Errorf("%v", r)
+				http.Error(writer, err.Error(), 500)
+			}
 		}()
 		if err := router.Route(writer, reader); err != nil {
 			http.Error(writer, err.Error(), 500)
