@@ -18,7 +18,10 @@ var dateLayout = "2006-03-01 03:10:11"
 
 //Service represents a scheduler
 type Service interface {
+
+	//List returns list of scheduled jobs
 	List(request *ListRequest) *ListResponse
+	//Get returns requested scheduled job
 	Get(ID string) *Schedulable
 }
 
@@ -211,6 +214,7 @@ func (s *service) loadFromURL(storageService storage.Service, URL string, ids ma
 		if err != nil {
 			return err
 		}
+		schedulable.URL = object.URL()
 		if err = schedulable.Init(); err == nil {
 			err = schedulable.Validate()
 		}
@@ -218,7 +222,7 @@ func (s *service) loadFromURL(storageService storage.Service, URL string, ids ma
 			log.Printf("err: %v  %v\n", object.URL(), err)
 			continue
 		}
-		schedulable.URL = object.URL()
+
 		ids[schedulable.ID] = true
 		if !s.hasChanged(schedulable.ID, fileInfo.ModTime()) {
 			continue
