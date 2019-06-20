@@ -55,6 +55,10 @@ func (s *Schedulable) Init() error {
 	if s.Schedule == nil {
 		return nil
 	}
+
+	if s.Schedule.Frequency != nil && s.Schedule.Frequency.Value == 0 {
+		s.Schedule.Frequency.Value = 1
+	}
 	if s.Schedule.Frequency != nil {
 		s.Schedule.NextRun = &now
 	} else {
@@ -71,6 +75,9 @@ func (s *Schedulable) Validate() error {
 	}
 	if s.Schedule.Frequency == nil && s.Schedule.At == nil {
 		return fmt.Errorf("schedule.Frequency and schedule.At were emtpy")
+	}
+	if s.ID == "" {
+		return fmt.Errorf("ID were emtpy")
 	}
 	return nil
 }

@@ -13,7 +13,7 @@ import (
 )
 
 var defaultSchedulerLoadFrequencyMs = 5000
-var dateLayout = "2006-03-01 03:10:11"
+var dateLayout = "2006-01-02 03:04:05"
 
 //Service represents a scheduler
 type Service interface {
