@@ -70,10 +70,11 @@ func (s *service) sync(request *Request) (response *Response, err error) {
 			job, err = s.getJob(request.ID())
 		}
 	}
-	ctx = shared.NewContext(job.ID, request.Debug)
 	if err != nil {
 		return nil, err
 	}
+	ctx = shared.NewContext(job.ID, request.Debug)
+	log.Printf("[%v] starting %v sync\n", job.ID, request.Table)
 	syncRequest, _ := json.Marshal(request)
 	ctx.Log(fmt.Sprintf("sync: %s", syncRequest))
 	if request.Async {
@@ -92,15 +93,20 @@ func (s *service) onJobDone(ctx *shared.Context, job *core.Job, response *Respon
 		return
 	}
 
+	if err != nil {
+		log.Printf("[%v] error: %v\n", job.ID, err)
+	}
 	if response.SetError(err) {
 		job.Status = shared.StatusError
 		job.Error = err.Error()
 	}
-
 	data, _ := json.Marshal(job)
 	ctx.Log(fmt.Sprintf("completed: %s\n", data))
 	job.Done(time.Now())
+	job.Update()
 	historyJob := s.history.Register(job)
+	elapsedInMs := int(job.EndTime.Sub(job.StartTime) / time.Millisecond)
+	log.Printf("[%v] changed: %v, processed: %v, time taken %v ms\n", job.ID, job.Progress.SourceCount, job.Progress.Transferred, elapsedInMs)
 	response.Transferred = historyJob.Transferred
 	response.SourceCount = historyJob.SourceCount
 	response.DestCount = historyJob.DestCount
