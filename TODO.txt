@@ -1,0 +1,5 @@
+- update docker/e2e build with compilation supplied app version vi -ldflags "-X dbsync.Version=0.10.0"
+- add error to context
+- add more unit tests
+- add BigQuery streaming e2e use case
+- update model/documentation
