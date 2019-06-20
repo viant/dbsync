@@ -25,7 +25,6 @@ func (s *Strategy) IDColumn() string {
 	return ""
 }
 
-
 //Init initializes strategy
 func (s *Strategy) Init() error {
 	err := s.Diff.Init()
@@ -39,10 +38,8 @@ func (s *Strategy) Init() error {
 
 //IsOptimized returns true if optimized sync
 func (s *Strategy) IsOptimized() bool {
-	return  !s.Force
+	return !s.Force
 }
-
-
 
 //UseUpperCaseSQL update id, partition column to upper case
 func (r *Strategy) UseUpperCaseSQL() {
@@ -57,9 +54,9 @@ func (r *Strategy) UseUpperCaseSQL() {
 		}
 	}
 	if len(r.Diff.Columns) > 0 {
-		for i, _ := range r.Diff.Columns {
-			r.Diff.Columns[i].Name= strings.ToUpper(r.Diff.Columns[i].Name)
-			r.Diff.Columns[i].Alias= strings.ToUpper(r.Diff.Columns[i].Alias)
+		for i := range r.Diff.Columns {
+			r.Diff.Columns[i].Name = strings.ToUpper(r.Diff.Columns[i].Name)
+			r.Diff.Columns[i].Alias = strings.ToUpper(r.Diff.Columns[i].Alias)
 		}
 	}
 }

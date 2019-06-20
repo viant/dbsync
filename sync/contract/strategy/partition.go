@@ -4,8 +4,6 @@ import "dbsync/sync/shared"
 
 const defaultPartitionThreads = 2
 
-
-
 //PartitionStrategy represents partition info
 type Partition struct {
 	ProviderSQL string // Deprecated: use Source.PartitionSQL instead
@@ -14,7 +12,6 @@ type Partition struct {
 	SyncMode    string `description:"persistency sync mode: batched or individual"`
 	BatchSize   int
 }
-
 
 //MaxThreads returns batch size for max elements
 func (p *Partition) MaxThreads(max int) int {
