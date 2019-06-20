@@ -25,12 +25,6 @@
     "timestamp": "$FormatTime('now', 'yyyy-MM-dd HH:mm:ss')"
   },
   {
-    "id": 5,
-    "event_type": 6,
-    "quantity": 26.21499478816986,
-    "timestamp": "$FormatTime('now', 'yyyy-MM-dd HH:mm:ss')"
-  },
-  {
     "id": 6,
     "event_type": 7,
     "quantity": 12.070401951670647,
