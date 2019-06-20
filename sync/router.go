@@ -63,8 +63,6 @@ func (r Router) api() http.Handler {
 		},
 	)
 
-
-
 	return http.HandlerFunc(func(writer http.ResponseWriter, reader *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
