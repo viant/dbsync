@@ -74,7 +74,7 @@ func TestService_Sync(t *testing.T) {
 			return
 		}
 		initDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/case/%v/prepare", useCase.caseURI)), "", "")
-		if ! dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset)) {
+		if !dsunit.Prepare(t, dsunit.NewPrepareRequest(initDataset)) {
 			return
 		}
 
@@ -84,17 +84,17 @@ func TestService_Sync(t *testing.T) {
 		}
 
 		response := service.Sync(request)
-		if ! assertly.AssertValues(t, useCase.expectResponse, response, useCase.description) {
+		if !assertly.AssertValues(t, useCase.expectResponse, response, useCase.description) {
 			_ = toolbox.DumpIndent(response, true)
 		}
 		historyResponse := service.History().Show(&history.ShowRequest{ID: "events2"})
 		if assert.EqualValues(t, 1, len(historyResponse.Items)) {
-			if ! assertly.AssertValues(t, useCase.expectJob, historyResponse.Items[0], useCase.description) {
+			if !assertly.AssertValues(t, useCase.expectJob, historyResponse.Items[0], useCase.description) {
 				_ = toolbox.DumpIndent(historyResponse.Items[0], true)
 			}
 		}
 		expectDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/case/%v/expect", useCase.caseURI)), "", "")
-		if ! dsunit.Prepare(t, dsunit.NewPrepareRequest(expectDataset)) {
+		if !dsunit.Prepare(t, dsunit.NewPrepareRequest(expectDataset)) {
 			return
 		}
 	}
