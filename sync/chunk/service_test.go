@@ -20,10 +20,12 @@ import (
 	"testing"
 )
 
-var chunkerTestConfig *dsc.Config
-var jobService jobs.Service
+var (
+	chunkerTestConfig *dsc.Config
+	jobService        jobs.Service
+)
 
-func init() {
+func initTest() {
 	parent := toolbox.CallerDirectory(3)
 	chunkerTestConfig = &dsc.Config{
 		DriverName: "sqlite3",
@@ -34,7 +36,7 @@ func init() {
 }
 
 func TestChunker_Build(t *testing.T) {
-
+	initTest()
 	parent := toolbox.CallerDirectory(3)
 	if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
 		return
