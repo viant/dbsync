@@ -11,9 +11,8 @@ type Chunk struct {
 	Size     int `description:"chunk size in record count"`
 	Threads  int
 	SyncMode string `description:"persistency sync mode: batched or individual"`
-	queued uint32
+	queued   uint32
 }
-
 
 //Init initializes chunk
 func (c *Chunk) Init() error {
