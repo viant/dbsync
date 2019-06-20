@@ -13,7 +13,6 @@ type Request struct {
 	Schedule *contract.Schedule
 }
 
-
 //Response return response
 type Response struct {
 	JobID       string `json:",ommitempty"`
