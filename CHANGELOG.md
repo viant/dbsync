@@ -1,4 +1,9 @@
-## May 21 2019 - v0.9.0
+## June 20 2019 - v0.9.1
+- Patched default ID on schedulables
+- Added start/end job info logging
+- Patched date formatting
+
+## June 18 2019 - v0.9.0
 - Major refactoring/restructuring
 - Added cross partition sync (with removal)
 - Added diff.NewIDOnly strategy
