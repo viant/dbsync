@@ -1,0 +1,54 @@
+table: SITE_LIST_ENTRY
+debug: true
+idColumns:
+  - ID
+source:
+  driverName: oci8
+  descriptor: '[username]/[password]@orcl1.cscpl14vdub5.us-east-1.rds.amazonaws.com:1521/ORCL'
+  credentials: sitemgnt
+  parameters:
+    dbname: sitemgnt
+  pseudoColumns:
+    - name: TS
+      expression: CAST(NULL AS TIMESTAMP)
+
+dest:
+  driverName: bigquery
+  credentials: viant-adelphic
+  maxRequestPerSecond: 200
+  parameters:
+    datasetId: sitemgnt
+  pseudoColumns:
+    - name: TS
+      expression: TIMESTAMP(NULL)
+
+diff:
+  batchSize: 32
+  columns:
+    - name: MATCH_STATUS_ID
+      func: SUM
+    - name: SITE_ID
+      func: COUNT
+  depth: 1
+
+partition:
+  syncMode: batch
+  batchSize: 16
+  threads: 2
+  providerSQL:  SELECT ID AS SITE_LIST_ID FROM SITE_LIST WHERE STATUS_ID = 1 AND COALESCE(UPDATED, CREATED) > (sysdate-3) ORDER BY 1 DESC
+  columns:
+    - SITE_LIST_ID
+
+
+transfer:
+  endpointIP: 10.55.1.222:8080
+  tempDatabase: transfer
+  writerThreads: 2
+  writerCount: 2
+  batchSize: 524287
+
+schedule:
+  at:
+    weekDay: '*'
+    hour: '*'
+    minute: 29

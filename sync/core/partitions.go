@@ -59,10 +59,10 @@ func (p *Partitions) BatchTransferable() *Transferable {
 	partitions := p.Source
 	for i := 0; i < len(partitions); i++ {
 		transferable := partitions[i].Transferable
-		if transferable.ShouldDelete() {
+		if transferable.Status == nil {
 			continue
 		}
-		if transferable.Status == nil {
+		if transferable.ShouldDelete() {
 			continue
 		}
 		if transferable.Method != shared.SyncMethodInsert {

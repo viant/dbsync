@@ -39,10 +39,10 @@ func (p *Partition) BatchTransferable() *Transferable {
 	chunks := p.chunks
 	for i := 0; i < len(chunks); i++ {
 		transferable := chunks[i].Transferable
-		if transferable.ShouldDelete() {
+		if transferable.Status == nil {
 			continue
 		}
-		if transferable.Status == nil {
+		if transferable.ShouldDelete() {
 			continue
 		}
 		if transferable.Method != shared.SyncMethodInsert {

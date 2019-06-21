@@ -18,24 +18,24 @@ init:
 
 pipeline:
   init:
-    system:
-      action: run
-      request: '@system'
-      tasks: '*'
-
-    fetchDbIp:
-      when: $useDockerDBIP = true
-      action: run
-      request: '@dbip.yaml'
-
-    info:
-      action: print
-      message: 'Db IP: $AsJSON($dbIP)'
-
-    datastore:
-      action: run
-      request: '@datastore'
-      tasks: '*'
+#    system:
+#      action: run
+#      request: '@system'
+#      tasks: '*'
+#
+#    fetchDbIp:
+#      when: $useDockerDBIP = true
+#      action: run
+#      request: '@dbip.yaml'
+#
+#    info:
+#      action: print
+#      message: 'Db IP: $AsJSON($dbIP)'
+#
+#    datastore:
+#      action: run
+#      request: '@datastore'
+#      tasks: '*'
 
     app:
       sdk: $sdk

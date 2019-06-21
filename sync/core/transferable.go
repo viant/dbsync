@@ -65,5 +65,8 @@ func (t Transferable) Kind() string {
 
 //ShouldDelete returns true if deletion is part of merging strategy
 func (t Transferable) ShouldDelete() bool {
+	if t.Status == nil {
+		return false
+	}
 	return t.Method == shared.DMLDelete || t.Method == shared.SyncMethodDeleteInsert || t.Method == shared.SyncMethodDeleteMerge
 }
