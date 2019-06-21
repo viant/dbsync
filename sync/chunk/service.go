@@ -34,7 +34,7 @@ type service struct {
 	Transfer  transfer.Service
 }
 
-func (s *service) transferAndMerge(ctx *shared.Context, chunk *core.Chunk) error {
+func (s *service) transferAndMerge(ctx *shared.Context, chunk *core.Chunk) (err error) {
 	isBatchMode := s.Chunk.SyncMode == shared.SyncModeBatch
 	if s.DirectAppend && chunk.Transferable.Method == shared.SyncMethodInsert {
 		chunk.Transferable.Suffix = ""
@@ -43,7 +43,7 @@ func (s *service) transferAndMerge(ctx *shared.Context, chunk *core.Chunk) error
 
 	request := s.Transfer.NewRequest(ctx, &chunk.Transferable)
 	s.job.Get(ctx.ID).Add(&chunk.Transferable)
-	err := s.Transfer.Post(ctx, request, &chunk.Transferable)
+	err = s.Transfer.Post(ctx, request, &chunk.Transferable)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,6 @@ func (s *service) syncInBackground(ctx *shared.Context) {
 			return
 		}
 		if err := s.transferAndMerge(ctx, chunk); err != nil {
-			//TODO handle error terminate partition sync, allow other to continue
 			s.partition.SetError(err)
 			return
 		}
@@ -130,6 +129,10 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 	if s.partition.Status != nil {
 		offset = s.partition.Status.Min()
 	}
+	if s.partition.InSyncWithID > 0 {
+		offset = s.partition.InSyncWithID + 1
+	}
+
 	maxID := s.partition.Status.Max()
 	limit := s.Chunk.Size
 	if limit == 0 {
