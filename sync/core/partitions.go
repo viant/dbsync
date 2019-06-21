@@ -6,6 +6,7 @@ import (
 	"dbsync/sync/shared"
 	"fmt"
 	"github.com/viant/toolbox"
+	"strings"
 	"sync"
 )
 
@@ -119,8 +120,13 @@ func (p *Partitions) Validate(ctx *shared.Context, comparator *Comparator, sourc
 		return nil
 	}
 	if !comparator.AreKeysInSync(ctx, keys, source, dest) {
-
-		return fmt.Errorf("inconsistent partition value: %v, src: %v, dest:%v", keys, source.Index(keys), dest.Index(keys))
+		var dataInfo =make([]string, 0)
+		for i := range keys {
+			sourceValue := source[keys[i]]
+			destValue := dest[keys[i]]
+			dataInfo = append(dataInfo, fmt.Sprintf("%v: src(%T): %v, dest(%T):%v", keys[i],sourceValue, sourceValue, destValue, destValue))
+		}
+		return fmt.Errorf("inconsistent partition value: %v, src: %v, dest:%v, %v", keys, source.Index(keys), dest.Index(keys), strings.Join(dataInfo, ","))
 	}
 	return nil
 }

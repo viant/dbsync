@@ -70,10 +70,16 @@ func (c *Comparator) IsInSync(ctx *shared.Context, record1, record2 Record) bool
 //IsSimilar returns true if truncated value1 and value2 are the same
 func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
 	c.index()
+	if toolbox.IsInt(value1) || toolbox.IsInt(value2) {
+		result :=  toolbox.AsInt(value1) == toolbox.AsInt(value2)
+		return result
+	}
+
 	column, ok := c.columns[strings.ToLower(key)]
 	if !ok {
-		return false
+		return value1 == value2
 	}
+
 	if column.DateLayout != "" {
 		timeValue1, err := toolbox.ToTime(value1, column.DateLayout)
 		if err != nil {
@@ -87,7 +93,7 @@ func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
 	} else if column.NumericPrecision > 0 && round(value1, column.NumericPrecision) == round(value2, column.NumericPrecision) {
 		return true
 	}
-	return false
+	return value1 == value2
 }
 
 //NewComparator creates a new comparator
