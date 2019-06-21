@@ -191,8 +191,8 @@ func TestPartitioner_Sync(t *testing.T) {
 		},
 	}
 
-	ctx := &shared.Context{Debug: false}
 	for _, useCase := range useCases {
+		ctx := &shared.Context{Debug: false, ID: useCase.caseURI}
 
 		if !dsunit.InitFromURL(t, path.Join(parent, fmt.Sprintf("test/sync/cases/%v/config.yaml", useCase.caseURI))) {
 			return
@@ -229,6 +229,8 @@ func TestPartitioner_Sync(t *testing.T) {
 		if !assert.Nil(t, err, useCase.description) {
 			continue
 		}
+
+		jobService.Create(ctx.ID)
 
 		partitioner := newService(dbSync, service, shared.NewMutex(), jobService, historyService)
 		defer partitioner.Close()

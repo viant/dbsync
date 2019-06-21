@@ -1,5 +1,9 @@
 package core
 
+import (
+	"dbsync/sync/shared"
+)
+
 //Status data signature status
 type Status struct {
 	Source       *Signature
@@ -72,4 +76,14 @@ func NewStatus(source, dest *Signature) *Status {
 		InSync: isEqual,
 	}
 
+}
+func NewStatusWithNewID(idColumn string, source, dest Record) *Status {
+	destSignature := NewSignatureFromRecord(idColumn, dest)
+	sourceSignature := NewSignatureFromRecord(idColumn, source)
+	return &Status{
+		Method:       shared.SyncMethodInsert,
+		Dest:         &Signature{},
+		Source:       sourceSignature,
+		InSyncWithID: destSignature.Max(),
+	}
 }

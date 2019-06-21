@@ -11,7 +11,6 @@ import (
 
 //Service represents a diff service
 type Service interface {
-
 	//Check compares source and dest record and returns sync status
 	Check(ctx *shared.Context, source, dest core.Record, filter map[string]interface{}) (*core.Status, error)
 
@@ -41,13 +40,26 @@ func (d *service) Check(ctx *shared.Context, source, dest core.Record, filter ma
 
 //Fetch reads source and dest signature records for supplied filter
 func (d *service) Fetch(ctx *shared.Context, filter map[string]interface{}) (source, dest core.Record, err error) {
+
 	if d.Diff.NewIDOnly && d.IDColumn() != "" {
+		key := d.IDColumn()
+		_, hasIDCriteria := filter[key]
+		if hasIDCriteria {
+			dest = core.Record{}
+			source, err = d.dao.Signature(ctx, contract.ResourceKindSource, filter)
+			return source, dest, nil
+		}
+
 		if dest, err = d.dao.Signature(ctx, contract.ResourceKindDest, filter); err == nil {
 			destSignature := core.NewSignatureFromRecord(d.IDColumn(), dest)
 			if len(filter) == 0 {
 				filter = make(map[string]interface{})
 			}
-			filter[d.IDColumn()] = criteria.NewGraterThan(destSignature.Max())
+			key := d.IDColumn()
+			if _, has := filter[key]; has {
+				key += " "
+			}
+			filter[key] = criteria.NewGraterThan(destSignature.Max())
 		}
 	}
 
@@ -118,6 +130,7 @@ func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source,
 
 func (d *service) isInSync(ctx *shared.Context, filter map[string]interface{}) bool {
 	candidate := &core.Status{}
+
 	if source, dest, err := d.Fetch(ctx, filter); err == nil {
 		if err = d.UpdateStatus(ctx, candidate, source, dest, filter, false); err == nil {
 			return candidate.InSync

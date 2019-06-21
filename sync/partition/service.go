@@ -18,7 +18,6 @@ import (
 
 //Service represents partitin service
 type Service interface {
-
 	//Build build sync partitions
 	Build(ctx *shared.Context) error
 
@@ -58,6 +57,7 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 	if !s.IsOptimized() {
 		return nil
 	}
+
 	if err = s.buildBatched(ctx); err == nil {
 		err = s.buildIndividual(ctx)
 	}
@@ -166,10 +166,10 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 
 func (s *service) syncPartitionChunks(ctx *shared.Context, partition *core.Partition) (err error) {
 	chunker := chunk.New(s.DbSync, partition, s.dao, s.Mutex, s.job, s.Transfer)
-	//if err = chunker.Init(); err != nil {
-	//	return err
-	//}
-	return chunker.Sync(ctx)
+	if err = chunker.Sync(ctx); err == nil {
+		err = partition.Error()
+	}
+	return err
 }
 
 func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) (err error) {
@@ -179,7 +179,11 @@ func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) 
 		partition.IsDirect = true
 	}
 	request := s.Transfer.NewRequest(ctx, &partition.Transferable)
-	s.job.Get(ctx.ID).Add(&partition.Transferable)
+	job := s.job.Get(ctx.ID)
+	if job == nil {
+		return fmt.Errorf("job was empty: %v", ctx.ID)
+	}
+	job.Add(&partition.Transferable)
 	if err = s.Transfer.Post(ctx, request, &partition.Transferable); err != nil {
 		return err
 	}
@@ -223,6 +227,20 @@ func (s *service) buildIndividual(ctx *shared.Context) (err error) {
 }
 
 func (s *service) buildBatch(ctx *shared.Context, filter map[string]interface{}) error {
+	isGlobalPartition := len(s.Partitions.Source) <= 1
+	syncOnlyNewID := s.Strategy.Diff.NewIDOnly && s.IDColumn() != ""
+	shouldUseNewIDGlobalFilter := isGlobalPartition && syncOnlyNewID
+
+	var destSignatures core.Records
+
+	if shouldUseNewIDGlobalFilter {
+		if dest, err := s.dao.Signature(ctx, contract.ResourceKindDest, filter); err == nil {
+			destSignature := core.NewSignatureFromRecord(s.Strategy.IDColumn(), dest)
+			filter[s.Strategy.IDColumn()] = criteria.NewGraterThan(destSignature.Max())
+			destSignatures = append(destSignatures, dest)
+		}
+	}
+
 	sourceSignatures, err := s.dao.Signatures(ctx, contract.ResourceKindSource, filter)
 	if err != nil {
 		return err
@@ -230,33 +248,45 @@ func (s *service) buildBatch(ctx *shared.Context, filter map[string]interface{})
 	if len(sourceSignatures) == 0 {
 		return nil //nothing to sync
 	}
-	destSignatures, err := s.dao.Signatures(ctx, contract.ResourceKindDest, filter)
-	if err != nil {
-		return err
+	if len(destSignatures) == 0 {
+		destSignatures, err = s.dao.Signatures(ctx, contract.ResourceKindDest, filter)
+		if err != nil {
+			return err
+		}
 	}
 	core.AlignRecords(sourceSignatures, destSignatures)
-
 	dateLayout := s.Partitions.FindDateLayout(sourceSignatures[0])
 	index, err := s.match(ctx, sourceSignatures, destSignatures, dateLayout)
 	if err != nil {
 		return err
 	}
-
 	if err = s.validate(ctx, index); err != nil {
 		return err
 	}
+
 	for key := range index.Source {
 		source := index.Source[key]
 		dest := index.Dest[key]
-
 		partition := s.Partitions.Get(key)
 		if partition == nil {
+			if key == "" {
+				partition = s.Partitions.Source[0]
+
+			} else {
+				continue
+			}
+		}
+		if syncOnlyNewID && len(destSignatures) > 0 {
+			partition.Status = core.NewStatusWithNewID(s.IDColumn(), source, dest)
+			partition.AddCriteria(s.IDColumn(), criteria.NewGraterThan(partition.Status.InSyncWithID))
+			partition.Init()
 			continue
 		}
 		partition.Status, err = s.Check(ctx, source, dest, partition.Filter)
 		if err != nil {
 			return err
 		}
+		partition.Init()
 	}
 	return nil
 }

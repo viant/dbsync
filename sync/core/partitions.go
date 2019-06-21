@@ -119,6 +119,7 @@ func (p *Partitions) Validate(ctx *shared.Context, comparator *Comparator, sourc
 		return nil
 	}
 	if !comparator.AreKeysInSync(ctx, keys, source, dest) {
+
 		return fmt.Errorf("inconsistent partition value: %v, src: %v, dest:%v", keys, source.Index(keys), dest.Index(keys))
 	}
 	return nil

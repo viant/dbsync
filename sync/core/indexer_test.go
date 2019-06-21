@@ -126,7 +126,7 @@ func TestIndexer_Index(t *testing.T) {
 			useCase.expectDest = useCase.expectSource
 		}
 
-		indexer := NewIndexer(useCase.keys)
+		indexer := NewIndexer(useCase.keys, "")
 		index := indexer.Index(useCase.source, useCase.dest)
 
 		assert.Equal(t, len(useCase.expectSource), len(index.Source), useCase.description)
