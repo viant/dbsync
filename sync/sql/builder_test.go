@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/criteria"
 
 	"dbsync/sync/contract/strategy"

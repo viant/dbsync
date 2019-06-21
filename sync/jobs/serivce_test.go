@@ -21,14 +21,18 @@ func TestService_List(t *testing.T) {
 			description: "running job",
 			ids:         []string{"1", "2"},
 			expect: `{
+
 	"Jobs": [
 		{
+			"@indexBy@":"ID"
+		},
+		{
 			"ID": "1",
-			"Status": "running"
+			"Status": ""
 		},
 		{
 			"ID": "2",
-			"Status": "running"
+			"Status": ""
 		}
 	]
 }`,
@@ -43,6 +47,9 @@ func TestService_List(t *testing.T) {
 			},
 			expect: `{
 	"Jobs": [
+	   {
+			"@indexBy@":"ID"
+		},
 		{
 			"ID": "1",
 			"Status": "done"

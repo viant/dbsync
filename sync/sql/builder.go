@@ -576,10 +576,11 @@ func (b *Builder) addStandardSignatureColumns() {
 
 	countColumnAlias := diff.AliasCount
 	for _, candidate := range b.Diff.Columns {
-		if candidate.Name == countColumnAlias {
+		if strings.ToLower(candidate.Name) == countColumnAlias {
 			return
 		}
 	}
+
 	b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 		Func:  "COUNT",
 		Name:  "1",

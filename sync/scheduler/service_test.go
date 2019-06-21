@@ -4,8 +4,18 @@ import "testing"
 
 func TestService_Schedules(t *testing.T) {
 
-	var useCase = []struct {
-		description string
-	}{}
+	/*
+		var useCases= []struct {
+			description string
+		}{
+
+		}
+
+
+		for _, usecase := range useCases {
+
+		}
+
+	*/
 
 }

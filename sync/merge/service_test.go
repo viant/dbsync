@@ -1,9 +1,9 @@
 package merge
 
 import (
+	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
-	"dbsync/sync/data"
 
 	"dbsync/sync/shared"
 	"fmt"
@@ -48,7 +48,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns:   []string{"id"},
 			transferable: &core.Transferable{
 				Suffix: "_tmp",
-				Method: shared.SyncMethodInsert,
+				Status: &core.Status{
+					Method: shared.SyncMethodInsert,
+				},
 			},
 		},
 
@@ -59,7 +61,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns: []string{"id"},
 			transferable: &core.Transferable{
 				Suffix: "_tmp",
-				Method: shared.SyncMethodInsert,
+				Status: &core.Status{
+					Method: shared.SyncMethodInsert,
+				},
 			},
 		},
 
@@ -70,7 +74,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns: []string{"id"},
 			transferable: &core.Transferable{
 				Suffix: "_tmp",
-				Method: shared.SyncMethodMerge,
+				Status: &core.Status{
+					Method: shared.SyncMethodMerge,
+				},
 			},
 		},
 		{
@@ -80,7 +86,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns: []string{"id"},
 			transferable: &core.Transferable{
 				Suffix: "_tmp",
-				Method: shared.SyncMethodDeleteMerge,
+				Status: &core.Status{
+					Method: shared.SyncMethodDeleteMerge,
+				},
 				Filter: map[string]interface{}{"id": ">=5"},
 			},
 		},
@@ -92,7 +100,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns: []string{"id"},
 			transferable: &core.Transferable{
 				Suffix: "_tmp",
-				Method: shared.SyncMethodDeleteInsert,
+				Status: &core.Status{
+					Method: shared.SyncMethodDeleteInsert,
+				},
 				Filter: map[string]interface{}{"id": ">=5"},
 			},
 		},
@@ -104,7 +114,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns: []string{},
 			transferable: &core.Transferable{
 				Suffix: "_tmp",
-				Method: shared.SyncMethodDeleteInsert,
+				Status: &core.Status{
+					Method: shared.SyncMethodDeleteInsert,
+				},
 				Filter: map[string]interface{}{"id": ">=5"},
 			},
 		},
@@ -115,8 +127,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns: []string{},
 			transferable: &core.Transferable{
 				Suffix: "_tmp",
-				Method: shared.SyncMethodDeleteInsert,
-				Filter: map[string]interface{}{"id": ">=5"},
+				Status: &core.Status{
+					Method: shared.SyncMethodDeleteInsert,
+				},
 			},
 		},
 
@@ -127,7 +140,9 @@ func TestService_Sync(t *testing.T) {
 			iDColumns:   []string{"id"},
 			transferable: &core.Transferable{
 				Suffix: "",
-				Method: shared.SyncMethodDeleteMerge,
+				Status: &core.Status{
+					Method: shared.SyncMethodDeleteMerge,
+				},
 			},
 			hasError: true,
 		},
@@ -139,7 +154,9 @@ func TestService_Sync(t *testing.T) {
 			transferable: &core.Transferable{
 				IsDirect: true,
 				Suffix:   "",
-				Method:   shared.SyncMethodDeleteMerge,
+				Status: &core.Status{
+					Method: shared.SyncMethodDeleteMerge,
+				},
 			},
 			hasError: true,
 		},
@@ -149,13 +166,15 @@ func TestService_Sync(t *testing.T) {
 			iDColumns:   []string{"id"},
 			transferable: &core.Transferable{
 				Suffix: "",
-				Method: "blah blah",
+				Status: &core.Status{
+					Method: "blah blah",
+				},
 			},
 			hasError: true,
 		},
 	}
 
-	ctx := &shared.Context{Debug: true}
+	ctx := &shared.Context{Debug: false}
 	for _, useCase := range useCases {
 		if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
 			return
@@ -199,7 +218,9 @@ func TestService_Sync(t *testing.T) {
 		}
 
 		expectDataset := dsunit.NewDatasetResource("db1", path.Join(parent, fmt.Sprintf("test/data/%v/expect", useCase.caseDataURI)), "", "")
-		dsunit.Expect(t, dsunit.NewExpectRequest(dsunit.FullTableDatasetCheckPolicy, expectDataset))
+		if !dsunit.Expect(t, dsunit.NewExpectRequest(dsunit.FullTableDatasetCheckPolicy, expectDataset)) {
+			t.Log("failed expected dataset " + useCase.description)
+		}
 
 	}
 
