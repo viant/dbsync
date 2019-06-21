@@ -22,6 +22,20 @@ type Sync struct {
 	Debug             bool
 }
 
+func (r *Sync) Clone() *Sync {
+	return &Sync{
+		Strategy: * r.Strategy.Clone(),
+		Transfer: r.Transfer,
+		Dest:     r.Dest,
+		Source:   r.Source,
+		Table:    r.Table,
+		Criteria: r.Criteria,
+		Schedule: r.Schedule,
+		Async:    r.Async,
+		Debug:    r.Debug,
+	}
+}
+
 //Init initialized Request
 func (r *Sync) Init() error {
 	if r.Dest == nil || r.Source == nil {
@@ -136,6 +150,8 @@ func (r *Sync) Validate() error {
 	}
 	return nil
 }
+
+
 
 //NewSyncFromURL returns new sync from URL
 func NewSyncFromURL(URL string) (*Sync, error) {

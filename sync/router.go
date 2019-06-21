@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/viant/toolbox"
 	"net/http"
+	"os"
 )
 
 const baseURI = "/v1/api"
+
+var debugMode = toolbox.AsBoolean(os.Getenv("DS_SYNC_DEBUG"))
 
 //Router represents a router
 type Router struct {
@@ -64,11 +67,15 @@ func (r Router) api() http.Handler {
 	)
 
 	return http.HandlerFunc(func(writer http.ResponseWriter, reader *http.Request) {
+
 		defer func() {
-			if r := recover(); r != nil {
-				var err = fmt.Errorf("%v", r)
-				http.Error(writer, err.Error(), 500)
+			if ! debugMode {
+				return
 			}
+			//if r := recover(); r != nil {
+			//	var err = fmt.Errorf("%v", r)
+			//	http.Error(writer, err.Error(), 500)
+			//}
 		}()
 		if err := router.Route(writer, reader); err != nil {
 			http.Error(writer, err.Error(), 500)

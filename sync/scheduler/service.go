@@ -139,19 +139,21 @@ func (s *service) run() {
 			schedulalble := dueToRun[i]
 			schedulalble.Schedule.Next(now)
 
-			remaining := time.Second * time.Duration(schedulalble.Schedule.NextRun.Unix()-time.Now().Unix())
-			log.Printf("[%v] next runner at: %v, remaining %s\n", schedulalble.ID, schedulalble.Schedule.NextRun.Format(dateLayout), remaining)
 
 			go func(schedulable *Schedulable) {
 				watGroup.Done()
 				defer schedulable.Done()
-				err := s.runner(schedulable)
+				runnable := schedulable.Clone()
+				_ = runnable.Init()
+				err := s.runner(runnable)
 				if err != nil {
 					schedulable.Schedule.ErrorCount++
-					log.Printf("failed to runner %v,%v", schedulable.ID, err)
+					log.Printf("failed to run %v,%v", schedulable.ID, err)
 					schedulable.ScheduleNexRun(time.Now().Add(time.Minute * time.Duration(schedulable.Schedule.ErrorCount%5)))
 
 				}
+				remaining := time.Second * time.Duration(schedulalble.Schedule.NextRun.Unix()-time.Now().Unix())
+				log.Printf("[%v] next run at: %v, remaining %s\n", schedulalble.ID, schedulalble.Schedule.NextRun.Format(dateLayout), remaining)
 			}(schedulalble)
 		}
 		watGroup.Wait() //wait only for re-scheduling completion, not runner completion

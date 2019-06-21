@@ -14,7 +14,21 @@ type Strategy struct {
 	Partition    Partition
 	AppendOnly   bool `description:"if set instead of merge, insert will be used"`
 	Force        bool `description:"if set skip checks if values in sync"`
-	adjustedCase uint32
+}
+
+
+//Clone clones strategy
+func (s *Strategy) Clone() *Strategy {
+	return &Strategy{
+		Chunk:s.Chunk,
+		IDColumns:s.IDColumns,
+		Diff:s.Diff,
+		DirectAppend:s.DirectAppend,
+		MergeStyle:s.MergeStyle,
+		Partition:s.Partition,
+		AppendOnly: s.AppendOnly,
+		Force: s.Force,
+	}
 }
 
 //IDColumn returns IDColumn
