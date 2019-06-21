@@ -566,7 +566,7 @@ func (b *Builder) formatColumn(column string) string {
 		column = strings.ToUpper(column)
 		aliasedCount := strings.Count(column, "T.")
 		if aliasedCount > 0 {
-			strings.Replace(column, "T.", "t.", aliasedCount)
+			column = strings.Replace(column, "T.", "t.", aliasedCount)
 		}
 	}
 	return column
