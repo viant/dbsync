@@ -46,7 +46,7 @@ func (s *service) Status(request *StatusRequest) *StatusResponse {
 				response.LastSyncTime = &item.EndTime
 			}
 		}
-		if history[0].Status == shared.StatusOk {
+		if history[0].Status == shared.StatusDone {
 			response.Transferred[k] = history[0].Transferred
 		}
 
