@@ -1,0 +1,44 @@
+{
+    "Id":"$index",
+    "Debug":true,
+ 	"Table": "events",
+	"IDColumns": [
+        "id"
+    ],
+    "Diff": {
+        "NewIDOnly": true,
+        "Columns": [
+            {
+                "Name":"timestamp",
+                "Func":"MAX"
+            }
+        ]
+    },
+    "Partition": {
+        "Columns":["event_type"]
+    },
+
+	"Source": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db1"
+		},
+	    "PartitionSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
+	},
+	"Dest": {
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
+		"Parameters": {
+			"dbname": "db2"
+		}
+	},
+    "Transfer": {
+        "EndpointIP": "127.0.0.1:8080",
+        "WriterThreads": 2,
+        "TempDatabase":"transfer",
+        "BatchSize": 4096
+    }
+}

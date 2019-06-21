@@ -2,7 +2,7 @@ tasks: $tasks
 init:
   sourcePath: $Pwd(..)
   buildPath: /tmp/dbsync
-  version: 0.1.0
+  Version: $Cat(../Version)
 
 defaults:
   target: $target
@@ -43,9 +43,9 @@ pipeline:
       - export LD_LIBRARY_PATH=${env.LD_LIBRARY_PATH}
       - export PKG_CONFIG_PATH=${env.LD_LIBRARY_PATH}
       - cd $sourcePath/transfer/app
-      - go build -o vtransfer
+      - go build -ldflags "-X main.Version=${Version}-e2e" -o vtransfer
       - cd $sourcePath/sync/app
-      - go build -o vsync
+      - go build -ldflags "-X main.Version=${Version}-e2e" -o vsync
 
 
   start:
