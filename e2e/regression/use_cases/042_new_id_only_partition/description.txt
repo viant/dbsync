@@ -1,20 +1,20 @@
-Id and partition based chunked synchronization,
+Only New ID with partition sync
 
 db1 is a source and db2 is destination database
 
 Input:
-    - db1.events 9999 records
-    - db2.events has 7 record, where last record in event_type=10 partition has the highest value
+    - db1.events 10 events (2 partition)
+    - db2.events has only 4 event from 1st partition, and 3 events from the second
     - sync request with
         - id based synchronization
+        - diff.newIDOnly
         - job id: $index
-        - chunk.size: 4096
         - partition on event_type column, 1 partition threads
-          and sqlProvider defined as: SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1
-        - chunk.syncMode: individual
+          and source.paritionSQL: SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1
+
 Output:
    -  db2.events has all records synchronized from db1.events
    -  job status: http://localhost:8081/v1/api/job/$index
-      - source count: 9999
-      - dest count: 7
-      - transferred: 9999
+      - source count: 0
+      - dest count: 10
+      - transferred: 3
