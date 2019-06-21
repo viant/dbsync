@@ -1,3 +1,9 @@
+## June 20 2019 - v0.9.6
+- Patched upper casing aliases
+- Patched nil pointer on status
+- Updated status to include transfers
+- Added dest signature validation
+
 ## June 20 2019 - v0.9.1
 - Patched default ID on schedulables
 - Added start/end job info logging

@@ -7,6 +7,8 @@ import (
 	"dbsync/sync/dao"
 	"dbsync/sync/shared"
 	"fmt"
+	"github.com/pkg/errors"
+	"log"
 )
 
 //Service represents a diff service
@@ -91,6 +93,10 @@ func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source,
 	hasID := idColumn != ""
 	status.Source = core.NewSignatureFromRecord(idColumn, source)
 	status.Dest = core.NewSignatureFromRecord(idColumn, dest)
+	if err := status.Dest.ValidateIDConsistency();err != nil {
+		log.Print(errors.Wrap(err, "dest inconsistency"))
+	}
+
 	if len(dest) == 0 || status.Dest.Count() == 0 {
 		status.Method = shared.SyncMethodInsert
 		return nil
