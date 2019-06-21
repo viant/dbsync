@@ -15,6 +15,8 @@ import (
 	"os"
 )
 
+var Version string
+
 var port = flag.Int("port", 8080, "service port")
 var debug = flag.Bool("debug", false, "debug flag")
 
@@ -28,6 +30,6 @@ func main() {
 	service := transfer.New(nil)
 	server := transfer.NewServer(service, *port)
 	go server.StopOnSiginals(os.Interrupt)
-	fmt.Printf("dstransfer listening on :%d\n", *port)
+	fmt.Printf("dstransfer %v listening on :%d\n", Version, *port)
 	log.Fatal(server.ListenAndServe())
 }

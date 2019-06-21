@@ -1,6 +1,6 @@
 init:
   buildPath: /tmp/dbsync/
-  version: $Cat(../Version)
+  Version: $Cat(../Version)
   target:
     URL: ssh://127.0.0.1/
     credentials: localhost
@@ -39,14 +39,15 @@ pipeline:
       action: docker:build
       path: ${buildPath}/transient/
       nocache: true
+      expand: true
       tag:
         image: dbsync_transient
-        version: ${version}
+        version: ${Version}
 
   extract:
     start:
       action: docker:run
-      image: dbsync_transient:${version}
+      image: dbsync_transient:${Version}
       name: dbsync_transient
 
     copy:
@@ -69,7 +70,7 @@ pipeline:
         nocache: true
         tag:
           image: dbsync
-          version: ${version}
+          version: ${Version}
 
     transfer:
       build:
@@ -78,7 +79,7 @@ pipeline:
         nocache: true
         tag:
           image: dbtransfer
-          version: ${version}
+          version: ${Version}
 
 
   deploy:
@@ -96,17 +97,17 @@ pipeline:
         action: docker:tag
         sourceTag:
           image: dbsync
-          version: ${version}
+          version: ${Version}
         targetTag:
           image: dbsync
           username: viant
-          version: ${version}
+          version: ${Version}
 
       tagLatestVersion:
         action: docker:tag
         sourceTag:
           image: dbsync
-          version: ${version}
+          version: ${Version}
         targetTag:
           image: dbsync
           username: viant
@@ -117,7 +118,7 @@ pipeline:
         tag:
           image: dbsync
           username: viant
-          version: ${version}
+          version: ${Version}
 
       pushLatestVersion:
         action: docker:push
@@ -131,17 +132,17 @@ pipeline:
         action: docker:tag
         sourceTag:
           image: dbtransfer
-          version: ${version}
+          version: ${Version}
         targetTag:
           image: dbtransfer
           username: viant
-          version: ${version}
+          version: ${Version}
 
       tagLatestVersion:
         action: docker:tag
         sourceTag:
           image: dbtransfer
-          version: ${version}
+          version: ${Version}
         targetTag:
           image: dbtransfer
           username: viant
@@ -152,7 +153,7 @@ pipeline:
         tag:
           image: dbtransfer
           username: viant
-          version: ${version}
+          version: ${Version}
 
       pushLatestVersion:
         action: docker:push
