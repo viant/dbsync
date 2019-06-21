@@ -24,9 +24,6 @@ func (t *Transferable) SetMinID(key string, ID int) {
 	if len(t.Filter) == 0 {
 		t.Filter = make(map[string]interface{})
 	}
-	//if _, has := t.Filter[key]; has {
-	//	key = key + " "
-	//}
 	t.Filter[key] = criteria.NewGraterOrEqual(ID)
 }
 

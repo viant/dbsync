@@ -140,9 +140,7 @@ func (d *service) isInSync(ctx *shared.Context, filter map[string]interface{}) b
 }
 
 func (d *service) findMaxIDInSync(ctx *shared.Context, idRange *core.IDRange, filter map[string]interface{}) (int, error) {
-	if len(filter) == 0 {
-		filter = make(map[string]interface{})
-	}
+	filter = shared.CloneMap(filter)
 	inSyncDestMaxID := 0
 	candidateID := idRange.Next(false)
 	for i := 0; i < d.Diff.Depth; i++ {
