@@ -20,6 +20,10 @@ type Partition struct {
 	err error
 }
 
+func (p *Partition) Error() error {
+	return p.err
+}
+
 //BatchTransferable returns batched transferable
 func (p *Partition) BatchTransferable() *Transferable {
 	result := &Transferable{
@@ -68,7 +72,7 @@ func (p *Partition) AddChunk(chunk *Chunk) {
 	}
 	chunk.Index = p.ChunkSize()
 	chunk.Suffix = fmt.Sprintf("%v_chunk_%05d", p.Suffix, chunk.Index)
-	chunk.Filter[p.IDColumn] = criteria.NewBetween(chunk.Min(), chunk.Max())
+	chunk.Filter[p.Strategy.IDColumn()] = criteria.NewBetween(chunk.Min(), chunk.Max())
 	p.Chunks.Offer(chunk)
 }
 
@@ -103,6 +107,13 @@ func (p *Partition) buildSuffix() string {
 	return suffix
 }
 
+func (p *Partition) AddCriteria(key string, value interface{}) {
+	if len(p.Filter) == 0 {
+		p.Filter = make(map[string]interface{})
+	}
+	p.Filter[key] = value
+}
+
 //Init initializes partition
 func (p *Partition) Init() {
 	if p.Strategy == nil {
@@ -111,6 +122,7 @@ func (p *Partition) Init() {
 	if len(p.IDColumns) == 1 {
 		p.IDColumn = p.IDColumns[0]
 	}
+
 	p.Suffix = p.buildSuffix()
 }
 
