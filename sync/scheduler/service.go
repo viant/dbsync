@@ -17,7 +17,6 @@ var dateLayout = "2006-01-02 03:04:05"
 
 //Service represents a scheduler
 type Service interface {
-
 	//List returns list of scheduled jobs
 	List(request *ListRequest) *ListResponse
 	//Get returns requested scheduled job
