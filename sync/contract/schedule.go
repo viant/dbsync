@@ -42,17 +42,22 @@ func (s *Schedule) Validate() error {
 }
 
 //Next schedules next run
-func (s *Schedule) Next(baseTime time.Time) {
+func (s *Schedule) Next(baseTime time.Time) error {
 	var nextTime = baseTime
 	if s.Frequency != nil {
-		duration, _ := s.Frequency.Duration()
+		duration, err := s.Frequency.Duration()
+		if err != nil {
+			return err
+		}
 		nextTime = baseTime.Add(duration)
 		if nextTime.Unix() < baseTime.Unix() { //sanity check next should always be in the future
 			//due to issue with tz amd 23 hour added extra check
 			nextTime = baseTime.Add(time.Hour)
 		}
+
 	} else if s.At != nil {
 		nextTime = s.At.Next(baseTime)
 	}
 	s.setNextRun(nextTime)
+	return nil
 }

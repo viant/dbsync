@@ -16,18 +16,17 @@ type Strategy struct {
 	Force        bool `description:"if set skip checks if values in sync"`
 }
 
-
 //Clone clones strategy
 func (s *Strategy) Clone() *Strategy {
 	return &Strategy{
-		Chunk:s.Chunk,
-		IDColumns:s.IDColumns,
-		Diff:s.Diff,
-		DirectAppend:s.DirectAppend,
-		MergeStyle:s.MergeStyle,
-		Partition:s.Partition,
-		AppendOnly: s.AppendOnly,
-		Force: s.Force,
+		Chunk:        s.Chunk,
+		IDColumns:    s.IDColumns,
+		Diff:         s.Diff,
+		DirectAppend: s.DirectAppend,
+		MergeStyle:   s.MergeStyle,
+		Partition:    s.Partition,
+		AppendOnly:   s.AppendOnly,
+		Force:        s.Force,
 	}
 }
 
