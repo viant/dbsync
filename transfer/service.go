@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/viant/dsc"
 	"math/rand"
 	"net/http"
@@ -216,7 +217,8 @@ func (s *Service) readData(request *Request, response *Response, task *Task) err
 
 		err := scanner.Scan(&record)
 		if err != nil {
-			return false, fmt.Errorf("failed to scan:%v", err)
+
+			return false, errors.Wrap(err, "failed to scan")
 		}
 		var transformed = make(map[string]interface{})
 		for k, v := range record {
