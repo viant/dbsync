@@ -4,6 +4,7 @@ import (
 	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/viant/toolbox/url"
 )
 
@@ -24,7 +25,7 @@ type Sync struct {
 
 func (r *Sync) Clone() *Sync {
 	return &Sync{
-		Strategy: * r.Strategy.Clone(),
+		Strategy: *r.Strategy.Clone(),
 		Transfer: r.Transfer,
 		Dest:     r.Dest,
 		Source:   r.Source,
@@ -143,15 +144,13 @@ func (r *Sync) Validate() error {
 		}
 	}
 	if err := r.Source.Validate(); err != nil {
-		return fmt.Errorf("source: %v", err)
+		return errors.Wrap(err, "invalid source")
 	}
 	if err := r.Dest.Validate(); err != nil {
-		return fmt.Errorf("dest: %v", err)
+		return errors.Wrap(err, "invalid dest")
 	}
 	return nil
 }
-
-
 
 //NewSyncFromURL returns new sync from URL
 func NewSyncFromURL(URL string) (*Sync, error) {
