@@ -139,7 +139,6 @@ func (s *service) run() {
 			schedulalble := dueToRun[i]
 			schedulalble.Schedule.Next(now)
 
-
 			go func(schedulable *Schedulable) {
 				watGroup.Done()
 				defer schedulable.Done()
