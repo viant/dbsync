@@ -11,7 +11,7 @@ require (
 	github.com/lib/pq v1.1.1
 	github.com/mattn/go-oci8 v0.0.0-20190410054007-e00f23025626
 	github.com/mattn/go-sqlite3 v1.10.0
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
 	github.com/viant/asc v0.5.0
 	github.com/viant/assertly v0.4.8
