@@ -1,5 +1,6 @@
 {
    "Id":"$index",
+   "AppendOnly":true,
  	"Table": "events",
 	"IDColumns": [
         "id"

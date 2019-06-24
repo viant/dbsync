@@ -1,6 +1,6 @@
 {
     "Id":"$index",
- 	"Table": "events",
+    "Table": "events",
 	"IDColumns": [
         "id"
     ],
