@@ -23,13 +23,13 @@ type Schedulable struct {
 	status   uint32
 }
 
-func (s *Schedulable) Clone() *Schedulable{
+func (s *Schedulable) Clone() *Schedulable {
 	return &Schedulable{
-		URL:s.URL,
-		ID:s.ID,
-		Sync:s.Sync.Clone(),
-		Schedule:s.Schedule,
-		Status:s.Status,
+		URL:      s.URL,
+		ID:       s.ID,
+		Sync:     s.Sync.Clone(),
+		Schedule: s.Schedule,
+		Status:   s.Status,
 	}
 }
 
