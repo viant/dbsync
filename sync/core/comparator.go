@@ -71,7 +71,7 @@ func (c *Comparator) IsInSync(ctx *shared.Context, record1, record2 Record) bool
 func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
 	c.index()
 	if toolbox.IsInt(value1) || toolbox.IsInt(value2) {
-		result :=  toolbox.AsInt(value1) == toolbox.AsInt(value2)
+		result := toolbox.AsInt(value1) == toolbox.AsInt(value2)
 		return result
 	}
 
