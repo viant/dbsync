@@ -35,6 +35,15 @@ pipeline:
         - cd $Pwd(..)
         - rm dbsync.tar.gz
 
+
+    prepareBuild:
+      action: storage:copy
+      expand: true
+      source:
+        URL: ${buildPath}/transient/docker/transient/Dockerfile
+      dest:
+        URL: ${buildPath}/transient/docker/transient/Dockerfile
+
     build:
       action: docker:build
       path: ${buildPath}/transient/
