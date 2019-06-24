@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"dbsync/sync/shared"
+	"fmt"
+	"github.com/pkg/errors"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/storage"
 	"github.com/viant/toolbox/url"
@@ -137,7 +139,10 @@ func (s *service) run() {
 		now := time.Now()
 		for i := range dueToRun {
 			schedulalble := dueToRun[i]
-			schedulalble.Schedule.Next(now)
+			if err := schedulalble.ScheduleNexRun(now); err != nil {
+				log.Print(errors.Wrap(err, fmt.Sprintf("failed to schedule job: %v, skipping", schedulalble.ID)))
+				continue
+			}
 
 			go func(schedulable *Schedulable) {
 				watGroup.Done()
@@ -148,8 +153,7 @@ func (s *service) run() {
 				if err != nil {
 					schedulable.Schedule.ErrorCount++
 					log.Printf("failed to run %v,%v", schedulable.ID, err)
-					schedulable.ScheduleNexRun(time.Now().Add(time.Minute * time.Duration(schedulable.Schedule.ErrorCount%5)))
-
+					_ = schedulable.ScheduleNexRun(time.Now().Add(time.Minute * time.Duration(schedulable.Schedule.ErrorCount%5)))
 				}
 				remaining := time.Second * time.Duration(schedulalble.Schedule.NextRun.Unix()-time.Now().Unix())
 				log.Printf("[%v] next run at: %v, remaining %s\n", schedulalble.ID, schedulalble.Schedule.NextRun.Format(dateLayout), remaining)

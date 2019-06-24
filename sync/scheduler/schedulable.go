@@ -44,8 +44,8 @@ func (s *Schedulable) IsRunning() bool {
 }
 
 //ScheduleNexRun schedules next run
-func (s *Schedulable) ScheduleNexRun(baseTime time.Time) {
-	s.Schedule.Next(baseTime)
+func (s *Schedulable) ScheduleNexRun(baseTime time.Time) error {
+	return s.Schedule.Next(baseTime)
 }
 
 //NewSchedulableFromURL create a new scheduleable from URL
@@ -69,10 +69,12 @@ func (s *Schedulable) Init() error {
 	if s.Schedule.Frequency != nil && s.Schedule.Frequency.Value == 0 {
 		s.Schedule.Frequency.Value = 1
 	}
-	if s.Schedule.Frequency != nil {
-		s.Schedule.NextRun = &now
-	} else {
-		s.Schedule.Next(now)
+	if s.Schedule.NextRun == nil {
+		if s.Schedule.Frequency != nil {
+			s.Schedule.NextRun = &now
+		} else {
+			return s.Schedule.Next(now)
+		}
 	}
 	return nil
 
