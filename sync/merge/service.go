@@ -4,7 +4,6 @@ import (
 	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
-
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
 	"fmt"
@@ -26,7 +25,8 @@ type service struct {
 }
 
 func (s *service) delete(ctx *shared.Context, transferable *core.Transferable) error {
-	DML, err := s.Builder.DML(shared.DMLDelete, transferable.Suffix, shared.CloneMap(transferable.Filter))
+	deleteFilter := shared.CloneMap(transferable.Filter)
+	DML, err := s.Builder.DML(shared.DMLDelete, transferable.Suffix, deleteFilter)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,13 @@ func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (e
 	s.Mutex.Lock(s.Sync.Table)
 	defer s.Mutex.Unlock(s.Sync.Table)
 	if s.AppendOnly {
-		return s.dedupeAppend(ctx, transferable)
+		if transferable.ShouldDelete() {
+			err = s.delete(ctx, transferable)
+		}
+		if err == nil {
+			err = s.dedupeAppend(ctx, transferable)
+		}
+		return err
 	}
 	switch transferable.Method {
 	case shared.SyncMethodDeleteInsert:
