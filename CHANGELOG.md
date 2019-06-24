@@ -1,3 +1,10 @@
+## June 20 2019 - v0.9.7
+- Patched missing partition filter on chunked batc
+- Patched appendOnly deleteMerge case
+- Added dest integrity validation
+- Minor errors handling refactoring 
+
+
 ## June 20 2019 - v0.9.6
 - Patched upper casing aliases
 - Patched nil pointer on status
