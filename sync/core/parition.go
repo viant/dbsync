@@ -27,7 +27,7 @@ func (p *Partition) Error() error {
 //BatchTransferable returns batched transferable
 func (p *Partition) BatchTransferable() *Transferable {
 	result := &Transferable{
-
+		Filter: p.Filter,
 		Suffix: p.Suffix,
 		Status: &Status{
 			Method: shared.SyncMethodInsert,
