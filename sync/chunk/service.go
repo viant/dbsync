@@ -2,14 +2,13 @@ package chunk
 
 import (
 	"dbsync/sync/contract"
+	"dbsync/sync/contract/strategy"
 	"dbsync/sync/core"
 	"dbsync/sync/criteria"
 	"dbsync/sync/dao"
 	"dbsync/sync/diff"
 	"dbsync/sync/jobs"
 	"dbsync/sync/merge"
-
-	"dbsync/sync/contract/strategy"
 	"dbsync/sync/shared"
 	"dbsync/sync/transfer"
 	"fmt"
@@ -147,12 +146,19 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 			return err
 		}
 		isLast = sourceSignature.Count() != limit || sourceSignature.Count() == 0
-
+		chunkMax := sourceSignature.Max()
+		upperBound := offset + limit
 		if !isLast {
-			destSignature, err = s.dao.ChunkSignature(ctx, contract.ResourceKindDest, offset, limit, s.partition.Filter)
+			if chunkMax > upperBound {
+				filter := shared.CloneMap(s.partition.Filter)
+				upperBound = chunkMax
+				filter[s.IDColumn()] = criteria.NewBetween(offset, upperBound)
+				destSignature, err = s.dao.CountSignature(ctx, contract.ResourceKindDest, filter)
+			} else {
+				destSignature, err = s.dao.ChunkSignature(ctx, contract.ResourceKindDest, offset, limit, s.partition.Filter)
+			}
 		} else {
 			filter := shared.CloneMap(s.partition.Filter)
-			upperBound := offset + limit
 			if maxID > upperBound {
 				upperBound = maxID
 			}
