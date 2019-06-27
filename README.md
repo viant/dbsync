@@ -1,6 +1,6 @@
 # dbsync - SQL based cross database cost effective synchronization
 
-[![SQL based cross database cost effective synchronization in Go.](https://goreportcard.com/badge/github.com/viant/dbsync)](https://goreportcard.com/report/github.com/viant/dbsync)
+[![GoReportCard](https://goreportcard.com/badge/github.com/viant/dbsync)](https://goreportcard.com/report/github.com/viant/dbsync)
 [![GoDoc](https://godoc.org/github.com/viant/dbsync?status.svg)](https://godoc.org/github.com/viant/dbsync)
 
 This library is compatible with Go 1.11+
@@ -215,6 +215,8 @@ schedule:
 - /v1/api/scheduled list all scheduled jobs
 - /v1/api/job/{ids}: progress info for specified jobs id(s)
 - /v1/api/job/history/{ids}: history info for specified jobs id(s)
+- /v1/api/status:  overal service status, with all transfers, and errors for the x past run
+
 
 ```bash
     curl http://127.0.0.1:8081//v1/api/jobs
@@ -298,6 +300,7 @@ thus deletion is reduced to discrepant chunks.
 - diff.numericPrecision: default required decimal precision when comparing decimal data (can be also specified on diff.columns level)
 - diff.dateFormat: default date format used to compare date/time data type (can be also specified on diff.columns level)
 - diff.dateLayout: default date layout used to compare date/time data type (can be also specified on diff.columns level)
+- diff.newIDOnly: flag to sync only source where dest.ID > source.ID
 
 
 ##### Custom data comparision
@@ -616,6 +619,7 @@ Transfer process is delegated to the transfer service, the following parameter c
     - insertOnConflictUpdate
 
 - appendOnly: flag to use append new entries
+- directAppend: flag to insert data directly to dest table (without transfer table, only recommended with streaming API, or where dest has unique constraints)
 - transfer.batchSize: batch size for insert/load operation
 - transfer.writerThreads: number of writing threads
 - transfer.endpointID: ip:port of transfer service
