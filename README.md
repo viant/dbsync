@@ -1,7 +1,7 @@
 # dbsync - SQL based cross database cost effective synchronization
 
 [![GoReportCard](https://goreportcard.com/badge/github.com/viant/dbsync)](https://goreportcard.com/report/github.com/viant/dbsync)
-[![GoDoc](https://godoc.org/github.com/viant/dbsync?status.svg)](https://godoc.org/github.com/viant/dbsync)
+[![GoDoc](https://godoc.org/github.com/viant/dbsync?status.svg)](https://godoc.org/github.com/viant/dbsync/sync)
 
 This library is compatible with Go 1.11+
 
