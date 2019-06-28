@@ -1,3 +1,8 @@
+## June 28 2019 - v0.9.10
+- Patched error status cleanup
+- Patched race condition
+
+
 ## June 20 2019 - v0.9.7
 - Patched missing partition filter on chunked batc
 - Patched appendOnly deleteMerge case
