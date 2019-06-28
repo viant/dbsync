@@ -25,6 +25,9 @@ func (b *Batch) Add(values map[string]interface{}) {
 		if _, ok := b.values[key]; !ok {
 			b.values[key] = make([]interface{}, 0)
 		}
+		if _, ok := b.uniqueValues[key]; !ok {
+			b.uniqueValues[key] = make(map[interface{}]bool)
+		}
 		valueForKey := b.uniqueValues[key]
 		valueForKey[key] = true
 		b.values[key] = append(b.values[key], value)
@@ -54,7 +57,7 @@ func (b *Batch) hasValue(key string, value interface{}) bool {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	if _, ok := b.uniqueValues[key]; !ok {
-		b.uniqueValues[key] = make(map[interface{}]bool)
+		return false
 	}
 	valueForKey := b.uniqueValues[key]
 	_, ok := valueForKey[value]
