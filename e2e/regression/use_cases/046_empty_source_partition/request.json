@@ -1,6 +1,6 @@
 {
    "Id":"$index",
-	"Table": "events",
+ 	"Table": "events",
 	"IDColumns": [
         "id"
     ],
@@ -11,31 +11,26 @@
         "Parameters": {
             "dbname": "db1"
         },
-        "PartitionSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
+        "PartitionSQL": "SELECT event_type FROM db1.events WHERE event_type = 4 GROUP BY 1 ORDER BY 1"
     },
 	"Dest": {
-		"Credentials": "pg-e2e",
-		"Descriptor": "host=${dbIP.pg} port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable",
-		"DriverName": "postgres",
+		"Credentials": "mysql-e2e",
+		"Descriptor": "[username]:[password]@tcp(${dbIP.mysql}:3306)/[dbname]?parseTime=true",
+		"DriverName": "mysql",
 		"Parameters": {
-			"dbname": "pgdb"
-		}
-	},
-	"Diff": {
-	    "CountOnly": true,
-	    "BatchSize": 1024
+			"dbname": "db2"
+		},
+		"PartitionSQL": "SELECT event_type FROM db2.events WHERE event_type = 4 GROUP BY 1 ORDER BY 1"
 	},
 	"Partition": {
         "Columns": [
             "event_type"
         ],
         "Threads": 5
-
     },
     "Transfer": {
             "EndpointIP": "127.0.0.1:8080",
             "WriterThreads": 2,
             "BatchSize": 2048
-    },
-    "MergeStyle": "insertOnConflictUpdate"
+    }
 }

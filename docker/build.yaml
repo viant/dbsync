@@ -42,7 +42,7 @@ pipeline:
       source:
         URL: ${buildPath}/transient/docker/transient/Dockerfile
       dest:
-        URL: ${buildPath}/transient/docker/transient/Dockerfile
+        URL: ${buildPath}/transient/Dockerfile
 
     build:
       action: docker:build

@@ -7,7 +7,8 @@
 	"Source": {
 		"DriverName": "oci8",
 		"Credentials": "ora-e2e",
-        "Descriptor": "[username]/[password]@${dbIP.ora}:1521/xe"
+        "Descriptor": "[username]/[password]@${dbIP.ora}:1521/xe",
+        "PartitionSQL":"SELECT event_type FROM oradb.events GROUP BY event_type ORDER BY event_type"
 	},
     "Dest": {
         "Credentials": "mysql-e2e",
@@ -25,8 +26,7 @@
         "Columns": [
             "event_type"
         ],
-        "Threads": 5,
-        "ProviderSQL":"SELECT event_type FROM oradb.events GROUP BY event_type ORDER BY event_type"
+        "Threads": 5
     },
     "Transfer": {
         "EndpointIP": "127.0.0.1:8080",

@@ -96,13 +96,14 @@ func (s *service) onJobDone(ctx *shared.Context, job *core.Job, response *Respon
 	if err != nil {
 		log.Printf("[%v] error: %v\n", job.ID, err)
 	}
+	job.Done(time.Now())
 	if response.SetError(err) {
 		job.Status = shared.StatusError
 		job.Error = err.Error()
 	}
 	data, _ := json.Marshal(job)
 	ctx.Log(fmt.Sprintf("completed: %s\n", data))
-	job.Done(time.Now())
+
 	job.Update()
 	historyJob := s.history.Register(job)
 	elapsedInMs := int(job.EndTime.Sub(job.StartTime) / time.Millisecond)

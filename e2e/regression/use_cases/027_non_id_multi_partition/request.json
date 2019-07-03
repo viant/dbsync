@@ -6,8 +6,7 @@
             "date",
             "event_type"
         ],
-        "Threads": 1,
-        "ProviderSQL": "SELECT DATE_FORMAT(DATE(t.timestamp), '%Y-%m-%d') AS date, event_type FROM events t"
+        "Threads": 1
     },
 	"Source": {
 		"Credentials": "mysql-e2e",
@@ -21,7 +20,8 @@
                 "Name":"date",
                 "expression": "DATE(t.timestamp)"
             }
-        ]
+        ],
+        "PartitionSQL": "SELECT DATE_FORMAT(DATE(t.timestamp), '%Y-%m-%d') AS date, event_type FROM events t"
 	},
 	"Dest": {
 		"Credentials": "mysql-e2e",

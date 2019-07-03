@@ -359,7 +359,7 @@ is controlled with threads strategy  partition level setting (2 by default)
 
 ###### Partition Contract settings
 
-- partition.providerSQL: SQL providing partition values
+- source|dest.partitionSQL: SQL providing partition values
 - partition.columns: partition column or pseudo columns
 - partition.threads: number of threads processing partition sync
 - partition.syncMode: batch | individual (individual by default)
@@ -375,11 +375,6 @@ idColumns:
 
 partition:
   threads: 10
-  providerSQL:  SELECT DATE(timestamp)::varchar AS date, event_type
-                FROM db.events
-                WHERE DATE(timestamp) > sysdate - 3
-                GROUP BY 1, 2
-                ORDER BY 1 DESC, 2 DESC
   columns:
     - date
     - event_type
@@ -397,6 +392,11 @@ source:
     - name: date
       expression: TO_CHAR(t.timestamp, 'YYYY-MM-DD')
 
+  partitionSQL:  SELECT DATE(timestamp)::varchar AS date, event_type
+                FROM db.events
+                WHERE DATE(timestamp) > sysdate - 3
+                GROUP BY 1, 2
+                ORDER BY 1 DESC, 2 DESC
 
 dest:
   driverName: bigquery
@@ -865,14 +865,17 @@ pipeline:
 	"IDColumns": [
         "id"
     ],
-   "Source":"...",
+   "Source":{
+   
+      "PartitionSQL": "SELECT event_type FROM db1.events WHERE DATE(timestamp) = '$dstamp' GROUP BY 1 ORDER BY 1",
+      "...": "..."
+   },
 	"Dest": "...",
 	"Partition": {
 	    "Columns": [
 	        "event_type"
 	    ],
-	    "Threads": 5,
-	    "ProviderSQL":"SELECT event_type FROM db1.events WHERE DATE(timestamp) = '$dstamp' GROUP BY 1 ORDER BY 1"
+	    "Threads": 5
 	},
 	"Transfer": {
         "EndpointIP": "127.0.0.1:8080",

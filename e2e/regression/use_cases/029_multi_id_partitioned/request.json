@@ -9,8 +9,7 @@
         "Columns": [
             "date"
         ],
-        "Threads": 1,
-        "ProviderSQL": "SELECT '$FormatTime(now, yyyy-MM-dd)' AS date"
+        "Threads": 1
     },
 	"Source": {
 		"Credentials": "mysql-e2e",
@@ -24,7 +23,8 @@
                 "Name":"date",
                 "expression": "DATE(t.timestamp)"
             }
-        ]
+        ],
+        "PartitionSQL": "SELECT '$FormatTime(now, yyyy-MM-dd)' AS date"
 	},
 	"Dest": {
 		"Credentials": "mysql-e2e",

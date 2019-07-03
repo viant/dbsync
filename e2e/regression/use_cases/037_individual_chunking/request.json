@@ -10,7 +10,8 @@
 		"DriverName": "mysql",
 		"Parameters": {
 			"dbname": "db1"
-		}
+		},
+		"PartitionSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
 	},
 	"Dest": {
 		"Credentials": "mysql-e2e",
@@ -24,8 +25,7 @@
 	    "Columns": [
 	        "event_type"
 	    ],
-	    "Threads": 1,
-	    "ProviderSQL":"SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1"
+	    "Threads": 1
 	},
     "Chunk":{
         "Size": 4096,
