@@ -1,3 +1,6 @@
+## July 2 2019 - v0.9.11
+- Patched empty source partition case 
+
 ## June 28 2019 - v0.9.10
 - Patched error status cleanup
 - Patched race condition
