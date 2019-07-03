@@ -13,6 +13,7 @@ import (
 	"dbsync/sync/merge"
 	"dbsync/sync/shared"
 	"dbsync/sync/transfer"
+	"errors"
 	"fmt"
 )
 
@@ -352,6 +353,7 @@ func (s *service) fetchPartitionValues(ctx *shared.Context, kind contract.Resour
 func (s *service) loadPartitions(ctx *shared.Context) (err error) {
 	var source = make([]*core.Partition, 0)
 	var dest = make([]*core.Partition, 0)
+
 	if s.DbSync.Source.PartitionSQL != "" {
 		if source, err = s.fetchPartitionValues(ctx, contract.ResourceKindSource); err != nil {
 			return err
@@ -360,6 +362,12 @@ func (s *service) loadPartitions(ctx *shared.Context) (err error) {
 			if dest, err = s.fetchPartitionValues(ctx, contract.ResourceKindDest); err != nil {
 				return err
 			}
+		}
+		if len(source) == 0 {
+			if len(dest) == 0 {
+				return errors.New("source partitions query returned empty set")
+			}
+			source = append(source, dest[0])
 		}
 
 	} else if s.Force {
