@@ -49,7 +49,7 @@ func (s *service) Status(request *StatusRequest) *StatusResponse {
 		}
 		if history[0].Status == shared.StatusDone {
 			response.Transferred[k] = history[0].Transferred
-			if _, has := response.Errors[history[0].ID];has {
+			if _, has := response.Errors[history[0].ID]; has {
 				delete(response.Errors, history[0].ID)
 			}
 		}
@@ -57,6 +57,7 @@ func (s *service) Status(request *StatusRequest) *StatusResponse {
 
 	if len(response.Errors) == 0 {
 		response.Status.Status = shared.StatusOk
+		response.Status.Error = ""
 	}
 
 	response.UpTime = fmt.Sprintf("%s", time.Now().Sub(s.startTime))
