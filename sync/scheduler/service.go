@@ -153,7 +153,9 @@ func (s *service) run() {
 				if err != nil {
 					schedulable.Schedule.ErrorCount++
 					log.Printf("failed to run %v,%v", schedulable.ID, err)
-					_ = schedulable.ScheduleNexRun(time.Now().Add(time.Minute * time.Duration(schedulable.Schedule.ErrorCount%5)))
+					//reschedule with next minutes or so
+					nextRun := (time.Now().Add(time.Minute * time.Duration(schedulable.Schedule.ErrorCount%5)))
+					schedulable.Schedule.NextRun = &nextRun
 				}
 				remaining := time.Second * time.Duration(schedulalble.Schedule.NextRun.Unix()-time.Now().Unix())
 				log.Printf("[%v] next run at: %v, remaining %s\n", schedulalble.ID, schedulalble.Schedule.NextRun.Format(dateLayout), remaining)
