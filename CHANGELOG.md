@@ -1,3 +1,8 @@
+## July 8 2019 - v0.10.0
+- Added comparator logging
+- Patched time comparision
+- Added RecentErrors "immediate" retry 
+
 ## July 2 2019 - v0.9.11
 - Patched empty source partition case 
 
