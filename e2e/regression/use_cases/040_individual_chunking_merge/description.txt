@@ -3,14 +3,12 @@ Id and partition based chunked synchronization,
 db1 is a source and db2 is destination database
 
 Input:
-    - db1.events 9999 records
-    - db2.events has 7 record, where last record in event_type=10 partition has the highest value
+    - db1.events 20 records
+    - db2.events has 11 records
     - sync request with
         - id based synchronization
         - job id: $index
-        - chunk.size: 4096
-        - partition on event_type column, 1 partition threads
-          and sqlProvider defined as: SELECT event_type FROM db1.events GROUP BY 1 ORDER BY 1
+        - chunk.size: 6
         - chunk.syncMode: individual
 Output:
    -  db2.events has all records synchronized from db1.events

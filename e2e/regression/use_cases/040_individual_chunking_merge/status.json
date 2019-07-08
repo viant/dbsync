@@ -6,9 +6,9 @@
       {
         "Status": "done",
         "Progress": {
-          "DestCount": 2,
-          "SourceCount": 11,
-          "Transferred": 11
+          "DestCount": 0,
+          "SourceCount": 9,
+            "Transferred": 9
         }
       }
     ]
