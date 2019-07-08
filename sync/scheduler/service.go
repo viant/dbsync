@@ -143,7 +143,6 @@ func (s *service) run() {
 				log.Print(errors.Wrap(err, fmt.Sprintf("failed to schedule job: %v, skipping", schedulalble.ID)))
 				continue
 			}
-
 			go func(schedulable *Schedulable) {
 				watGroup.Done()
 				defer schedulable.Done()
@@ -151,11 +150,15 @@ func (s *service) run() {
 				_ = runnable.Init()
 				err := s.runner(runnable)
 				if err != nil {
+					schedulalble.Schedule.RecentErrors++
 					schedulable.Schedule.ErrorCount++
 					log.Printf("failed to run %v,%v", schedulable.ID, err)
-					//reschedule with next minutes or so
-					nextRun := (time.Now().Add(time.Minute * time.Duration(schedulable.Schedule.ErrorCount%5)))
-					schedulable.Schedule.NextRun = &nextRun
+					if schedulalble.Schedule.RecentErrors < 4 { //reschedule with next minutes or so
+						nextRun := (time.Now().Add(time.Minute * time.Duration(schedulable.Schedule.ErrorCount%5)))
+						schedulable.Schedule.NextRun = &nextRun
+					}
+				} else {
+					schedulalble.Schedule.RecentErrors = 0
 				}
 				remaining := time.Second * time.Duration(schedulalble.Schedule.NextRun.Unix()-time.Now().Unix())
 				log.Printf("[%v] next run at: %v, remaining %s\n", schedulalble.ID, schedulalble.Schedule.NextRun.Format(dateLayout), remaining)

@@ -8,13 +8,14 @@ import (
 
 //Schedule represent schedule meta
 type Schedule struct {
-	Frequency  *toolbox.Duration
-	At         *toolbox.AtTime
-	NextRun    *time.Time
-	RunCount   int
-	ErrorCount int
-	Disabled   bool
-	SourceURL  string
+	Frequency    *toolbox.Duration
+	At           *toolbox.AtTime
+	NextRun      *time.Time
+	RunCount     int
+	ErrorCount   int
+	RecentErrors int
+	Disabled     bool
+	SourceURL    string
 }
 
 //setNextRun sets next run
