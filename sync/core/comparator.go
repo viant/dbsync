@@ -4,6 +4,7 @@ import (
 	"dbsync/sync/contract/strategy"
 	"dbsync/sync/contract/strategy/diff"
 	"dbsync/sync/shared"
+	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
 )
@@ -47,6 +48,8 @@ func (c *Comparator) IsKeyInSync(ctx *shared.Context, key string, record1, recor
 	if c.IsSimilar(key, value1, value2) {
 		return true
 	}
+
+	ctx.Log(fmt.Sprintf("key: %v, not equal: %T(%v), %T(%v)", key, value1, value1, value2, value2))
 	return false
 }
 
@@ -77,10 +80,16 @@ func (c *Comparator) IsSimilar(key string, value1, value2 interface{}) bool {
 
 	column, ok := c.columns[strings.ToLower(key)]
 	if !ok {
+		if toolbox.IsTime(value1) {
+			timeValue1, _ := toolbox.ToTime(value1, "")
+			if timeValue2, err := toolbox.ToTime(value2, ""); err == nil {
+				return timeValue1.Equal(*timeValue2)
+			}
+		}
 		return value1 == value2
 	}
 
-	if column.DateLayout != "" {
+	if column.DateLayout != "" || toolbox.IsTime(value1) {
 		timeValue1, err := toolbox.ToTime(value1, column.DateLayout)
 		if err != nil {
 			return false
