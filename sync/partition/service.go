@@ -50,6 +50,7 @@ type service struct {
 
 //Close closes this service
 func (s *service) Close() error {
+	s.Partitions.Close()
 	return s.dao.Close()
 }
 

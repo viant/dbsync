@@ -145,6 +145,12 @@ func (p *Partitions) Keys() []string {
 	return result
 }
 
+func (p *Partitions) Close() {
+	if p != nil &&  p.throttleChannel != nil {
+		close(p.throttleChannel)
+	}
+}
+
 //Init indexes partitions Source
 func (p *Partitions) Init() {
 	items := p.Source
