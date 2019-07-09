@@ -19,6 +19,7 @@ type Sync struct {
 	Table             string
 	Criteria          map[string]interface{}
 	Schedule          *Schedule
+	Columns           []string
 	Async             bool
 	Debug             bool
 }
