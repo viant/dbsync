@@ -1,6 +1,9 @@
 package sql
 
-import "strings"
+import (
+	"github.com/viant/dsc"
+	"strings"
+)
 
 //normalizeTableName normalizes table name
 func normalizeTableName(table string) string {
@@ -19,4 +22,22 @@ func removeTableAliases(expression, alias string) string {
 		return expression
 	}
 	return strings.Replace(expression, alias+".", "", count)
+}
+
+func filterColumns(filter []string, columns []dsc.Column) []dsc.Column {
+	if len(filter) == 0 {
+		return columns
+	}
+	filterMap := make(map[string]bool)
+	for i := range filter {
+		filterMap[strings.ToLower(filter[i])] = true
+	}
+	var result = make([]dsc.Column, 0)
+	for i := range columns {
+		if _, ok := filterMap[strings.ToLower(columns[i].Name())]; !ok {
+			continue
+		}
+		result = append(result, columns[i])
+	}
+	return columns
 }
