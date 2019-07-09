@@ -309,10 +309,12 @@ func (s *service) match(ctx *shared.Context, source, dest core.Records, dateLayo
 	result := core.NewIndex()
 	if len(source) == 1 {
 		result.Source[""] = source[0]
-		result.Dest[""] = dest[0]
+		result.Dest[""] = nil
+		if len(dest) > 0 {
+			result.Dest[""] = dest[0]
+		}
 		return result, nil
 	}
-
 	indexer := core.NewIndexer(s.Partition.Columns, dateLayout)
 	index := indexer.Index(source, dest)
 	if hasDest := len(index.Dest) > 0; hasDest {
