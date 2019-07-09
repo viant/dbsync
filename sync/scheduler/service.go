@@ -86,7 +86,11 @@ func (s *service) hasChanged(ID string, modTime time.Time) bool {
 	if !ok {
 		return true
 	}
-	return !timeValue.Equal(modTime)
+	hasChanged := !timeValue.Equal(modTime)
+	if hasChanged {
+		log.Printf("[%v]: changed time from: %v to: %v\n", ID, timeValue, modTime)
+	}
+	return hasChanged
 }
 
 //remove remove runnable by ID
