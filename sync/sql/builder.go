@@ -688,6 +688,7 @@ func NewBuilder(sync *contract.Sync, ddl string, destColumns []dsc.Column) (*Bui
 	if len(destColumns) == 0 {
 		return nil, fmt.Errorf("columns were empty")
 	}
+	destColumns = filterColumns(sync.Columns, destColumns)
 	transferSuffix := sync.Transfer.Suffix
 	if transferSuffix != "" && !strings.HasPrefix(transferSuffix, "_") {
 		transferSuffix = "_" + transferSuffix
