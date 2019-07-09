@@ -146,7 +146,7 @@ func (p *Partitions) Keys() []string {
 }
 
 func (p *Partitions) Close() {
-	if p != nil &&  p.throttleChannel != nil {
+	if p != nil && p.throttleChannel != nil {
 		close(p.throttleChannel)
 	}
 }
