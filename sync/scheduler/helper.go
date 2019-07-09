@@ -8,8 +8,8 @@ import (
 //URLToID converts URL to ID
 func uRLToID(URL string) string {
 	segments := strings.Split(url.NewResource(URL).ParsedURL.Path, "/")
-	if len(segments) > 3 {
-		segments = segments[len(segments)-3:]
+	if len(segments) > 4 {
+		segments = segments[len(segments)-4:]
 	}
 	pathBasedID := strings.Join(segments, ":")
 	pathBasedID = strings.Replace(pathBasedID, "\\", "-", len(pathBasedID))
