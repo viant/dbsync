@@ -1,3 +1,9 @@
+## July 9 2019 - v0.11.0
+- Added columns to explicitly control sync columns
+- Patched index out of bound
+- Updated schedulable ID with 4 URL parts
+
+
 ## July 8 2019 - v0.10.0
 - Added comparator logging
 - Patched time comparision

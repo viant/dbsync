@@ -60,6 +60,10 @@ It uses batched inserts or batched load job (BigQuery) to reduce unnecessary rou
 On top of that large dataset can be divided in to partition or/and smaller transferable chunks, which 
 provides additional level of the read paralelization. 
 
+By default all columns from destination table are used with sync process, you can override this behaviour by supplying
+explicit columns list. 
+
+
 ##### 3. Data Merge
 
 During checking synchronization status, sync process determines merge strategy based on the changed dataset
@@ -69,6 +73,7 @@ which is one of the following:
 - merge  - append or update data in destination table
 - delete merge - remove data from destination table if it does not exist in transferred transient table, then merge
 - delete insert - remove data from destination table if it does not exist in transferred transient table, then append
+
 
 
 ![synchronization process](process.png)
@@ -172,6 +177,11 @@ Place scheduled request in url specified with sync service
 table: events
 idColumns:
   - id
+columns:
+  - id
+  - event_type
+  - timestamp
+ 
 diff:
   countOnly: true  
 source:
