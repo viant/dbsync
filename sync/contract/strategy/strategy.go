@@ -24,6 +24,7 @@ func (s *Strategy) Clone() *Strategy {
 		IDColumns:    s.IDColumns,
 		Diff:         s.Diff,
 		DirectAppend: s.DirectAppend,
+		Columns:      s.Columns,
 		MergeStyle:   s.MergeStyle,
 		Partition:    s.Partition,
 		AppendOnly:   s.AppendOnly,
