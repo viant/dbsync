@@ -1,0 +1,21 @@
+Id based synchronization with explicit columns
+
+db1 is a source and db2 is destination database
+
+
+Input:
+    - db1.events has  5
+    - db2.events has 4 with different timestamp (explicit columns do not account for timestamp)
+
+    - sync request with
+        - id based synchronization
+        - job id: $index
+        - columns: id,event_type, quantity
+
+
+Output:
+   -  db2.events has all data synchronized from db1.events with merge strategy
+   -  job status: http://localhost:8081/v1/api/job/$index
+      - source count: 5
+      - dest count: 4
+      - transferred: 5
