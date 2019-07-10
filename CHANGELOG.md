@@ -1,4 +1,4 @@
-## July 9 2019 - v0.11.1
+## July 10 2019 - v0.11.1
 - Patched schedulable clone with columns
 
 ## July 9 2019 - v0.11.0
