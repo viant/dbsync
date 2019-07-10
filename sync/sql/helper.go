@@ -7,7 +7,7 @@ import (
 
 //normalizeTableName normalizes table name
 func normalizeTableName(table string) string {
-	for _, aChar := range []string{" ", "-", ":"} {
+	for _, aChar := range []string{" ", "-", ":", "\t"} {
 		if count := strings.Count(table, aChar); count > 0 {
 			table = strings.Replace(table, aChar, "_", count)
 		}
