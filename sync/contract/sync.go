@@ -19,9 +19,9 @@ type Sync struct {
 	Table             string
 	Criteria          map[string]interface{}
 	Schedule          *Schedule
-	Columns           []string
-	Async             bool
-	Debug             bool
+
+	Async bool
+	Debug bool
 }
 
 func (r *Sync) Clone() *Sync {

@@ -8,6 +8,7 @@ import (
 type Strategy struct {
 	Chunk        Chunk
 	IDColumns    []string
+	Columns      []string
 	Diff         Diff
 	DirectAppend bool   `description:"if this flag is set all insert/append data is stream directly to the dest table"`
 	MergeStyle   string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
