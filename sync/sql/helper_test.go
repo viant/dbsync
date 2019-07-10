@@ -96,6 +96,7 @@ func Test_FilterColumns(t *testing.T) {
 	for _, useCase := range useCases {
 		var actualMap = make(map[string]bool)
 		actual := filterColumns(useCase.filter, useCase.columns)
+		assert.EqualValues(t, len(useCase.expect), len(actual), useCase.description)
 		for i := range actual {
 			actualMap[actual[i].Name()] = true
 		}

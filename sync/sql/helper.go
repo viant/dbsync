@@ -39,5 +39,5 @@ func filterColumns(filter []string, columns []dsc.Column) []dsc.Column {
 		}
 		result = append(result, columns[i])
 	}
-	return columns
+	return result
 }
