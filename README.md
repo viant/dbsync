@@ -663,6 +663,13 @@ diff:
 
 You can use the following pseudo column expressions:
 
+```yaml
+source/dest:
+  pseudoColumns:
+    - name: MODIFIED
+      expression: xxxx
+```
+
 * MySQL: UNIX_TIMESTAMP(COALESCE(t.updated, t.created))
 * BigQuery: UNIX_SECONDS(COALESCE(t.updated, t.created))
 * Oracle: ROUND((CAST(COALESCE(t.updated, t.created) AS DATE) -  to_date('19700101 000000', 'YYYYMMDD HH24MISS')) *86400) 
