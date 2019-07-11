@@ -897,6 +897,9 @@ pipeline:
 
 ### Cross vendor utility workflows  
 
+
+All utlity workflows use endly automation/e2e runner.
+
 #### Checking data sync quality
 
 In order to compare dataset between source and dest database, you can use [endly](http://github.com/viant/endly/) runner with compare workflow.
@@ -967,7 +970,7 @@ pipeline:
 
 #### Basic cross vendor schema check
 
-```ednly check_schema.yaml```  (endly 0.40.0+)
+```endly check_schema.yaml```  (endly 0.40.0+)
 
 [@check_schema.yaml](usage/check_schema.yaml)
 ```yaml
@@ -1006,7 +1009,7 @@ pipeline:
  
 #### Reverse engineering cross vendor schema
 
-```ednly reverse_schema.yaml```
+```endly reverse_schema.yaml```
 
 [@reverse_schema.yaml](usage/reverse_schema.yaml)
 ```yaml
