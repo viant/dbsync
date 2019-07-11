@@ -645,6 +645,30 @@ resource.positionReference informs query builder if databae vendor support this 
 - source.positionReference flags if source database support GROUP/ORDER BY position
 - dest.positionReference flags if dest database support GROUP/ORDER BY position
 
+
+#### Time based comparision signature
+
+Many tables use create or last modification time, in that case you can use time base signature as unix timestamp with SUM aggregates
+
+
+```yaml
+diff:
+  depth: 3
+  columns:
+    - name: MODIFIED
+      func: SUM
+
+```
+
+
+You can use the following pseudo column expressions:
+
+* MySQL: UNIX_TIMESTAMP(COALESCE(t.updated, t.created))
+* BigQuery: UNIX_SECONDS(COALESCE(t.updated, t.created))
+* Oracle: ROUND((CAST(COALESCE(t.updated, t.created) AS DATE) -  to_date('19700101 000000', 'YYYYMMDD HH24MISS')) *86400) 
+
+
+
 #### Incompatible timezone
 
 Cross database timestamp representation varies, thus event after db sync there could be timezone based discrepancy.
@@ -661,7 +685,7 @@ diff:
   depth: 3
   columns:
     - name: MODIFIED
-      func: MAX
+      func: SUM
 
 source:
   credentials: ora-e2e
@@ -688,6 +712,7 @@ transfer:
   batchSize: 2048
 
 ```
+
 
 
 
