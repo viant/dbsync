@@ -1,0 +1,31 @@
+
+pipeline:
+  register:
+    mysqldb:
+      action: dsunit:register
+      datastore: mysqldb
+      config:
+        credentials: my-mysql-credentials
+        Descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4,utf8"
+        DriverName: mysql
+        parameters:
+          dbname: mydb
+
+
+    bigquerydb:
+      action: dsunit:register
+      datastore: bigquerydb
+      config:
+        driverName: bigquery
+        credentials: mybq-credentials
+        parameters:
+          datasetId: mydb
+
+  checkSchema:
+    action: dsunit:checkSchema
+    source:
+      datastore: mysqldb
+      target: bigquery
+    dest:
+      datastore: bigquerydb
+      target: bigquery
