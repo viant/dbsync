@@ -664,7 +664,7 @@ diff:
 You can use the following pseudo column expressions:
 
 ```yaml
-source/dest:
+source|dest:
   pseudoColumns:
     - name: MODIFIED
       expression: xxxx
