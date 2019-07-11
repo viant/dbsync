@@ -814,7 +814,6 @@ Add default import to the following service entry points:
 - [trasfer service](transfer/app/app.go)
 
 
-
 ### Running adhoc date range db sync automation with endly
 
 
@@ -896,8 +895,9 @@ pipeline:
 ```  
 
 
+### Cross vendor utility workflows  
 
-### Checking data sync quality
+#### Checking data sync quality
 
 In order to compare dataset between source and dest database, you can use [endly](http://github.com/viant/endly/) runner with compare workflow.
 It uses [dsunit](http://github.com/viant/dsunit/) and  [asserly](http://github.com/viant/assertly/) testing framework for comprehensive data validation. 
@@ -963,6 +963,74 @@ pipeline:
             GROUP BY 1
             ORDER  BY 1
 ```
+
+
+#### Basic cross vendor schema check
+
+```ednly check_schema.yaml```  (endly 0.40.0+)
+
+[@check_schema.yaml](usage/check_schema.yaml)
+```yaml
+
+pipeline:
+  register:
+    mysqldb:
+      action: dsunit:register
+      datastore: mysqldb
+      config:
+        credentials: my-mysql-credentials
+        Descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4,utf8"
+        DriverName: mysql
+        parameters:
+          dbname: mydb
+
+
+    bigquerydb:
+      action: dsunit:register
+      datastore: bigquerydb
+      config:
+        driverName: bigquery
+        credentials: mybq-credentials
+        parameters:
+          datasetId: mydb
+
+  checkSchema:
+    action: dsunit:checkSchema
+    source:
+      datastore: mysqldb
+      target: bigquery
+    dest:
+      datastore: bigquerydb
+      target: bigquery
+```
+ 
+#### Reverse engineering cross vendor schema
+
+```ednly reverse_schema.yaml```
+
+[@reverse_schema.yaml](usage/reverse_schema.yaml)
+```yaml
+pipeline:
+  register:
+    mysqldb:
+      action: dsunit:register
+      datastore: mysqldb
+      config:
+        credentials: my-mysql-credentials
+        Descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4,utf8"
+        DriverName: mysql
+        parameters:
+          dbname: mydb
+    reverseSchema:
+      action: dsunit:dump
+      datastore: mysqldb
+      target: bigquery
+      destURL: schema.sql
+      tables:
+        - table1
+        - table2
+```
+ 
 
 
 ## GoCover
