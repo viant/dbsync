@@ -1065,7 +1065,6 @@ pipeline:
         - table1
         - table2
 ```
- 
 
 
 ## GoCover

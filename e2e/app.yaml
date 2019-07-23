@@ -10,10 +10,10 @@ pipeline:
 
   stop:
     transfer:
-      action: process:stop-all
+      action: process:stop
       input: vtransfer
     sync:
-      action: process:stop-all
+      action: process:stop
       input: vsync
 
   setSdk:
