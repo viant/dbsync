@@ -1,3 +1,6 @@
+## August 2 2019 - v0.11.2
+- Updated dsc dependency with patched vertica metadata
+
 ## July 10 2019 - v0.11.1
 - Patched schedulable clone with columns
 
