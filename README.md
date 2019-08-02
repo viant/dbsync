@@ -1018,7 +1018,7 @@ pipeline:
         DriverName: mysql
         parameters:
           dbname: mydb
-
+          
 
     bigquerydb:
       action: dsunit:register

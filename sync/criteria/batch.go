@@ -17,6 +17,7 @@ type Batch struct {
 
 //Add add value to a batch
 func (b *Batch) Add(values map[string]interface{}) {
+
 	for key, value := range values {
 		if b.hasValue(key, value) {
 			continue
@@ -25,10 +26,11 @@ func (b *Batch) Add(values map[string]interface{}) {
 		if _, ok := b.values[key]; !ok {
 			b.values[key] = make([]interface{}, 0)
 		}
-		if _, ok := b.uniqueValues[key]; !ok {
-			b.uniqueValues[key] = make(map[interface{}]bool)
-		}
 		valueForKey := b.uniqueValues[key]
+		if  len(valueForKey) == 0 {
+			valueForKey = make(map[interface{}]bool)
+			b.uniqueValues[key] = valueForKey
+		}
 		valueForKey[key] = true
 		b.values[key] = append(b.values[key], value)
 		b.mutex.Unlock()
