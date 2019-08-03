@@ -20,7 +20,7 @@ require (
 	github.com/viant/asc v0.5.0
 	github.com/viant/assertly v0.4.8
 	github.com/viant/bgc v0.7.0
-	github.com/viant/dsc v0.11.3
+	github.com/viant/dsc v0.11.4
 	github.com/viant/dsunit v0.9.2
 	github.com/viant/toolbox v0.23.7
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca // indirect
