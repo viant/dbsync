@@ -33,7 +33,7 @@ func (t *Transferable) SetTransferred(transferred int) {
 }
 
 //Clone clones this transferable
-func (t Transferable) Clone() *Transferable {
+func (t Transferable) 	Clone() *Transferable {
 	return &Transferable{
 		OwnerSuffix: t.OwnerSuffix,
 		Suffix:      t.Suffix,

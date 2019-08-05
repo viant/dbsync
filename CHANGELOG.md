@@ -1,5 +1,6 @@
-## August 5 2019 - v0.12.0
+## August 5 2019 - v0.12.1
 - Added support for COPY local batch insert.
+- Added BQ pageSize config parameters
 
 ## August 2 2019 - v0.11.2
 - Updated dsc dependency with patched vertica metadata
