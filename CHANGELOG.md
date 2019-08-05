@@ -1,3 +1,6 @@
+## August 5 2019 - v0.12.0
+- Added support for COPY local batch insert.
+
 ## August 2 2019 - v0.11.2
 - Updated dsc dependency with patched vertica metadata
 
