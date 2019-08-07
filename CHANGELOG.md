@@ -1,3 +1,6 @@
+## August 7 2019 - v0.12.2
+- Update BigQuery with cached job reference for retries to avoid intermittent duplicates.
+
 ## August 5 2019 - v0.12.1
 - Added support for COPY local batch insert.
 - Added BQ pageSize config parameters

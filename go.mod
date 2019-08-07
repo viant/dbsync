@@ -19,7 +19,7 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/viant/asc v0.5.0
 	github.com/viant/assertly v0.4.8
-	github.com/viant/bgc v0.7.1
+	github.com/viant/bgc v0.7.2
 	github.com/viant/dsc v0.12.1
 	github.com/viant/dsunit v0.9.2
 	github.com/viant/toolbox v0.23.7
