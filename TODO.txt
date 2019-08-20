@@ -2,3 +2,4 @@
 - update model/documentation
 - added partition sanity check (count, and completion)
 - add e2e additionOnly test on empty dest table
+- add native vertica driver support
