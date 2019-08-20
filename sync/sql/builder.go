@@ -15,6 +15,14 @@ import (
 	"strings"
 )
 
+
+
+var reservedKeyword = map[string]bool{
+	"window": true,
+
+}
+
+
 //Builder represents SQL builder
 type Builder struct {
 	*strategy.Strategy //request sync meta
@@ -83,6 +91,9 @@ func (b *Builder) columnExpression(column string, resource *contract.Resource) s
 func (b *Builder) unAliasedColumnExpression(column string, resource *contract.Resource) string {
 	if pseudoColumn := resource.GetPseudoColumn(column); pseudoColumn != nil {
 		return pseudoColumn.Expression
+	}
+	if reservedKeyword[column] {
+		return fmt.Sprintf("`%v`", column)
 	}
 	return column
 }
@@ -359,8 +370,14 @@ func (b *Builder) aliasedInsertNameAndValues(srcAlias, destAlias string) (string
 		if b.isUnique(column.Name()) {
 			continue
 		}
-		names = append(names, destAlias+column.Name())
-		values = append(values, b.aliasValue(srcAlias, column.Name(), b.dest))
+
+		columnName := column.Name()
+		if reservedKeyword[column.Name()] {
+			columnName = fmt.Sprintf("`%v`", columnName)
+		}
+
+		names = append(names, destAlias+columnName)
+		values = append(values, b.aliasValue(srcAlias, columnName, b.dest))
 	}
 	return strings.Join(names, ","), strings.Join(values, ",")
 }
@@ -562,6 +579,9 @@ func (b *Builder) deleteDML(suffix string, filter map[string]interface{}) string
 }
 
 func (b *Builder) formatColumn(column string) string {
+	if reservedKeyword[column] {
+		return fmt.Sprintf("`%v`", column)
+	}
 	if b.isUpperCase {
 		column = strings.ToUpper(column)
 		aliasedCount := strings.Count(column, "T.")
