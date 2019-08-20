@@ -1,3 +1,5 @@
+## August 20 2019 - v0.12.3
+- Updated build with merge source alias
 ## August 7 2019 - v0.12.2
 - Update BigQuery with cached job reference for retries to avoid intermittent duplicates.
 

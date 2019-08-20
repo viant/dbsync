@@ -27,7 +27,7 @@ func (b *Batch) Add(values map[string]interface{}) {
 			b.values[key] = make([]interface{}, 0)
 		}
 		valueForKey := b.uniqueValues[key]
-		if  len(valueForKey) == 0 {
+		if len(valueForKey) == 0 {
 			valueForKey = make(map[interface{}]bool)
 			b.uniqueValues[key] = valueForKey
 		}

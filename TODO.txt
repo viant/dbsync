@@ -1,4 +1,4 @@
-- update error handling with errors.Wrap
-- add more unit tests
 - add BigQuery streaming e2e use case
 - update model/documentation
+- added partition sanity check (count, and completion)
+- add e2e additionOnly test on empty dest table

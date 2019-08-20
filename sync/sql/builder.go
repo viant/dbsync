@@ -365,7 +365,7 @@ func (b *Builder) aliasedInsertNameAndValues(srcAlias, destAlias string) (string
 	return strings.Join(names, ","), strings.Join(values, ",")
 }
 
-func (b *Builder) updateSetValues() string {
+func (b *Builder) updateSetValues(destAlias string) string {
 	update := make([]string, 0)
 	for _, column := range b.columns {
 		if b.isUnique(column.Name()) {
@@ -375,7 +375,7 @@ func (b *Builder) updateSetValues() string {
 		if value == column.Name() {
 			value = "t." + column.Name()
 		}
-		update = append(update, fmt.Sprintf("%v = %v", column.Name(), value))
+		update = append(update, fmt.Sprintf("%v%v = %v", destAlias, column.Name(), value))
 	}
 	return strings.Join(update, ",\n\t")
 }
@@ -401,12 +401,12 @@ func (b *Builder) AppendDML(sourceSuffix, destSuffix string) string {
 
 func (b *Builder) insertOnDuplicateUpdateDML(suffix string, wfilter map[string]interface{}) string {
 	DML := b.baseInsert(suffix, false)
-	return fmt.Sprintf("%v \nON DUPLICATE KEY \n UPDATE %v", DML, b.updateSetValues())
+	return fmt.Sprintf("%v \nON DUPLICATE KEY \n UPDATE %v", DML, b.updateSetValues(""))
 }
 
 func (b *Builder) insertOnConflictUpdateDML(suffix string, filter map[string]interface{}) string {
 	DML := b.baseInsert(suffix, false)
-	updateDML := b.updateSetValues()
+	updateDML := b.updateSetValues("")
 	updateDML = strings.Replace(updateDML, "t.", "excluded.", strings.Count(updateDML, "t."))
 	return fmt.Sprintf("%v \nON CONFLICT(%v) DO\n UPDATE SET %v", DML, strings.Join(b.IDColumns, ","), updateDML)
 }
@@ -468,7 +468,7 @@ func (b *Builder) mergeWithTemplateDML(suffix string, filter map[string]interfac
 			onCriteria = append(onCriteria, criteria.ToCriterion(column, v))
 		}
 	}
-	setValues := b.updateSetValues()
+	setValues := b.updateSetValues("d.")
 	var srcAlias, destAlias string
 	if insertAlias {
 		srcAlias = "t."
