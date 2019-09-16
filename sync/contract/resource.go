@@ -78,3 +78,17 @@ func (r *Resource) ColumnExpr(column string) string {
 	}
 	return column
 }
+
+
+//ColumnExpr returns column expresion
+func (r *Resource) BaseColumnExpr(base, column string) string {
+	if base != "" {
+		if pseudoColumn, ok := r.columnExpression[column]; ok {
+			return strings.Replace(column, base, pseudoColumn.Expression, strings.Count(column, base))
+		}
+	}
+	if pseudoColumn, ok := r.columnExpression[column]; ok {
+		return pseudoColumn.Expression
+	}
+	return column
+}

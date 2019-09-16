@@ -1,3 +1,6 @@
+## August 20 2019 - v0.14.0
+-  Added IDColumns sourced from pseudo columns
+
 ## August 20 2019 - v0.12.4
 - Updated build with merge source alias
 - Added reserved keyword list (window)

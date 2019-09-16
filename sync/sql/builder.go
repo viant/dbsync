@@ -15,27 +15,23 @@ import (
 	"strings"
 )
 
-
-
 var reservedKeyword = map[string]bool{
 	"window": true,
-
 }
-
 
 //Builder represents SQL builder
 type Builder struct {
 	*strategy.Strategy //request sync meta
-	ddl                string
-	transferSuffix     string
-	tempDatabase       string
-	uniques            map[string]bool
-	source             *contract.Resource
-	dest               *contract.Resource
-	table              string
-	columns            []dsc.Column
-	columnsByName      map[string]dsc.Column
-	isUpperCase        bool
+	ddl            string
+	transferSuffix string
+	tempDatabase   string
+	uniques        map[string]bool
+	source         *contract.Resource
+	dest           *contract.Resource
+	table          string
+	columns        []dsc.Column
+	columnsByName  map[string]dsc.Column
+	isUpperCase    bool
 }
 
 //Table returns table name
@@ -104,8 +100,8 @@ func (b *Builder) defaultChunkDQL(resource *contract.Resource) string {
 	}
 	if len(b.uniques) > 0 {
 		projection = append(projection,
-			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.formatColumn("min_value")),
-			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.formatColumn("max_value")))
+			fmt.Sprintf("MIN(%v) AS %v", b.unAliasedColumnExpression(b.IDColumns[0], resource), b.formatColumn("min_value")),
+			fmt.Sprintf("MAX(%v) AS %v", b.unAliasedColumnExpression(b.IDColumns[0], resource), b.formatColumn("max_value")))
 	}
 	return fmt.Sprintf(`SELECT %v
 FROM (
@@ -113,7 +109,7 @@ SELECT %v
 FROM %v t $whereClause
 ORDER BY %v
 LIMIT $limit 
-) t`, strings.Join(projection, ",\n\t"), b.IDColumns[0], b.QueryTable("", resource), b.IDColumns[0])
+) t`, strings.Join(projection, ",\n\t"), b.unAliasedColumnExpression(b.IDColumns[0], resource), b.QueryTable("", resource), b.IDColumns[0])
 }
 
 //ChunkDQL returns chunk DQL
@@ -172,8 +168,8 @@ func (b *Builder) CountDQL(suffix string, resource *contract.Resource, criteria 
 
 	if len(b.uniques) == 1 {
 		projection = append(projection,
-			fmt.Sprintf("MIN(%v) AS %v", b.IDColumns[0], b.formatColumn("min_value")),
-			fmt.Sprintf("MAX(%v) AS %v", b.IDColumns[0], b.formatColumn("max_value")))
+			fmt.Sprintf("MIN(%v) AS %v", b.unAliasedColumnExpression(b.IDColumns[0], resource), b.formatColumn("min_value")),
+			fmt.Sprintf("MAX(%v) AS %v", b.unAliasedColumnExpression(b.IDColumns[0], resource), b.formatColumn("max_value")))
 	}
 
 	DQL := fmt.Sprintf("SELECT %v\nFROM %v t %v",
@@ -217,9 +213,14 @@ func (b *Builder) DQL(suffix string, resource *contract.Resource, values map[str
 		projection = append(projection, fmt.Sprintf("%v AS %v", expression.Expression, b.formatColumn(column.Name())))
 	}
 
+	idColumnProjection := make([]string, 0)
 	if len(b.IDColumns) > 0 {
-		projection = append(b.IDColumns, projection...)
+		for i := range b.IDColumns {
+			idColumnProjection = append(idColumnProjection, b.unAliasedColumnExpression(b.IDColumns[i], resource))
+		}
+		projection = append(idColumnProjection, projection...)
 	}
+
 	DQL := fmt.Sprintf("SELECT %v %v\nFROM %v t ", resource.Hint, strings.Join(projection, ",\n"), b.QueryTable(suffix, resource))
 
 	if len(values) > 0 || len(resource.Criteria) > 0 {
@@ -228,7 +229,7 @@ func (b *Builder) DQL(suffix string, resource *contract.Resource, values map[str
 		DQL += "\nWHERE " + strings.Join(whereCriteria, " AND ")
 	}
 	if dedupeFunction != "" {
-		DQL += fmt.Sprintf("\nGROUP BY %v", strings.Join(b.IDColumns, ","))
+		DQL += fmt.Sprintf("\nGROUP BY %v", strings.Join(idColumnProjection, ","))
 	}
 	return DQL
 }
@@ -272,7 +273,7 @@ func (b *Builder) SignatureDQL(resource *contract.Resource, criteria map[string]
 			if _, has := dimension[column.Name]; has {
 				continue
 			}
-			*projection = append(*projection, b.formatColumn(column.Expr(resource.ColumnExpr)))
+			*projection = append(*projection, b.formatColumn(column.Expr(resource.BaseColumnExpr)))
 		}
 	})
 }
@@ -370,7 +371,6 @@ func (b *Builder) aliasedInsertNameAndValues(srcAlias, destAlias string) (string
 		if b.isUnique(column.Name()) {
 			continue
 		}
-
 		columnName := column.Name()
 		if reservedKeyword[column.Name()] {
 			columnName = fmt.Sprintf("`%v`", columnName)
@@ -623,6 +623,7 @@ func (b *Builder) addStandardSignatureColumns() {
 
 			b.Diff.Columns = append(b.Diff.Columns, &diff.Column{
 				Func:  "SUM",
+				Base:  unique,
 				Name:  "(CASE WHEN " + unique + " IS NOT NULL THEN 1 ELSE 0 END)",
 				Alias: b.formatColumn(nonNullIDCountColumnAlias),
 			})
