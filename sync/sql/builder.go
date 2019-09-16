@@ -216,7 +216,7 @@ func (b *Builder) DQL(suffix string, resource *contract.Resource, values map[str
 	idColumnProjection := make([]string, 0)
 	if len(b.IDColumns) > 0 {
 		for i := range b.IDColumns {
-			idColumnProjection = append(idColumnProjection, b.unAliasedColumnExpression(b.IDColumns[i], resource))
+			idColumnProjection = append(idColumnProjection, b.columnExpression(b.IDColumns[i], resource))
 		}
 		projection = append(idColumnProjection, projection...)
 	}
