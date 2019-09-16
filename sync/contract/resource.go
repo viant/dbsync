@@ -82,7 +82,7 @@ func (r *Resource) ColumnExpr(column string) string {
 //ColumnExpr returns column expresion
 func (r *Resource) BaseColumnExpr(base, column string) string {
 	if base != "" {
-		if pseudoColumn, ok := r.columnExpression[column]; ok {
+		if pseudoColumn, ok := r.columnExpression[base]; ok {
 			return strings.Replace(column, base, pseudoColumn.Expression, strings.Count(column, base))
 		}
 	}
