@@ -79,7 +79,6 @@ func (r *Resource) ColumnExpr(column string) string {
 	return column
 }
 
-
 //ColumnExpr returns column expresion
 func (r *Resource) BaseColumnExpr(base, column string) string {
 	if base != "" {

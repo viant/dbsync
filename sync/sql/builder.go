@@ -22,16 +22,16 @@ var reservedKeyword = map[string]bool{
 //Builder represents SQL builder
 type Builder struct {
 	*strategy.Strategy //request sync meta
-	ddl            string
-	transferSuffix string
-	tempDatabase   string
-	uniques        map[string]bool
-	source         *contract.Resource
-	dest           *contract.Resource
-	table          string
-	columns        []dsc.Column
-	columnsByName  map[string]dsc.Column
-	isUpperCase    bool
+	ddl                string
+	transferSuffix     string
+	tempDatabase       string
+	uniques            map[string]bool
+	source             *contract.Resource
+	dest               *contract.Resource
+	table              string
+	columns            []dsc.Column
+	columnsByName      map[string]dsc.Column
+	isUpperCase        bool
 }
 
 //Table returns table name
