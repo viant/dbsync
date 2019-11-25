@@ -222,10 +222,10 @@ schedule:
 #### Monitoring sync service URI 
 
 - /v1/api/jobs: list all recently active sync jobs
-- /v1/api/scheduled list all scheduled jobs
+- /v1/api/schedules list all scheduled jobs
 - /v1/api/job/{ids}: progress info for specified jobs id(s)
 - /v1/api/job/history/{ids}: history info for specified jobs id(s)
-- /v1/api/status:  overal service status, with all transfers, and errors for the x past run
+- /v1/api/status:  overall service status, with all transfers, and errors for the x past run
 
 
 ```bash
