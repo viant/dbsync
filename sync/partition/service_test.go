@@ -438,7 +438,7 @@ func TestPartitioner_Build(t *testing.T) {
 		actualInSyncCount := 0
 
 		_ = partitioner.Partitions.Range(func(partition *core.Partition) error {
-			if partition.InSync {
+			if isSync, _ := partition.InSync(); isSync {
 				actualInSyncCount++
 				return nil
 			}

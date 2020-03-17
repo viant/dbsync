@@ -4,6 +4,7 @@ import (
 	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/dao"
+	"github.com/go-errors/errors"
 
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
@@ -18,7 +19,8 @@ import (
 const (
 	transferURL       = "http://%v/v1/api/transfer"
 	transferStatusURL = "http://%v/v1/api/task/"
-	defaultRetries    = 2
+	defaultRetries    = 3
+	baseSleep         = 15 * time.Second
 )
 
 //Service represents transfer service
@@ -79,12 +81,26 @@ func (s *service) NewRequest(ctx *shared.Context, transferable *core.Transferabl
 	}
 }
 
-func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) error {
+func (s *service) waitForSync(ctx *shared.Context, syncTaskID int, transferable *core.Transferable, seq int) error {
 	statusURL := fmt.Sprintf(transferStatusURL, s.Transfer.EndpointIP)
 	URL := statusURL + fmt.Sprintf("%d", syncTaskID)
-	response := &Response{}
+	response := &Response{Status: shared.StatusUnknown}
+	var err error
+
+	checkRetry := 0
 	for i := 0; ; i++ {
-		err := toolbox.RouteToService("get", URL, nil, response)
+		err = toolbox.RouteToService("get", URL, nil, response)
+		ctx.Log(fmt.Sprintf("checking status: %v %+v\n", URL, response))
+		if err != nil {
+			if checkRetry < defaultRetries {
+				time.Sleep(baseSleep * time.Duration(1+checkRetry))
+				checkRetry++
+				continue
+			}
+		}
+		if response.Status == shared.StatusUnknown {
+			return errors.Errorf("unknown job status: %v", URL)
+		}
 		if response.WriteCount > 0 {
 			transferable.SetTransferred(response.WriteCount)
 		}
@@ -101,8 +117,10 @@ func (s *service) waitForSync(syncTaskID int, transferable *core.Transferable) e
 	if response.Status == "error" {
 		return NewError(response)
 	}
-	return nil
+	return err
 }
+
+var seq = uint32(0)
 
 //Post post transfer job
 func (s *service) Post(ctx *shared.Context, request *Request, transferable *core.Transferable) (err error) {
@@ -118,8 +136,15 @@ func (s *service) Post(ctx *shared.Context, request *Request, transferable *core
 	}
 	atomic.StoreUint32(&transferable.Transferred, 0)
 	attempt := 0
+
+	lseq := atomic.AddUint32(&seq, 1)
+	defer func() {
+		ctx.Log(fmt.Sprintf("completed transfer %v, %v\n", lseq, err))
+	}()
 	for i := 0; attempt < maxRetries; i++ {
-		if err = s.post(ctx, request, transferable); err == nil {
+		err = s.post(ctx, request, transferable, lseq)
+		ctx.Log(fmt.Sprintf("run transfer %v ... \n", lseq))
+		if err == nil {
 			break
 		}
 		if IsTransferError(err) {
@@ -131,7 +156,7 @@ func (s *service) Post(ctx *shared.Context, request *Request, transferable *core
 	return err
 }
 
-func (s *service) post(ctx *shared.Context, request *Request, transferable *core.Transferable) (err error) {
+func (s *service) post(ctx *shared.Context, request *Request, transferable *core.Transferable, seq uint32) (err error) {
 	targetURL := fmt.Sprintf(transferURL, s.Transfer.EndpointIP)
 	ctx.Log(fmt.Sprintf("post: %v\n", targetURL))
 	if ctx.Debug {
@@ -151,7 +176,7 @@ func (s *service) post(ctx *shared.Context, request *Request, transferable *core
 	if response.Status == shared.StatusDone {
 		return nil
 	}
-	return s.waitForSync(response.TaskID, transferable)
+	return s.waitForSync(ctx, response.TaskID, transferable, int(seq))
 }
 
 func newService(sync *contract.Sync, dao dao.Service) *service {

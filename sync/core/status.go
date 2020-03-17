@@ -8,10 +8,32 @@ import (
 type Status struct {
 	Source       *Signature
 	Dest         *Signature
-	InSync       bool
+	inSync       *bool
 	isSubset     bool
+	syncChecker  func() error
 	InSyncWithID int
 	Method       string
+}
+
+func (s *Status) SyncChecker(syncChecker func() error) {
+	s.syncChecker = syncChecker
+}
+
+func (s *Status) SetInSync(inSync bool) {
+	s.inSync = &inSync
+}
+
+func (s *Status) InSync() (bool, error) {
+	if s.syncChecker != nil {
+		if err := s.syncChecker(); err != nil {
+			return false, err
+		}
+		s.syncChecker = nil
+	}
+	if s.inSync == nil {
+		return false, nil
+	}
+	return *s.inSync, nil
 }
 
 //Clone closes status
@@ -73,7 +95,7 @@ func NewStatus(source, dest *Signature) *Status {
 	return &Status{
 		Source: source,
 		Dest:   dest,
-		InSync: isEqual,
+		inSync: &isEqual,
 	}
 
 }

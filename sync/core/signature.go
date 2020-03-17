@@ -41,6 +41,14 @@ func (c *Signature) Count() int {
 }
 
 //UniqueIDCount returns unique count value
+func (c *Signature) IsUniqueIDDefined() bool {
+	if c.UniqueIDCountValue == nil {
+		return false
+	}
+	return true
+}
+
+//UniqueIDCount returns unique count value
 func (c *Signature) UniqueIDCount() int {
 	if c.UniqueIDCountValue == nil {
 		return 0
@@ -72,6 +80,9 @@ func (c *Signature) ValidateIDConsistency() error {
 		return nil
 	}
 
+	if !c.IsUniqueIDDefined() {
+		return nil
+	}
 	if c.Count() == c.UniqueIDCount() {
 		return nil
 	}

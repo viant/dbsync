@@ -181,7 +181,11 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 			return err
 		}
 
-		if chunk.InSync {
+		inSync, err := chunk.InSync()
+		if err != nil {
+			return err
+		}
+		if inSync {
 			ctx.Log(fmt.Sprintf("chunk [%v .. %v] is inSyc", status.Min(), status.Max()))
 			offset = status.Max() + 1
 			continue

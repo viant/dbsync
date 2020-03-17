@@ -168,6 +168,7 @@ func (s *Service) writeData(request *Request, response *Response, task *Task, tr
 		count += batch.size
 		return err
 	}
+
 	if err = persist(batch); err != nil {
 		return
 	}

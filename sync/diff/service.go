@@ -81,17 +81,20 @@ func (d *service) FetchAll(ctx *shared.Context, filter map[string]interface{}) (
 }
 
 func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source, dest core.Record, filter map[string]interface{}, narrowInSyncSubset bool) (err error) {
+	inSync := false
 	defer func() {
-		ctx.Log(fmt.Sprintf("(%v): in sync: %v, %v\n", filter, status.InSync, status.Method))
+		ctx.Log(fmt.Sprintf("(%v): in sync: %v, %v\n", filter, inSync, status.Method))
 	}()
-	status.InSync = d.Comparator.IsInSync(ctx, source, dest)
-	if status.InSync {
+	inSync = d.Comparator.IsInSync(ctx, source, dest)
+	status.SetInSync(inSync)
+	if inSync {
 		return nil
 	}
 	idColumn := d.Sync.IDColumn()
 	hasID := idColumn != ""
 	status.Source = core.NewSignatureFromRecord(idColumn, source)
 	status.Dest = core.NewSignatureFromRecord(idColumn, dest)
+
 	if err := status.Dest.ValidateIDConsistency(); err != nil {
 		return errors.Wrap(err, "dest inconsistency")
 	}
@@ -115,21 +118,30 @@ func (d *service) UpdateStatus(ctx *shared.Context, status *core.Status, source,
 		return nil
 	}
 
-	narrowFilter := shared.CloneMap(filter)
-	narrowFilter[idColumn] = criteria.NewLessOrEqual(status.Dest.Max())
-	if d.isInSync(ctx, narrowFilter) {
-		status.Method = shared.SyncMethodInsert
-		status.SetInSyncWithID(status.Dest.Max())
+	if status.Dest.Max() <= 0 {
+		status.Method = shared.SyncMethodMerge
 		return nil
 	}
-	inSyncWithID := 0
 
-	status.Method = shared.SyncMethodMerge
-	idRange := core.NewIDRange(status.Source.Min(), status.Dest.Max())
-	inSyncWithID, err = d.findMaxIDInSync(ctx, idRange, filter)
-	if inSyncWithID > 0 {
-		status.SetInSyncWithID(inSyncWithID)
+	checker := func() error {
+		narrowFilter := shared.CloneMap(filter)
+		narrowFilter[idColumn] = criteria.NewLessOrEqual(status.Dest.Max())
+		if d.isInSync(ctx, narrowFilter) {
+			status.Method = shared.SyncMethodInsert
+			status.SetInSyncWithID(status.Dest.Max())
+			return nil
+		}
+		inSyncWithID := 0
+
+		status.Method = shared.SyncMethodMerge
+		idRange := core.NewIDRange(status.Source.Min(), status.Dest.Max())
+		inSyncWithID, err = d.findMaxIDInSync(ctx, idRange, filter)
+		if inSyncWithID > 0 {
+			status.SetInSyncWithID(inSyncWithID)
+		}
+		return err
 	}
+	status.SyncChecker(checker)
 	return err
 }
 
@@ -138,7 +150,8 @@ func (d *service) isInSync(ctx *shared.Context, filter map[string]interface{}) b
 
 	if source, dest, err := d.Fetch(ctx, filter); err == nil {
 		if err = d.UpdateStatus(ctx, candidate, source, dest, filter, false); err == nil {
-			return candidate.InSync
+			inSync, _ := candidate.InSync()
+			return inSync
 		}
 	}
 	return false

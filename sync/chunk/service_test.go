@@ -147,7 +147,7 @@ func TestChunker_Build(t *testing.T) {
 		actualInSync := 0
 		actual := make(map[string]interface{})
 		_ = partition.Chunks.Range(func(chunk *core.Chunk) error {
-			if chunk.InSync {
+			if inSync, _ := chunk.InSync(); inSync {
 				actualInSync++
 				return nil
 			}

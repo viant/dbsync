@@ -7,7 +7,8 @@ import (
 
 //Context represent a context
 type Context struct {
-	Debug bool
+	UseLock bool
+	Debug   bool
 	//ID request ID
 	ID string
 }
@@ -23,9 +24,10 @@ func (c *Context) Log(v ...interface{}) {
 }
 
 //NewContext returns new context
-func NewContext(ID string, debug bool) *Context {
+func NewContext(ID string, debug bool, useLock bool) *Context {
 	return &Context{
-		ID:    ID,
-		Debug: debug,
+		ID:      ID,
+		Debug:   debug,
+		UseLock: useLock,
 	}
 }

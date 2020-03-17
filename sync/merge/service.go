@@ -82,11 +82,15 @@ func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (e
 	if transferable.IsDirect {
 		return fmt.Errorf("transferable was direct")
 	}
-	s.Mutex.Lock(s.Sync.Table)
-	defer s.Mutex.Unlock(s.Sync.Table)
 	if s.AppendOnly {
 		if transferable.ShouldDelete() {
+			if ctx.UseLock {
+				s.Mutex.Lock(s.Sync.Table)
+			}
 			err = s.delete(ctx, transferable)
+			if ctx.UseLock {
+				s.Mutex.Unlock(s.Sync.Table)
+			}
 		}
 		if err == nil {
 			err = s.dedupeAppend(ctx, transferable)
@@ -95,17 +99,37 @@ func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (e
 	}
 	switch transferable.Method {
 	case shared.SyncMethodDeleteInsert:
-		if err = s.delete(ctx, transferable); err == nil {
+		if ctx.UseLock {
+			s.Mutex.Lock(s.Sync.Table)
+		}
+		err = s.delete(ctx, transferable)
+		if ctx.UseLock {
+			s.Mutex.Unlock(s.Sync.Table)
+		}
+		if err == nil {
 			err = s.dedupeAppend(ctx, transferable)
 		}
 		return err
 	case shared.SyncMethodDeleteMerge:
+		if ctx.UseLock {
+			s.Mutex.Lock(s.Sync.Table)
+		}
 		if err = s.delete(ctx, transferable); err == nil {
 			err = s.merge(ctx, transferable)
 		}
+		if ctx.UseLock {
+			s.Mutex.Unlock(s.Sync.Table)
+		}
 		return err
 	case shared.SyncMethodMerge:
-		return s.merge(ctx, transferable)
+		if ctx.UseLock {
+			s.Mutex.Lock(s.Sync.Table)
+		}
+		err = s.merge(ctx, transferable)
+		if ctx.UseLock {
+			s.Mutex.Unlock(s.Sync.Table)
+		}
+		return err
 	case shared.SyncMethodInsert:
 		return s.dedupeAppend(ctx, transferable)
 	}

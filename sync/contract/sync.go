@@ -19,9 +19,17 @@ type Sync struct {
 	Table             string
 	Criteria          map[string]interface{}
 	Schedule          *Schedule
+	Lock              *bool
+	Async             bool
+	Debug             bool
+}
 
-	Async bool
-	Debug bool
+//UseLock returns lock flag
+func (r *Sync) UseLock() bool {
+	if r.Lock != nil {
+		return *r.Lock
+	}
+	return true
 }
 
 func (r *Sync) Clone() *Sync {
@@ -29,6 +37,7 @@ func (r *Sync) Clone() *Sync {
 		Strategy: *r.Strategy.Clone(),
 		Transfer: r.Transfer,
 		Dest:     r.Dest,
+		Lock:     r.Lock,
 		Source:   r.Source,
 		Table:    r.Table,
 		Criteria: r.Criteria,

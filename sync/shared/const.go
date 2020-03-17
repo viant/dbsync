@@ -9,6 +9,8 @@ const (
 	StatusDone = "done"
 	//StatusRunning sync1 running status
 	StatusRunning = "running"
+	//StatusUnknown unknown status
+	StatusUnknown = "unknown"
 
 	//SyncModeBatch persistency mode,  batched each chunk/partition merged with tmp transient table, then after all chunk transferred temp table marged with dest table
 	SyncModeBatch = "batch"

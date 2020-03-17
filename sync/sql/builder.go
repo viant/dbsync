@@ -592,13 +592,20 @@ func (b *Builder) formatColumn(column string) string {
 	return column
 }
 
-func (b *Builder) addStandardSignatureColumns() {
-
+func (b *Builder) hasDefinedCount() bool {
 	countColumnAlias := diff.AliasCount
 	for _, candidate := range b.Diff.Columns {
-		if strings.ToLower(candidate.Name) == countColumnAlias {
-			return
+		if strings.ToLower(candidate.Alias) == countColumnAlias {
+			return true
 		}
+	}
+	return false
+}
+
+func (b *Builder) addStandardSignatureColumns() {
+
+	if b.hasDefinedCount() {
+		return
 	}
 
 	b.Diff.Columns = append(b.Diff.Columns, &diff.Column{

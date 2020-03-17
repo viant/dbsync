@@ -15,6 +15,7 @@ import (
 	"dbsync/sync/transfer"
 	"errors"
 	"fmt"
+	"sync/atomic"
 )
 
 //Service represents partitin service
@@ -59,7 +60,6 @@ func (s *service) Build(ctx *shared.Context) (err error) {
 	if !s.IsOptimized() {
 		return nil
 	}
-
 	if err = s.buildBatched(ctx); err == nil {
 		err = s.buildIndividual(ctx)
 	}
@@ -82,7 +82,11 @@ func (s *service) Sync(ctx *shared.Context) (err error) {
 func (s *service) syncInBatches(ctx *shared.Context) error {
 	batchMap := criteria.NewBatchMap(s.Partition.BatchSize)
 	_ = s.Partitions.Range(func(partition *core.Partition) error {
-		if partition.Status.InSync {
+		inSync, err := partition.Status.InSync()
+		if err != nil {
+			return err
+		}
+		if inSync {
 			s.job.Get(ctx.ID).Add(&partition.Transferable)
 			return nil
 		}
@@ -145,15 +149,26 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 		}
 	}
 
+	total := uint32(0)
+	inSync := uint32(0)
 	//This run with multi go routines
 	err = partitions.Range(func(partition *core.Partition) error {
 		if partition.Status == nil {
 			return nil
 		}
-		if partition.InSync {
+		if atomic.AddUint32(&total, 1)%10 == 0 {
+			ctx.Log(fmt.Sprintf("InSync: %v/%v\n", inSync, total))
+		}
+		isSync, err := partition.InSync()
+		if err != nil {
+			return err
+		}
+		if isSync {
+			atomic.AddUint32(&inSync, 1)
 			s.job.Get(ctx.ID).Add(&partition.Transferable)
 			return nil
 		}
+
 		if partition.Status.InSyncWithID > 0 {
 			partition.SetMinID(s.IDColumn(), partition.Status.InSyncWithID+1)
 		}
@@ -213,7 +228,7 @@ func (s *service) buildBatched(ctx *shared.Context) (err error) {
 
 //build build status to all  partition, ideally al should be done in batch
 func (s *service) buildIndividual(ctx *shared.Context) (err error) {
-	return s.Partitions.Range(func(partition *core.Partition) error {
+	err = s.Partitions.Range(func(partition *core.Partition) error {
 		if partition.Status != nil {
 			return nil
 		}
@@ -226,6 +241,8 @@ func (s *service) buildIndividual(ctx *shared.Context) (err error) {
 		}
 		return err
 	})
+	return err
+
 }
 
 func (s *service) buildBatch(ctx *shared.Context, filter map[string]interface{}) error {

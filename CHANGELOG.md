@@ -1,3 +1,8 @@
+## March 16 2020 - v0.16.0
+- Added Lock option to control dest table mutation (true by default)
+- Patched status checking
+- Streamline data narrowing with lazy pattern
+
 ## August 20 2019 - v0.14.0
 -  Added IDColumns sourced from pseudo columns
 
