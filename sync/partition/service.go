@@ -181,7 +181,7 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 
 		//Added retries
 		for i := 0;i< shared.MaxRetries;i++ {
-			if err := s.syncPartition(ctx, partition);err == nil {
+			if err = s.syncPartition(ctx, partition);err == nil {
 				return err
 			}
 			time.Sleep(time.Second)
