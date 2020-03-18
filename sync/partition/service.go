@@ -148,7 +148,6 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 			return err
 		}
 	}
-
 	total := uint32(0)
 	inSync := uint32(0)
 	//This run with multi go routines
@@ -161,6 +160,7 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 		}
 		isSync, err := partition.InSync()
 		if err != nil {
+			partition.SetError(err)
 			return err
 		}
 		if isSync {
@@ -202,6 +202,7 @@ func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) 
 	}
 	job.Add(&partition.Transferable)
 	if err = s.Transfer.Post(ctx, request, &partition.Transferable); err != nil {
+		partition.SetError(err)
 		return err
 	}
 	if partition.IsDirect {
@@ -213,7 +214,9 @@ func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) 
 		transferable.OwnerSuffix = shared.TransientTableSuffix
 		transferable.Method = shared.SyncMethodInsert
 	}
-	return s.Merger.Merge(ctx, transferable)
+	err =  s.Merger.Merge(ctx, transferable)
+	partition.SetError(err)
+	return err
 }
 
 func (s *service) buildBatched(ctx *shared.Context) (err error) {
@@ -378,11 +381,13 @@ func (s *service) loadPartitions(ctx *shared.Context) (err error) {
 		if source, err = s.fetchPartitionValues(ctx, contract.ResourceKindSource); err != nil {
 			return err
 		}
+
 		if s.DbSync.Dest.PartitionSQL != "" {
 			if dest, err = s.fetchPartitionValues(ctx, contract.ResourceKindDest); err != nil {
 				return err
 			}
 		}
+
 		if len(source) == 0 {
 			if len(dest) == 0 {
 				return errors.New("source partitions query returned empty set")

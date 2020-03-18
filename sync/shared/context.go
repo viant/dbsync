@@ -10,8 +10,9 @@ type Context struct {
 	UseLock bool
 	Debug   bool
 	//ID request ID
-	ID string
+	ID         string
 }
+
 
 //Log logs
 func (c *Context) Log(v ...interface{}) {
@@ -24,10 +25,9 @@ func (c *Context) Log(v ...interface{}) {
 }
 
 //NewContext returns new context
-func NewContext(ID string, debug bool, useLock bool) *Context {
+func NewContext(ID string, debug bool) *Context {
 	return &Context{
 		ID:      ID,
 		Debug:   debug,
-		UseLock: useLock,
 	}
 }

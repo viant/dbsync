@@ -4,6 +4,7 @@ import (
 	"dbsync/transfer"
 	"flag"
 	"fmt"
+	_ "github.com/vertica/vertica-sql-go"
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"

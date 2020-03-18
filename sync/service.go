@@ -73,7 +73,7 @@ func (s *service) sync(request *Request) (response *Response, err error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx = shared.NewContext(job.ID, request.Debug, true)
+	ctx = shared.NewContext(job.ID, request.Debug)
 	log.Printf("[%v] starting %v sync\n", job.ID, request.Table)
 	syncRequest, _ := json.Marshal(request)
 	ctx.Log(fmt.Sprintf("sync: %s", syncRequest))
@@ -128,6 +128,7 @@ func (s *service) runSyncJob(ctx *shared.Context, job *core.Job, request *Reques
 	defer func() {
 		_ = partitionService.Close()
 	}()
+
 	if err = partitionService.Init(ctx); err == nil {
 		if err = partitionService.Build(ctx); err == nil {
 			err = partitionService.Sync(ctx)

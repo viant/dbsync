@@ -34,6 +34,7 @@ func (s *service) delete(ctx *shared.Context, transferable *core.Transferable) e
 	return s.dao.ExecSQL(ctx, DML)
 }
 
+
 func (s *service) append(ctx *shared.Context, transferable *core.Transferable) error {
 	DML := s.Builder.AppendDML(transferable.Suffix, transferable.OwnerSuffix)
 	var err error
@@ -70,6 +71,7 @@ func (s *service) merge(ctx *shared.Context, transferable *core.Transferable) er
 	}
 	return err
 }
+
 
 //Delete delete data from dest table for supplied filter
 func (s *service) Delete(ctx *shared.Context, filter map[string]interface{}) error {

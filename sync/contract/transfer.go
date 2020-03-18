@@ -8,6 +8,8 @@ type Transfer struct {
 	MaxRetries    int
 	TempDatabase  string
 	Suffix        string
+	DriverName    string
+	Descriptor    string
 }
 
 //Init initializes transfer

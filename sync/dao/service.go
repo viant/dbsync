@@ -4,63 +4,64 @@ import (
 	"dbsync/sync/contract"
 	"dbsync/sync/core"
 	"dbsync/sync/criteria"
-
 	"dbsync/sync/shared"
 	"dbsync/sync/sql"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/viant/dsc"
-	"strings"
+	"time"
 )
 
 //errSuffixWasEmpty represents suffix empty error
 var errSuffixWasEmpty = errors.New("suffix was empty")
 
-//Service represents dao service
-type Service interface {
+type (
+	//Service represents dao service
+	Service interface {
 
-	//Partitions returns partition for supplied resource kind
-	Partitions(ctx *shared.Context, kind contract.ResourceKind) (core.Records, error)
+		//Partitions returns partition for supplied resource kind
+		Partitions(ctx *shared.Context, kind contract.ResourceKind) (core.Records, error)
 
-	//Signatures returns aggregated data signatures
-	Signatures(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Records, error)
+		//Signatures returns aggregated data signatures
+		Signatures(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Records, error)
 
-	//Signature returns aggregated data signature
-	Signature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Record, error)
+		//Signature returns aggregated data signature
+		Signature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Record, error)
 
-	//CountSignature returns basic (without used defined projection) signature
-	CountSignature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (*core.Signature, error)
+		//CountSignature returns basic (without used defined projection) signature
+		CountSignature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (*core.Signature, error)
 
-	//ChunkSignature returns chunking data signature
-	ChunkSignature(ctx *shared.Context, kind contract.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error)
+		//ChunkSignature returns chunking data signature
+		ChunkSignature(ctx *shared.Context, kind contract.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error)
 
-	//ExecSQL executes supplied SQL
-	ExecSQL(ctx *shared.Context, SQL string) error
+		//ExecSQL executes supplied SQL
+		ExecSQL(ctx *shared.Context, SQL string) error
 
-	//Columns returns column definition from dest table
-	Columns(ctx *shared.Context, table string) ([]dsc.Column, error)
+		//Columns returns column definition from dest table
+		Columns(ctx *shared.Context, table string) ([]dsc.Column, error)
 
-	//DbName returns database name for supplied resource kind
-	DbName(ctx *shared.Context, kind contract.ResourceKind) (string, error)
+		//DbName returns database name for supplied resource kind
+		DbName(ctx *shared.Context, kind contract.ResourceKind) (string, error)
 
-	//CreateTransientTable creates a transient table
-	CreateTransientTable(ctx *shared.Context, suffix string) error
+		//CreateTransientTable creates a transient table
+		CreateTransientTable(ctx *shared.Context, suffix string) error
 
-	//DropTransientTable drops a transient table
-	DropTransientTable(ctx *shared.Context, suffix string) error
+		//DropTransientTable drops a transient table
+		DropTransientTable(ctx *shared.Context, suffix string) error
 
-	//RecreateTransientTable recreate transient table
-	RecreateTransientTable(ctx *shared.Context, suffix string) error
+		//RecreateTransientTable recreate transient table
+		RecreateTransientTable(ctx *shared.Context, suffix string) error
 
-	//Builder returns SQL builder
-	Builder() *sql.Builder
+		//Builder returns SQL builder
+		Builder() *sql.Builder
 
-	//Init initialises this service
-	Init(ctx *shared.Context) error
+		//Init initialises this service
+		Init(ctx *shared.Context) error
 
-	//Closes this service
-	Close() error
-}
+		//Closes this service
+		Close() error
+	}
+)
 
 type dbResource struct {
 	*contract.Resource
@@ -117,6 +118,8 @@ func (s *service) RecreateTransientTable(ctx *shared.Context, suffix string) (er
 	return s.CreateTransientTable(ctx, suffix)
 }
 
+const maxRetries = 3
+
 //CreateTransientTable create transient table
 func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err error) {
 	if suffix == "" {
@@ -129,15 +132,17 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 		}
 	}
 	DDL := s.builder.DDLFromSelect(suffix)
-	if err = s.ExecSQL(ctx, DDL); err == nil {
-		return nil
+	for i := 0; i < maxRetries; i++ {
+		if err = s.ExecSQL(ctx, DDL); err == nil {
+			return nil
+		}
+		time.Sleep(time.Second)
 	}
-
 	//Fallback to dialect DDL
 	DDL = s.builder.DDL(suffix)
-	if s.Transfer.TempDatabase != "" {
-		DDL = strings.Replace(DDL, dbName+".", "", 1)
-	}
+	//if s.Transfer.TempDatabase != "" {
+	//	DDL = strings.Replace(DDL, dbName+".", "", 1)
+	//}
 	return s.ExecSQL(ctx, DDL)
 }
 
@@ -218,9 +223,9 @@ func (s *service) chunkSignature(ctx *shared.Context, dbResource *dbResource, of
 }
 
 //ExecSQL execute SQL
-func (s *service) ExecSQL(ctx *shared.Context, SQL string) error {
+func (s *service) ExecSQL(ctx *shared.Context, SQL string) (err error) {
 	ctx.Log(SQL)
-	_, err := s.dest.DB.Execute(SQL)
+	_, err = s.dest.DB.Execute(SQL)
 	return err
 }
 

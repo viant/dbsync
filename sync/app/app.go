@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/alexbrainman/odbc"
+	_ "github.com/vertica/vertica-sql-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"
 	_ "github.com/lib/pq"
@@ -15,6 +16,7 @@ import (
 	"log"
 	"os"
 )
+
 
 //Version app version
 var Version string

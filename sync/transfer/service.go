@@ -44,11 +44,17 @@ func (s *service) destConfig(ctx *shared.Context) *dsc.Config {
 	}
 	result.Parameters = make(map[string]interface{})
 	dbName, _ := s.dao.DbName(ctx, contract.ResourceKindDest)
+	if s.Transfer.DriverName != "" {
+		result.DriverName = s.Transfer.DriverName
+	}
 	for k, v := range s.Dest.Config.Parameters {
 		result.Parameters[k] = v
 		if textValue, ok := v.(string); ok {
 			result.Parameters[k] = strings.Replace(textValue, dbName, s.Transfer.TempDatabase, 1)
 		}
+	}
+	if s.Transfer.Descriptor != "" {
+		result.Descriptor = s.Transfer.Descriptor
 	}
 	result.Descriptor = strings.Replace(result.Descriptor, dbName, s.Transfer.TempDatabase, 1)
 	return result
@@ -142,8 +148,8 @@ func (s *service) Post(ctx *shared.Context, request *Request, transferable *core
 		ctx.Log(fmt.Sprintf("completed transfer %v, %v\n", lseq, err))
 	}()
 	for i := 0; attempt < maxRetries; i++ {
-		err = s.post(ctx, request, transferable, lseq)
 		ctx.Log(fmt.Sprintf("run transfer %v ... \n", lseq))
+		err = s.post(ctx, request, transferable, lseq)
 		if err == nil {
 			break
 		}
