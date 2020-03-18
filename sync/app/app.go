@@ -10,6 +10,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"
 	_ "github.com/lib/pq"
+	"github.com/viant/dsc"
+
 	_ "github.com/mattn/go-oci8"
 	_ "github.com/viant/asc"
 	_ "github.com/viant/bgc"
@@ -35,6 +37,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
+
 
 	config := &shared.Config{
 		Debug:                *debug,
