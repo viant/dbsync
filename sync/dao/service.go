@@ -118,7 +118,6 @@ func (s *service) RecreateTransientTable(ctx *shared.Context, suffix string) (er
 	return s.CreateTransientTable(ctx, suffix)
 }
 
-const maxRetries = 3
 
 //CreateTransientTable create transient table
 func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err error) {
@@ -132,7 +131,7 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 		}
 	}
 	DDL := s.builder.DDLFromSelect(suffix)
-	for i := 0; i < maxRetries; i++ {
+	for i := 0; i < shared.MaxRetries; i++ {
 		if err = s.ExecSQL(ctx, DDL); err == nil {
 			return nil
 		}

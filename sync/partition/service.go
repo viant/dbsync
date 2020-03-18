@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"sync/atomic"
+	"time"
 )
 
 //Service represents partitin service
@@ -176,7 +177,17 @@ func (s *service) syncIndividually(ctx *shared.Context, partitions *core.Partiti
 		if isChunked {
 			return s.syncPartitionChunks(ctx, partition)
 		}
-		return s.syncPartition(ctx, partition)
+
+
+		//Added retries
+		for i := 0;i< shared.MaxRetries;i++ {
+			if err := s.syncPartition(ctx, partition);err == nil {
+				return err
+			}
+			time.Sleep(time.Second)
+		}
+		partition.SetError(err)
+		return err
 	})
 	return err
 }
@@ -202,7 +213,6 @@ func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) 
 	}
 	job.Add(&partition.Transferable)
 	if err = s.Transfer.Post(ctx, request, &partition.Transferable); err != nil {
-		partition.SetError(err)
 		return err
 	}
 	if partition.IsDirect {
@@ -215,7 +225,6 @@ func (s *service) syncPartition(ctx *shared.Context, partition *core.Partition) 
 		transferable.Method = shared.SyncMethodInsert
 	}
 	err =  s.Merger.Merge(ctx, transferable)
-	partition.SetError(err)
 	return err
 }
 

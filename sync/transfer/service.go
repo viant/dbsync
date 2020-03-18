@@ -19,7 +19,6 @@ import (
 const (
 	transferURL       = "http://%v/v1/api/transfer"
 	transferStatusURL = "http://%v/v1/api/task/"
-	defaultRetries    = 3
 	baseSleep         = 15 * time.Second
 )
 
@@ -98,7 +97,7 @@ func (s *service) waitForSync(ctx *shared.Context, syncTaskID int, transferable 
 		err = toolbox.RouteToService("get", URL, nil, response)
 		ctx.Log(fmt.Sprintf("checking status: %v %+v\n", URL, response))
 		if err != nil {
-			if checkRetry < defaultRetries {
+			if checkRetry < shared.MaxRetries {
 				time.Sleep(baseSleep * time.Duration(1+checkRetry))
 				checkRetry++
 				continue
@@ -138,7 +137,7 @@ func (s *service) Post(ctx *shared.Context, request *Request, transferable *core
 	}
 	maxRetries := s.Transfer.MaxRetries
 	if maxRetries == 0 {
-		maxRetries = defaultRetries
+		maxRetries = shared.MaxRetries
 	}
 	atomic.StoreUint32(&transferable.Transferred, 0)
 	attempt := 0
