@@ -78,6 +78,10 @@ func (s *service) sync(request *Request) (response *Response, err error) {
 	syncRequest, _ := json.Marshal(request)
 	ctx.Log(fmt.Sprintf("sync: %s", syncRequest))
 	ctx.UseLock = request.UseLock()
+	if request.DMLTimeout > 0 {
+		ctx.DMLTimeout = time.Second * time.Duration(request.DMLTimeout)
+	}
+
 	if request.Async {
 		go func() {
 			_ = s.runSyncJob(ctx, job, request, response)

@@ -3,6 +3,7 @@ package shared
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
 //Context represent a context
@@ -11,6 +12,7 @@ type Context struct {
 	Debug   bool
 	//ID request ID
 	ID         string
+	DMLTimeout time.Duration
 }
 
 

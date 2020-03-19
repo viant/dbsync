@@ -131,12 +131,9 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 		}
 	}
 	DDL := s.builder.DDLFromSelect(suffix)
-	for i := 0; i < shared.MaxRetries; i++ {
-		if err = s.ExecSQL(ctx, DDL); err == nil {
+	if err = s.ExecSQL(ctx, DDL); err == nil {
 			return nil
 		}
-		time.Sleep(time.Second)
-	}
 	//Fallback to dialect DDL
 	DDL = s.builder.DDL(suffix)
 	//if s.Transfer.TempDatabase != "" {
@@ -223,10 +220,40 @@ func (s *service) chunkSignature(ctx *shared.Context, dbResource *dbResource, of
 
 //ExecSQL execute SQL
 func (s *service) ExecSQL(ctx *shared.Context, SQL string) (err error) {
-	ctx.Log(SQL)
-	_, err = s.dest.DB.Execute(SQL)
+	if ctx.DMLTimeout == 0 {
+		ctx.Log(SQL)
+		_, err = s.dest.DB.Execute(SQL)
+		return err
+	}
+	return s.executeInBackground(err, SQL, ctx)
+}
+
+
+
+func (s *service) executeInBackground(err error, SQL string, ctx *shared.Context) error {
+	var conn dsc.Connection
+	conn, err = s.dest.DB.ConnectionProvider().Get()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	waitChannel := make(chan bool, 1)
+	go func() {
+		_, err = s.dest.DB.ExecuteOnConnection(conn, SQL, nil)
+		waitChannel <- true
+	}()
+
+	select {
+	case <-waitChannel:
+	case <-time.After(ctx.DMLTimeout):
+		go func() {
+			_ = conn.CloseNow()
+		}()
+		return errors.Errorf("execution timeout on %v", SQL)
+	}
 	return err
 }
+
 
 //DbName returns db name for supplied source kind
 func (s *service) DbName(ctx *shared.Context, kind contract.ResourceKind) (string, error) {
