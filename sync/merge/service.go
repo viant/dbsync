@@ -98,6 +98,8 @@ func (s *service) Merge(ctx *shared.Context, transferable *core.Transferable) (e
 			err = s.dedupeAppend(ctx, transferable)
 		}
 		return err
+	} else if  s.AppendUpdateOnly {
+		return s.merge(ctx, transferable)
 	}
 	switch transferable.Method {
 	case shared.SyncMethodDeleteInsert:

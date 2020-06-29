@@ -6,15 +6,16 @@ import (
 
 //Strategy represents a sync strategy
 type Strategy struct {
-	Chunk        Chunk
-	IDColumns    []string
-	Columns      []string
-	Diff         Diff
-	DirectAppend bool   `description:"if this flag is set all insert/append data is stream directly to the dest table"`
-	MergeStyle   string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
-	Partition    Partition
-	AppendOnly   bool `description:"if set instead of merge, insert will be used"`
-	Force        bool `description:"if set skip checks if values in sync"`
+	Chunk         Chunk
+	IDColumns     []string
+	Columns       []string
+	Diff          Diff
+	DirectAppend  bool   `description:"if this flag is set all insert/append data is stream directly to the dest table"`
+	MergeStyle    string `description:"supported value:merge,insertReplace,insertUpdate,insertDelete"`
+	Partition     Partition
+	AppendOnly    bool `description:"if set instead of merge, insert will be used"`
+	AppendUpdateOnly bool `description:"if set instead of merge, insert will be used"`
+	Force         bool `description:"if set skip checks if values in sync"`
 }
 
 //Clone clones strategy
@@ -28,6 +29,7 @@ func (s *Strategy) Clone() *Strategy {
 		MergeStyle:   s.MergeStyle,
 		Partition:    s.Partition,
 		AppendOnly:   s.AppendOnly,
+		AppendUpdateOnly:s.AppendUpdateOnly,
 		Force:        s.Force,
 	}
 }

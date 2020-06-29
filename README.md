@@ -629,6 +629,7 @@ Transfer process is delegated to the transfer service, the following parameter c
     - insertOnConflictUpdate
 
 - appendOnly: flag to use append new entries
+- appendUpdateOnly: flag to use sync with merge (without delete)
 - directAppend: flag to insert data directly to dest table (without transfer table, only recommended with streaming API, or where dest has unique constraints)
 - transfer.batchSize: batch size for insert/load operation
 - transfer.writerThreads: number of writing threads
