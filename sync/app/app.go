@@ -6,10 +6,11 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/alexbrainman/odbc"
-	_ "github.com/vertica/vertica-sql-go"
+	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"
 	_ "github.com/lib/pq"
+	_ "github.com/vertica/vertica-sql-go"
 
 	_ "github.com/mattn/go-oci8"
 	_ "github.com/viant/asc"
@@ -17,7 +18,6 @@ import (
 	"log"
 	"os"
 )
-
 
 //Version app version
 var Version string
@@ -36,7 +36,6 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
-
 
 	config := &shared.Config{
 		Debug:                *debug,

@@ -11,7 +11,7 @@ type registry struct {
 	mux        *sync.Mutex
 }
 
-//Get returns stats for supplied id
+//Any returns stats for supplied id
 func (r *registry) get(id string) []*Job {
 	r.mux.Lock()
 	defer r.mux.Unlock()
