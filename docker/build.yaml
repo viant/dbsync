@@ -47,7 +47,7 @@ pipeline:
     build:
       action: docker:build
       path: ${buildPath}/transient/
-      nocache: true
+      #nocache: true
       expand: true
       tag:
         image: dbsync_transient

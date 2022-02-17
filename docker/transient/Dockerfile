@@ -22,9 +22,9 @@ RUN wget http://www.unixodbc.org/unixODBC-2.3.5.tar.gz &&\
     cd .. && \
     rm -rf unixODBC-2.3.5 unixODBC-2.3.5.tar.gz
 
-RUN wget https://dl.google.com/go/go1.12.1.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.12.1.linux-amd64.tar.gz && \
-    rm go1.12.1.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.16.1.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.16.1.linux-amd64.tar.gz && \
+    rm go1.16.1.linux-amd64.tar.gz && \
     ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 
@@ -34,6 +34,7 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib/oracle/12.2/client64/lib
 COPY . /tmp/dbsync
 
 WORKDIR /tmp/dbsync/sync/app
+RUN go mod tidy
 RUN go build -ldflags "-X main.Version=${Version}" -o dbsync &&  cp dbsync /dbsync
 RUN tar cvzf /dbsync.tar.gz /dbsync  \
     /usr/local/lib/l* /etc/vertica.ini /etc/odbcinst.ini /opt/vertica \
