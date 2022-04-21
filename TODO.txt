@@ -1,6 +1,3 @@
-- add BigQuery streaming e2e use case
-- update model/documentation
-- added partition sanity check (count, and completion)
-- add e2e additionOnly test on empty dest table
-- add load into mysql
-- add stalled job detection
+
+- rewrite using viant/sqlx
+- add better BigQuery resource sync management account for quota/limits
