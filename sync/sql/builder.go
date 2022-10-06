@@ -66,7 +66,7 @@ func (b *Builder) QueryTable(suffix string, resource *contract.Resource) string 
 func (b *Builder) DDLFromSelect(suffix string) string {
 	suffix = normalizeTableName(suffix)
 	if b.useCrateLikeDDL {
-		return fmt.Sprintf("CREATE TABLE %v LIKE ", b.Table(suffix), b.Table(""))
+		return fmt.Sprintf("CREATE TABLE %v LIKE %v", b.Table(suffix), b.Table(""))
 	}
 	return fmt.Sprintf("CREATE TABLE %v AS SELECT * FROM %v WHERE 1 = 0", b.Table(suffix), b.Table(""))
 }
