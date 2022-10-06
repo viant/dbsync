@@ -45,6 +45,7 @@ func (r *Sync) Clone() *Sync {
 		Criteria: r.Criteria,
 		Schedule: r.Schedule,
 		Async:    r.Async,
+		UseCreateLikeDDL: r.UseCreateLikeDDL,
 		Debug:    r.Debug,
 	}
 }

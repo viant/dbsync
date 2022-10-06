@@ -18,7 +18,8 @@
             "dbname": "db1"
         }
     },
-	"Diff": {
+  "UseCreateLikeDDL": true,
+  "Diff": {
 	    "CountOnly": true,
 	    "BatchSize": 1024
 	},
