@@ -31,6 +31,7 @@ type Builder struct {
 	table              string
 	columns            []dsc.Column
 	columnsByName      map[string]dsc.Column
+	useCrateLikeDDL    bool
 	isUpperCase        bool
 }
 
@@ -723,16 +724,17 @@ func NewBuilder(sync *contract.Sync, ddl string, destColumns []dsc.Column) (*Bui
 	}
 	isUpperCaseTable := isUpperCaseTable(destColumns)
 	builder := &Builder{
-		tempDatabase:   sync.Transfer.TempDatabase,
-		Strategy:       &sync.Strategy,
-		columns:        destColumns,
-		columnsByName:  make(map[string]dsc.Column),
-		table:          sync.Dest.Table,
-		source:         sync.Source,
-		ddl:            ddl,
-		dest:           sync.Dest,
-		isUpperCase:    isUpperCaseTable,
-		transferSuffix: transferSuffix,
+		tempDatabase:    sync.Transfer.TempDatabase,
+		Strategy:        &sync.Strategy,
+		columns:         destColumns,
+		columnsByName:   make(map[string]dsc.Column),
+		table:           sync.Dest.Table,
+		source:          sync.Source,
+		ddl:             ddl,
+		dest:            sync.Dest,
+		isUpperCase:     isUpperCaseTable,
+		useCrateLikeDDL: sync.UseCreateLikeDDL,
+		transferSuffix:  transferSuffix,
 	}
 	builder.init()
 

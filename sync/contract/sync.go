@@ -23,6 +23,7 @@ type Sync struct {
 	Async             bool
 	Debug             bool
 	DMLTimeout        int
+	UseCreateLikeDDL  bool
 }
 
 //UseLock returns lock flag
