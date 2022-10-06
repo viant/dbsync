@@ -2,7 +2,7 @@ init:
   buildPath: /tmp/dbsync/
   Version: $Cat(../Version)
   target:
-    URL: ssh://127.0.0.1/
+    URL: ssh://localhost/
     credentials: localhost
 
 pipeline:
