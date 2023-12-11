@@ -22,9 +22,9 @@ RUN wget http://www.unixodbc.org/unixODBC-2.3.5.tar.gz &&\
     cd .. && \
     rm -rf unixODBC-2.3.5 unixODBC-2.3.5.tar.gz
 
-RUN wget https://dl.google.com/go/go1.16.1.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.16.1.linux-amd64.tar.gz && \
-    rm go1.16.1.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.19.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.19.5.linux-amd64.tar.gz && \
+    rm go1.19.5.linux-amd64.tar.gz && \
     ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 

@@ -46,6 +46,7 @@ pipeline:
 
     build:
       action: docker:build
+      platform: linux/amd64
       path: ${buildPath}/transient/
       #nocache: true
       expand: true
@@ -56,6 +57,7 @@ pipeline:
   extract:
     start:
       action: docker:run
+      platform: linux/amd64
       image: dbsync_transient:${Version}
       name: dbsync_transient
 
@@ -75,6 +77,7 @@ pipeline:
     sync:
       build:
         action: docker:build
+        platform: linux/amd64
         path: ${buildPath}/final/sync
         nocache: true
         tag:
@@ -84,6 +87,7 @@ pipeline:
     transfer:
       build:
         action: docker:build
+        platform: linux/amd64
         path: ${buildPath}/final/transfer
         nocache: true
         tag:
