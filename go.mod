@@ -13,14 +13,16 @@ require (
 	github.com/mattn/go-oci8 v0.0.4
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.3
 	github.com/vertica/vertica-sql-go v0.2.1
 	github.com/viant/afs v0.16.0
 	github.com/viant/afsc v0.7.2
 	github.com/viant/asc v0.5.0
 	github.com/viant/assertly v0.5.3
-	github.com/viant/bgc v0.8.0
+	github.com/viant/bgc v0.8.1-0.20231211214443-77fb67e4256e
 	github.com/viant/dsc v0.16.1
 	github.com/viant/dsunit v0.10.10
 	github.com/viant/toolbox v0.30.0
+	golang.org/x/oauth2 v0.15.0 // indirect
+	google.golang.org/api v0.153.0 // indirect
 )
