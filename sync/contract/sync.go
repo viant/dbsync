@@ -10,10 +10,11 @@ import (
 
 const defaultPartitionBatchSize = 16
 
-//Sync represents sync instruction
+// Sync represents sync instruction
 type Sync struct {
 	strategy.Strategy `yaml:",inline" json:",inline"`
 	Transfer          Transfer
+	PreserveCase      bool
 	Dest              *Resource
 	Source            *Resource
 	Table             string
@@ -26,7 +27,7 @@ type Sync struct {
 	UseCreateLikeDDL  bool
 }
 
-//UseLock returns lock flag
+// UseLock returns lock flag
 func (r *Sync) UseLock() bool {
 	if r.Lock != nil {
 		return *r.Lock
@@ -36,21 +37,21 @@ func (r *Sync) UseLock() bool {
 
 func (r *Sync) Clone() *Sync {
 	return &Sync{
-		Strategy: *r.Strategy.Clone(),
-		Transfer: r.Transfer,
-		Dest:     r.Dest,
-		Lock:     r.Lock,
-		Source:   r.Source,
-		Table:    r.Table,
-		Criteria: r.Criteria,
-		Schedule: r.Schedule,
-		Async:    r.Async,
+		Strategy:         *r.Strategy.Clone(),
+		Transfer:         r.Transfer,
+		Dest:             r.Dest,
+		Lock:             r.Lock,
+		Source:           r.Source,
+		Table:            r.Table,
+		Criteria:         r.Criteria,
+		Schedule:         r.Schedule,
+		Async:            r.Async,
 		UseCreateLikeDDL: r.UseCreateLikeDDL,
-		Debug:    r.Debug,
+		Debug:            r.Debug,
 	}
 }
 
-//Init initialized Request
+// Init initialized Request
 func (r *Sync) Init() error {
 	if r.Dest == nil || r.Source == nil {
 		return nil
@@ -123,7 +124,7 @@ func (r *Sync) Init() error {
 	return err
 }
 
-//Validate checks if Request is valid
+// Validate checks if Request is valid
 func (r *Sync) Validate() error {
 	if r.Source == nil {
 		return fmt.Errorf("source was empty")
@@ -165,7 +166,7 @@ func (r *Sync) Validate() error {
 	return nil
 }
 
-//NewSyncFromURL returns new sync from URL
+// NewSyncFromURL returns new sync from URL
 func NewSyncFromURL(URL string) (*Sync, error) {
 	result := &Sync{}
 	resource := url.NewResource(URL)

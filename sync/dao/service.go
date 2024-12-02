@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-//errSuffixWasEmpty represents suffix empty error
+// errSuffixWasEmpty represents suffix empty error
 var errSuffixWasEmpty = errors.New("suffix was empty")
 
 type (
@@ -82,19 +82,19 @@ func (s *service) dbResource(kind contract.ResourceKind) *dbResource {
 	return s.source
 }
 
-//Builder returns sql builder
+// Builder returns sql builder
 func (s *service) Builder() *sql.Builder {
 	return s.builder
 }
 
-//Partitions returns partitions for supplied source kind
+// Partitions returns partitions for supplied source kind
 func (s *service) Partitions(ctx *shared.Context, kind contract.ResourceKind) (core.Records, error) {
 	dbResource := s.dbResource(kind)
 	return s.partitions(ctx, dbResource)
 
 }
 
-//DropTransientTable drops transient table
+// DropTransientTable drops transient table
 func (s *service) DropTransientTable(ctx *shared.Context, suffix string) (err error) {
 	if suffix == "" {
 		return errSuffixWasEmpty
@@ -112,14 +112,13 @@ func (s *service) DropTransientTable(ctx *shared.Context, suffix string) (err er
 
 }
 
-//RecreateTransientTable recreate transient table
+// RecreateTransientTable recreate transient table
 func (s *service) RecreateTransientTable(ctx *shared.Context, suffix string) (err error) {
 	_ = s.DropTransientTable(ctx, suffix)
 	return s.CreateTransientTable(ctx, suffix)
 }
 
-
-//CreateTransientTable create transient table
+// CreateTransientTable create transient table
 func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err error) {
 	if suffix == "" {
 		return errSuffixWasEmpty
@@ -132,8 +131,8 @@ func (s *service) CreateTransientTable(ctx *shared.Context, suffix string) (err 
 	}
 	DDL := s.builder.DDLFromSelect(suffix)
 	if err = s.ExecSQL(ctx, DDL); err == nil {
-			return nil
-		}
+		return nil
+	}
 	//Fallback to dialect DDL
 	DDL = s.builder.DDL(suffix)
 	//if s.Transfer.TempDatabase != "" {
@@ -152,13 +151,13 @@ func (s *service) partitions(ctx *shared.Context, resource *dbResource) (core.Re
 	return result, err
 }
 
-//Signatures returns data signatures
+// Signatures returns data signatures
 func (s *service) Signatures(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Records, error) {
 	dbResource := s.dbResource(kind)
 	return s.signatures(ctx, dbResource, filter)
 }
 
-//Signature returns data signatures or error if multi record is read
+// Signature returns data signatures or error if multi record is read
 func (s *service) Signature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (core.Record, error) {
 	result, err := s.Signatures(ctx, kind, filter)
 	if err != nil {
@@ -180,7 +179,7 @@ func (s *service) signatures(ctx *shared.Context, dbResource *dbResource, filter
 	return result, err
 }
 
-//CountSignature returns a count signature
+// CountSignature returns a count signature
 func (s *service) CountSignature(ctx *shared.Context, kind contract.ResourceKind, filter map[string]interface{}) (*core.Signature, error) {
 	dbResource := s.dbResource(kind)
 	return s.countSignature(ctx, dbResource, filter)
@@ -197,7 +196,7 @@ func (s *service) countSignature(ctx *shared.Context, dbResource *dbResource, fi
 	return result, err
 }
 
-//ChunkSignature returns a chunk signature
+// ChunkSignature returns a chunk signature
 func (s *service) ChunkSignature(ctx *shared.Context, kind contract.ResourceKind, offset, limit int, filter map[string]interface{}) (*core.Signature, error) {
 	dbResource := s.dbResource(kind)
 	return s.chunkSignature(ctx, dbResource, offset, limit, filter)
@@ -218,7 +217,7 @@ func (s *service) chunkSignature(ctx *shared.Context, dbResource *dbResource, of
 	return result, err
 }
 
-//ExecSQL execute SQL
+// ExecSQL execute SQL
 func (s *service) ExecSQL(ctx *shared.Context, SQL string) (err error) {
 	if ctx.DMLTimeout == 0 {
 		ctx.Log(SQL)
@@ -227,8 +226,6 @@ func (s *service) ExecSQL(ctx *shared.Context, SQL string) (err error) {
 	}
 	return s.executeInBackground(err, SQL, ctx)
 }
-
-
 
 func (s *service) executeInBackground(err error, SQL string, ctx *shared.Context) error {
 	var conn dsc.Connection
@@ -254,15 +251,14 @@ func (s *service) executeInBackground(err error, SQL string, ctx *shared.Context
 	return err
 }
 
-
-//DbName returns db name for supplied source kind
+// DbName returns db name for supplied source kind
 func (s *service) DbName(ctx *shared.Context, kind contract.ResourceKind) (string, error) {
 	dbResource := s.dbResource(kind)
 	dialect := dsc.GetDatastoreDialect(dbResource.DB.Config().DriverName)
 	return dialect.GetCurrentDatastore(dbResource.DB)
 }
 
-//Columns returns columns
+// Columns returns columns
 func (s *service) Columns(ctx *shared.Context, table string) ([]dsc.Column, error) {
 	dialect := dsc.GetDatastoreDialect(s.dest.DB.Config().DriverName)
 	datastore, err := dialect.GetCurrentDatastore(s.dest.DB)
@@ -272,7 +268,7 @@ func (s *service) Columns(ctx *shared.Context, table string) ([]dsc.Column, erro
 	return dialect.GetColumns(s.dest.DB, datastore, table)
 }
 
-//Close closes resources
+// Close closes resources
 func (s *service) Close() error {
 	_ = s.dest.DB.ConnectionProvider().Close()
 	return s.source.DB.ConnectionProvider().Close()
@@ -296,7 +292,7 @@ func (s *service) initBuilder(ctx *shared.Context) error {
 	return err
 }
 
-//Init initialises service
+// Init initialises service
 func (s *service) Init(ctx *shared.Context) error {
 	err := s.initDB(ctx)
 	if err == nil {
@@ -305,7 +301,7 @@ func (s *service) Init(ctx *shared.Context) error {
 	return err
 }
 
-//New returns new service
+// New returns new service
 func New(sync *contract.Sync) Service {
 	return &service{
 		Sync:   sync,

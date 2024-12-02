@@ -14,10 +14,10 @@ const (
 	ResourceKindDest = "dest"
 )
 
-//ResourceKind represents source or dest
+// ResourceKind represents source or dest
 type ResourceKind string
 
-//Resource represents sync resource
+// Resource represents sync resource
 type Resource struct {
 	*dsc.Config
 	Table             string
@@ -31,7 +31,7 @@ type Resource struct {
 	PartitionSQL      string
 }
 
-//Validate checks if resource is valid
+// Validate checks if resource is valid
 func (r *Resource) Validate() error {
 	if len(r.PseudoColumns) == 0 {
 		return nil
@@ -47,12 +47,12 @@ func (r *Resource) Validate() error {
 	return nil
 }
 
-//GetPseudoColumn returns pseudo columns
+// GetPseudoColumn returns pseudo columns
 func (r *Resource) GetPseudoColumn(column string) *pseudo.Column {
 	return r.columnExpression[column]
 }
 
-//Init initializes resource
+// Init initializes resource
 func (r *Resource) Init() error {
 	r.indexPseudoColumns()
 	if r.Config == nil {
@@ -71,7 +71,7 @@ func (r *Resource) indexPseudoColumns() {
 	}
 }
 
-//ColumnExpr returns column expresion
+// ColumnExpr returns column expresion
 func (r *Resource) ColumnExpr(column string) string {
 	if pseudoColumn, ok := r.columnExpression[column]; ok {
 		return pseudoColumn.Expression
@@ -79,7 +79,7 @@ func (r *Resource) ColumnExpr(column string) string {
 	return column
 }
 
-//ColumnExpr returns column expresion
+// ColumnExpr returns column expresion
 func (r *Resource) BaseColumnExpr(base, column string) string {
 	if base != "" {
 		if pseudoColumn, ok := r.columnExpression[base]; ok {

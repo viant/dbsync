@@ -5,15 +5,14 @@ import (
 	"dbsync/sync/shared"
 	"flag"
 	"fmt"
-	_ "github.com/alexbrainman/odbc"
+	//	_ "github.com/alexbrainman/odbc"
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/gops/agent"
 	_ "github.com/lib/pq"
-	_ "github.com/vertica/vertica-sql-go"
-
+	//	_ "github.com/mattn/go-oci8"
 	_ "github.com/adrianwit/dyndb"
-	_ "github.com/mattn/go-oci8"
+	_ "github.com/vertica/vertica-sql-go"
 	_ "github.com/viant/asc"
 	_ "github.com/viant/bgc"
 	"log"
@@ -31,7 +30,6 @@ var statsHistory = flag.Int("statsHistory", 10, "max stats history")
 
 func main() {
 	flag.Parse()
-
 	go func() {
 		if err := agent.Listen(agent.Options{}); err != nil {
 			log.Fatal(err)

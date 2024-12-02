@@ -19,7 +19,7 @@ var reservedKeyword = map[string]bool{
 	"window": true,
 }
 
-//Builder represents SQL builder
+// Builder represents SQL builder
 type Builder struct {
 	*strategy.Strategy //request sync meta
 	ddl                string
@@ -35,7 +35,7 @@ type Builder struct {
 	isUpperCase        bool
 }
 
-//Table returns table name
+// Table returns table name
 func (b *Builder) Table(suffix string) string {
 	if suffix == "" {
 		return b.table
@@ -47,7 +47,7 @@ func (b *Builder) Table(suffix string) string {
 	return b.table + b.transferSuffix + suffix
 }
 
-//QueryTable returns query table
+// QueryTable returns query table
 func (b *Builder) QueryTable(suffix string, resource *contract.Resource) string {
 	suffix = normalizeTableName(suffix)
 	if suffix == "" {
@@ -62,7 +62,7 @@ func (b *Builder) QueryTable(suffix string, resource *contract.Resource) string 
 	return resource.Table + b.transferSuffix + suffix
 }
 
-//DDLFromSelect returns transient table DDL for supplied suffix
+// DDLFromSelect returns transient table DDL for supplied suffix
 func (b *Builder) DDLFromSelect(suffix string) string {
 	suffix = normalizeTableName(suffix)
 	if b.useCrateLikeDDL {
@@ -71,7 +71,7 @@ func (b *Builder) DDLFromSelect(suffix string) string {
 	return fmt.Sprintf("CREATE TABLE %v AS SELECT * FROM %v WHERE 1 = 0", b.Table(suffix), b.Table(""))
 }
 
-//DDL returns transient table DDL for supplied suffix
+// DDL returns transient table DDL for supplied suffix
 func (b *Builder) DDL(tempTable string) string {
 	DDL := b.ddl
 	if tempTable != "" {
@@ -116,7 +116,7 @@ LIMIT $limit
 ) t`, strings.Join(projection, ",\n\t"), b.unAliasedColumnExpression(b.IDColumns[0], resource), b.QueryTable("", resource), b.IDColumns[0])
 }
 
-//ChunkDQL returns chunk DQL
+// ChunkDQL returns chunk DQL
 func (b *Builder) ChunkDQL(resource *contract.Resource, max, limit int, values map[string]interface{}) string {
 	state := data.NewMap()
 	state.Put("hint", resource.Hint)
@@ -164,7 +164,7 @@ func (b *Builder) toWhereCriteria(criteria map[string]interface{}, resource *con
 	return "\nWHERE " + strings.Join(criteriaList, " AND ")
 }
 
-//CountDQL returns count DQL for supplied resource and filter
+// CountDQL returns count DQL for supplied resource and filter
 func (b *Builder) CountDQL(suffix string, resource *contract.Resource, criteria map[string]interface{}) string {
 	var projection = []string{
 		fmt.Sprintf("COUNT(1) AS %v", b.formatColumn("count_value")),
@@ -188,7 +188,7 @@ func (b *Builder) isUnique(candidate string) bool {
 	return has
 }
 
-//DQL returns sync DQL
+// DQL returns sync DQL
 func (b *Builder) DQL(suffix string, resource *contract.Resource, values map[string]interface{}, dedupe bool) string {
 	var projection = make([]string, 0)
 	var dedupeFunction = ""
@@ -270,7 +270,7 @@ func (b *Builder) init() {
 	}
 }
 
-//SignatureDQL returns sync difference DQL
+// SignatureDQL returns sync difference DQL
 func (b *Builder) SignatureDQL(resource *contract.Resource, criteria map[string]interface{}) string {
 	return b.partitionDQL(criteria, resource, func(projection *[]string, dimension map[string]bool) {
 		for _, column := range b.Diff.Columns {
@@ -315,7 +315,7 @@ func (b *Builder) partitionDQL(criteria map[string]interface{}, resource *contra
 	return SQL
 }
 
-//DML returns DML
+// DML returns DML
 func (b *Builder) DML(dmlType string, suffix string, filter map[string]interface{}) (string, error) {
 	if suffix == "" && dmlType != shared.DMLFilteredDelete {
 		return "", fmt.Errorf("sufifx was empty")
@@ -412,7 +412,7 @@ func (b *Builder) baseInsert(suffix string, withReplace bool) string {
 	return fmt.Sprintf("INSERT %v INTO %v(%v) SELECT %v FROM (%v) t", replace, b.Table(""), names, values, DQL)
 }
 
-//AppendDML returns append DML
+// AppendDML returns append DML
 func (b *Builder) AppendDML(sourceSuffix, destSuffix string) string {
 	dedupe := len(b.uniques) > 0
 	DQL := b.DQL(sourceSuffix, b.dest, nil, dedupe)
@@ -715,7 +715,7 @@ func isUpperCaseTable(columns []dsc.Column) bool {
 	return true
 }
 
-//NewBuilder creates a new builder
+// NewBuilder creates a new builder
 func NewBuilder(sync *contract.Sync, ddl string, destColumns []dsc.Column) (*Builder, error) {
 	if len(destColumns) == 0 {
 		return nil, fmt.Errorf("columns were empty")
@@ -725,7 +725,7 @@ func NewBuilder(sync *contract.Sync, ddl string, destColumns []dsc.Column) (*Bui
 	if transferSuffix != "" && !strings.HasPrefix(transferSuffix, "_") {
 		transferSuffix = "_" + transferSuffix
 	}
-	isUpperCaseTable := isUpperCaseTable(destColumns)
+	isUpperCaseTable := isUpperCaseTable(destColumns) && !sync.PreserveCase
 	builder := &Builder{
 		tempDatabase:    sync.Transfer.TempDatabase,
 		Strategy:        &sync.Strategy,
