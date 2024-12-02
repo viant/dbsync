@@ -5,3 +5,4 @@ vsync
 nohup.out
 cron
 mydb
+local/

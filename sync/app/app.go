@@ -12,6 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/vertica/vertica-sql-go"
 
+	_ "github.com/adrianwit/dyndb"
 	_ "github.com/mattn/go-oci8"
 	_ "github.com/viant/asc"
 	_ "github.com/viant/bgc"
@@ -19,7 +20,7 @@ import (
 	"os"
 )
 
-//Version app version
+// Version app version
 var Version string
 
 var port = flag.Int("port", 8080, "service port")
